@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+    <head>
+            <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://icgem.gfz.de blob: data: ws: https://webstats.gfz.de;
+                                                            script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://webstats.gfz.de;
+                                                            img-src * data:;">
+        <meta content="Franz Barthelmes, Elmas Sinem Ince, Sven Rei&szlig;land" name="Author">
+        <meta name="keywords"
+            content="CHAMP, GOCE, GPS levelling, GPS levelling, GRACE, calculation, comparison,
+                     computation, geoid, geopotential, gravity, gravity anomaly, gravity field,
+                     gravity model, grid, iag, map, spherical harmonic coefficients,
+                     spherical harmonics, validation, visualisation">
+        <meta name="description" content="ICGEM: International Centre for Global Earth Models">
+        <title>ICGEM International Center for Global Gravity Field Models</title>
+        <link rel="stylesheet" type="text/css" href="/libs/bootstrap_5.3.3.min.css">
+        <link rel="stylesheet" type="text/css" href="/colors.css">
+        <link rel="stylesheet" type="text/css" href="/icgem_bs.css">
+        <script src="/libs/jquery-3.7.0.min.js"></script>
+        <script src="/libs/underscore-umd-min.js"></script>
+        <script src="/common.js"></script>
+        <script>
+            const newurl = "https://icgem.gfz.de" + window.location.pathname + window.location.hash;
+            if (window.location.hostname.endsWith(".gfz-potsdam.de")) {
+                window.location.replace(newurl);
+            }
+        </script>
+            <script src="/libs/editorjs/header.js"></script>
+    <script src="/libs/editorjs/image.js"></script>
+    <script src="/libs/editorjs/inlineimage.js"></script>
+    <script src="/libs/editorjs/delimiter.js"></script>
+    <script src="/libs/editorjs/list.js"></script>
+    <script src="/libs/editorjs/quote.js"></script>
+    <script src="/libs/editorjs/code.js"></script>
+    <script src="/libs/editorjs/table.js"></script>
+    <script src="/libs/editorjs/marker.js"></script>
+    <script src="/libs/editorjs/underline.js"></script>
+    <script src="/libs/editorjs/inline-code.js"></script>
+    <script src="/libs/editorjs/attaches.js"></script>
+    <script src="/libs/editorjs/alignment.js"></script>
+    <script src="/libs/editorjs/raw.js"></script>
+    <link rel="stylesheet" type="text/css" href="/libs/editorjs/Hyperlink.css">
+    <script src="/libs/editorjs/SelectionUtils.js"></script>
+    <script src="/libs/editorjs/Hyperlink.js"></script>
+    <link rel="stylesheet" type="text/css" href="/libs/editorjs/color-picker.css">
+    <script src="/libs/editorjs/color-picker.js"></script>
+    <script src="/libs/editorjs/genericinline.js"></script>
+    <script src="/libs/editorjs.umd.min.js"></script>
+
+
+    <style>
+        .cardwrap {
+            min-width: 15rem;
+            width: 20%;
+        }
+        .card:hover {
+            transform: scale(1.025,1.025);
+            transition: transform .4s;
+            z-index: 6;
+        }
+        .cards-with-bigger-hover .card:hover {
+            transform: scale(1.1,1.1);
+            transition: transform .4s;
+            z-index: 6;
+        }
+    </style>
+    </head>
+    <body>
+        
+        <div class="w-100 h-100 d-flex">
+            <div id="sidebar" class="d-flex flex-column">
+                <img id="logo" class="logo" src="/imgs/icgem.png" alt="Logo">
+                <div id="menu">
+
+
+
+
+        <a class="self" href="/home">ICGEM Home</a>
+
+
+<h4>Gravity Field Models</h4>
+        <a class="sub " href="/tom_longtime">Static Models</a>
+
+        <a class="sub " href="/sl/temporal">Temporal Models</a>
+
+        <a class="sub " href="/sl/simulated">Simulated Models</a>
+
+        <a class="sub " href="/tom_reltopo">Topographic Models</a>
+
+
+<h4>Calculation Service</h4>
+        <a class="sub " href="/calcgrid">Regular grids</a>
+
+        <a class="sub " href="/calcpoints">User-defined points</a>
+
+        <a class="sub " href="/g3">G3-Browser</a>
+
+
+<h4>3D Visualisation</h4>
+        <a class="sub " href="/vis3d/longtime">Static Models</a>
+
+        <a class="sub " href="/vis3d/series">Temporal Models</a>
+
+        <a class="sub " href="/vis3d/trend">Trend &amp; Amplitude</a>
+
+        <a class="sub " href="/vis3d/tutorial">Spherical Harmonics</a>
+
+
+<h4>Evaluation</h4>
+        <a class="sub " href="/evalchart">Spectral domain</a>
+
+        <a class="sub " href="/tom_gpslev">GNSS Leveling</a>
+
+
+        <a href="/dochome">Documentation</a>
+
+        <a class="sub " href="/faq">FAQ</a>
+
+        <a class="sub " href="/theory">Theory</a>
+
+        <a class="sub " href="/refs">References</a>
+
+        <a class="sub " href="/changes">Latest Changes</a>
+
+        <a class="sub " href="/contact">Contact</a>
+
+
+<h4>Other Celestial Bodies<br>
+    (Moon,Venus, Mars)</h4>
+        <a class="sub " href="/tom_celestial">Table of Models</a>
+
+        <a class="sub " href="/vis3d/celestial">3D Visualization</a>
+
+        <a class="sub " href="/calcgrid?modeltype=celestial">Calculation Service</a>
+
+<hr noshade color="black" width="100%" size="3" align="center">
+        <a class="sub " href="/imprint">Imprint</a>
+
+        <a class="sub " href="/dataprotection">Data Protection</a>
+
+                <a class="sub " href="/login?redirecturl=/home">Admin-Login</a>
+
+                </div>
+            </div>
+            <div id="content">
+                <div id="header" class="row">
+                    <img src="/imgs/iaglogo-short-web.png" alt="iaglogo">
+                    <img src="/imgs/logo_gfz.svg" alt="gfzlogo">
+                </div>
+<h1 class="display-4 text-center textshadow mb-4">International Centre for Global Earth Models (ICGEM)</h1>
+<div class="container-fluid">
+    <!-- News Section -->
+    <h2 class="mt-4">News</h2>
+    <div class="d-flex flex-wrap cards-with-bigger-hover">
+                    <div class="cardwrap d-flex pe-2 pb-2 position-relative" style="">
+  <div class="card w-100">
+    <div class="cdx-block image-tool image-tool--filled   "><div class="image-tool__image"><div class="image-tool__image-preloader"></div><img class="image-tool__image-picture" src="/files/e384f7dcf2e8867b5999d8e439039e9f470d3584ba1d277d04b4baf01f51da46.svg"/></div><div class="image-tool__caption"></div></div>
+<h4 class="cdx-block ce-header ce-tune-alignment--left"><a href="https://www.egu.eu/">See you at EGU</a></h4>
+<p class="cdx-block ce-paragraph">Where to find our poster at the EGU26:</p>
+<p class="cdx-block ce-paragraph">⏱️Thu, May 7 | 10:45–12:30<b><br></b>📍Hall X2 | X2.19</p>
+  </div>
+</div>
+            <div class="cardwrap d-flex pe-2 pb-2 position-relative" style="">
+  <div class="card w-100">
+    <div class="cdx-block image-tool image-tool--filled   "><div class="image-tool__image"><div class="image-tool__image-preloader"></div><img class="image-tool__image-picture" src="/files/25883291646899851a3e95fc16820f5b115972cd66cf4d3204f95ac62891b1a0.png"/></div><div class="image-tool__caption"></div></div>
+<h4 class="cdx-block ce-header ce-tune-alignment--left"><a href="https://www.gfz.de/en/section/global-geomonitoring-and-gravity-field/projects/samdat-service-and-archive-for-mass-distribution-and-mass-transportation-data">SAMDAT</a></h4>
+<p class="cdx-block ce-paragraph">The SAMDAT project funded by the DFG (German Research Foundation) aims to increase the performance of the ICGEM service and to meet the growing needs of the users.</p>
+  </div>
+</div>
+            <div class="cardwrap d-flex pe-2 pb-2 position-relative" style="">
+  <div class="card w-100">
+    <div class="cdx-block image-tool image-tool--filled   "><div class="image-tool__image"><div class="image-tool__image-preloader"></div><img class="image-tool__image-picture" src="/files/dc576161d73cacba2f0564322cadc8c5ceabb71707ef1c69303d5d8b624be417.png?"/></div><div class="image-tool__caption"></div></div>
+<h4 class="cdx-block ce-header ce-tune-alignment--left"><a href="https://icgem.gfz.de/files/e9906817e927eb14a1b2748ffb6d3d9be8015897260a000c45cf63c527d9f7d8.pdf">Presentation from IAG Rimini 2025</a></h4>
+<div class="cdx-block"><div class="cdx-attaches cdx-attaches--with-file"><div class="cdx-attaches__file-icon"><div class="cdx-attaches__file-icon-background" style="background-color: rgb(209, 51, 89);"></div><div class="cdx-attaches__file-icon-label" title="pdf" style="background-color: rgb(209, 51, 89);">pdf</div></div><div class="cdx-attaches__file-info"><div class="cdx-attaches__title" contenteditable="true" data-placeholder="File title" data-empty="false">ICGEM@IAG_Rimini_2025</div><div class="cdx-attaches__size" data-size="MiB">1.4</div></div><a class="cdx-attaches__download-button" href="/files/e9906817e927eb14a1b2748ffb6d3d9be8015897260a000c45cf63c527d9f7d8.pdf" target="_blank" rel="nofollow noindex noreferrer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M7 10L11.8586 14.8586C11.9367 14.9367 12.0633 14.9367 12.1414 14.8586L17 10"></path></svg></a></div></div>
+<p class="cdx-block ce-paragraph">Recent activities and its contribution to the gravity field related products.</p>
+  </div>
+</div>
+            <div class="cardwrap d-flex pe-2 pb-2 position-relative" style="">
+  <div class="card w-100">
+    <div class="cdx-block image-tool image-tool--filled   "><div class="image-tool__image"><div class="image-tool__image-preloader"></div><img class="image-tool__image-picture" src="/files/8a41de4b15ebfa7685fca389a2e5db3e0a6a6e2a931c78af039d88414ef922ea.png"/></div><div class="image-tool__caption"></div></div>
+<h4 class="cdx-block ce-header ce-tune-alignment--left"><a href="/contact?topic=design">We redesigned the website</a></h4>
+<p class="cdx-block ce-paragraph">ICGEM keeps advancing: our website is now powered by the Bootstrap framework. Stay tuned for updates and a responsive design. We welcome your feedback!</p>
+  </div>
+</div>
+            <div class="cardwrap d-flex pe-2 pb-2 position-relative" style="">
+  <div class="card w-100">
+    <div class="cdx-block image-tool image-tool--filled   "><div class="image-tool__image"><div class="image-tool__image-preloader"></div><img class="image-tool__image-picture" src="/files/759bb9ce94783ff65715d78589fab8c0755ddef765be6b02c5472fb1309cc831.png"/></div><div class="image-tool__caption"></div></div>
+<h4 class="cdx-block ce-header"><a href="https://doi.org/10.48440/gfz.b103-25011">User Survey results</a></h4>
+<p class="cdx-block ce-paragraph">The Results of the ICGEM User Survey are now available. Thank you to everyone who participated and shared their valuable insights.</p>
+  </div>
+</div>
+
+    </div>
+
+    <!-- IGFS Services Section -->
+    <h2 class="mt-4">Services coordinated by
+        <a href="http://igfs.topo.auth.gr/" target="_blank">IGFS (International Gravity Field Service)</a>
+        of the
+        <a href="http://www.iag-aig.org/" target="_blank">IAG (International Association of Geodesy)</a>
+    </h2>
+    <div class="d-flex flex-wrap cards-with-bigger-hover">
+<div class="cardwrap d-flex pe-2 pb-2" style="">
+  <a class="card w-100" href="/">
+    <img src="/imgs/logo_icgem.png" class="card-img-top" alt="">
+    <div class="card-body">
+      <h4 class="card-title">ICGEM (International Centre for Global Earth Models)</h4>
+      <p class="card-text">            GFZ, Potsdam, Germany
+</p>
+    </div>
+  </a>
+</div>
+<div class="cardwrap d-flex pe-2 pb-2" style="">
+  <a class="card w-100" href="https://bgi.obs-mip.fr" target="_blank">
+    <img src="/imgs/logo_bgi.jpg" class="card-img-top" alt="">
+    <div class="card-body">
+      <h4 class="card-title">BGI (Bureau Gravimetrique International)</h4>
+      <p class="card-text">            Toulouse, France
+</p>
+    </div>
+  </a>
+</div>
+<div class="cardwrap d-flex pe-2 pb-2" style="">
+  <a class="card w-100" href="http://www.isgeoid.polimi.it" target="_blank">
+    <img src="/imgs/logo_isg.gif" class="card-img-top" alt="">
+    <div class="card-body">
+      <h4 class="card-title">ISG (International Service for the Geoid)</h4>
+      <p class="card-text">            Politecnico di Milano, Milano, Italy
+</p>
+    </div>
+  </a>
+</div>
+<div class="cardwrap d-flex pe-2 pb-2" style="">
+  <a class="card w-100" href="http://igets.u-strasbg.fr" target="_blank">
+    <img src="/imgs/logo_igets.jpg" class="card-img-top" alt="">
+    <div class="card-body">
+      <h4 class="card-title">IGETS (International Geodynamics and Earth Tide Service)</h4>
+      <p class="card-text">            EOST, Strasbourg, France
+</p>
+    </div>
+  </a>
+</div>
+<div class="cardwrap d-flex pe-2 pb-2" style="">
+  <a class="card w-100" href="https://idems.maps.arcgis.com" target="_blank">
+    <img src="/imgs/logo_idems.png" class="card-img-top" alt="">
+    <div class="card-body">
+      <h4 class="card-title">IDEMS (International Digital Elevation Model Service)</h4>
+      <p class="card-text">            ESRI, Redlands, CA, USA
+</p>
+    </div>
+  </a>
+</div>    </div>
+
+    <!-- About Us Section -->
+    <h2 class="mt-4">About us</h2>
+    <div class="d-flex flex-wrap noextlinks">
+      <div class="cardwrap d-flex pe-2 pb-2 position-relative" style="min-width: 50rem; width: 50%;">
+  <div class="card w-100">
+    <h4 class="cdx-block ce-header ce-tune-alignment--left">Services of ICGEM</h4>
+<p class="cdx-block ce-paragraph">• Collecting and archiving of all existing global gravity field models&nbsp;<br>• Web interface for getting access to global gravity field models&nbsp;<br>• Web-based visualization of the gravity field models, their differences, and their time variation&nbsp;<br>• Web-based service for calculating different functionals of the gravity field models&nbsp;<br>• Tutorials on spherical harmonics and the theory of the calculation service&nbsp;<br>• Providing a Digital Object Identifier (DOI) for the data set of the model (the coefficients) </p>
+  </div>
+</div>
+                  <div class="cardwrap d-flex pe-2 pb-2 position-relative" style="min-width: 25rem; width: 25%;">
+  <div class="card w-100">
+    <h4 class="cdx-block ce-header ce-tune-alignment--left">Our publications</h4>
+<div class="cdx-block"><div class="cdx-attaches cdx-attaches--with-file"><div class="cdx-attaches__file-icon"><div class="cdx-attaches__file-icon-background" style="background-color: rgb(209, 51, 89);"></div><div class="cdx-attaches__file-icon-label" title="pdf" style="background-color: rgb(209, 51, 89);">pdf</div></div><div class="cdx-attaches__file-info"><div class="cdx-attaches__title" contenteditable="true" data-placeholder="File title" data-empty="false">ICGEM Services: ESSD Article</div><div class="cdx-attaches__size" data-size="MiB">21.4</div></div><a class="cdx-attaches__download-button" href="/files/ef8f34a8e4fbd8777f09e0d714ec4e70f38f4af86adbc0084fe2b740cc1798af.pdf" target="_blank" rel="nofollow noindex noreferrer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M7 10L11.8586 14.8586C11.9367 14.9367 12.0633 14.9367 12.1414 14.8586L17 10"></path></svg></a></div></div>
+<div class="cdx-block"><div class="cdx-attaches cdx-attaches--with-file"><div class="cdx-attaches__file-icon"><div class="cdx-attaches__file-icon-background" style="background-color: rgb(209, 51, 89);"></div><div class="cdx-attaches__file-icon-label" title="pdf" style="background-color: rgb(209, 51, 89);">pdf</div></div><div class="cdx-attaches__file-info"><div class="cdx-attaches__title" contenteditable="true" data-placeholder="File title" data-empty="false">ICGEM File Format Description</div><div class="cdx-attaches__size" data-size="KiB">512.9</div></div><a class="cdx-attaches__download-button" href="/files/6defd9f87a64b16ec96bd657a74d0292ae3447cc7418da5104441102d8cb2b58.pdf" target="_blank" rel="nofollow noindex noreferrer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M7 10L11.8586 14.8586C11.9367 14.9367 12.0633 14.9367 12.1414 14.8586L17 10"></path></svg></a></div></div>
+  </div>
+</div>
+
+    </div>
+
+    <h2 class="mt-4">Please cite our service as:</h2>
+    <div class="d-flex flex-wrap">
+<div class="cardwrap d-flex pe-2 pb-2" style="min-width: 60rem; width: 60%;">
+  <div class="card w-100">
+    <div class="card-body">
+      <h4 class="card-title"></h4>
+      <p class="card-text">            Ince, E. S., Barthelmes, F., Reißland, S., Elger, K., Förste, C., Flechtner, F., Schuh, H. (2019):<br>
+                    ICGEM – 15 years of successful collection and distribution of global gravitational models, associated<br>
+                    services and future plans. - Earth System Science Data, 11, pp. 647-674,DOI: http://doi.org/10.5194/essd-11-647-2019.
+</p>
+    </div>
+  </div>
+</div>    </div>
+    <div class="d-flex flex-wrap">
+<div class="cardwrap d-flex pe-2 pb-2" style="min-width: 30rem; width: 30%;">
+  <div class="card w-100">
+    <div class="card-body">
+      <h4 class="card-title">ICGEM Centre&rsquo;s staff at <a href="http://www.gfz.de/" target="_blank"> GFZ Potsdam </a></h4>
+      <p class="card-text">        <ul>
+            <li> <a href="javascript:js_dec_link('bWFpbHRvOmljZ2VtQGdmei5kZQ==');">Elmas Sinem Ince</a></li>
+            <li> <a href="javascript:js_dec_link('bWFpbHRvOmljZ2VtQGdmei5kZQ==');">Sven Rei&szlig;land</a></li>
+        </ul>
+</p>
+    </div>
+  </div>
+</div><div class="cardwrap d-flex pe-2 pb-2" style="min-width: 30rem; width: 30%;">
+  <div class="card w-100">
+    <div class="card-body">
+      <h4 class="card-title">Mailinglist</h4>
+      <p class="card-text">        <a target="_blank" href="https://www.listserv.dfn.de/sympa/subscribe/icgemusers">Subscribe</a> to the ICGEM-users mailinglist.
+</p>
+    </div>
+  </div>
+</div>    </div>
+</div>
+            </div>
+        </div>
+        <div id="footer_outer">
+            <div id="footer_inner">
+                <i>icgem (at) gfz.de</i>
+            </div>
+        </div>
+<div id='popup'>
+    <a class="x" href="javascript:hidePopup();" title="Hide this message and set a cookie">X</a>
+    <h4><b><a target="_blank" href="https://www.listserv.dfn.de/sympa/subscribe/icgemusers">Subscribe</a> to the<br>ICGEM-users mailinglist.</b></h4>
+</div>
+<!--<div id='popup'>
+    <a class="x" href="javascript:hidePopup();" title="Hide this message and set a cookie">X</a>
+    <h4>We appreciate your feedback. Please use our <a target="_blank" href="/survey">user survey</a> to send us your opinion.</h4>
+</div>-->
+<script type="text/javascript">
+    var hidemax = 7*24*60*60;
+    function hidePopup() {
+        document.getElementById('popup').style.display="none";
+        if ( getCookie("cookieconsent_status") == "accept" ) {
+            var htime = Math.min(parseInt(getCookie("popuphide")) * 2, hidemax) || 60*60;
+            console.log(htime);
+            setCookie("popuphide", htime, 30);
+            setCookie("popupnext", new Date() / 1000 + htime, 30);
+        }
+    }
+    if ( getCookie("cookieconsent_status") == "accept" ) {
+        if ( parseInt(getCookie("popupnext")) > (new Date() / 1000) ) {
+            document.getElementById('popup').style.display="none";
+            if ( parseInt(getCookie("popuphide")) >= hidemax ) {
+                setCookie("popupnext", new Date() / 1000 + hidemax, 30);
+            }
+        }
+    } else {
+        delCookie("popuphide");
+        delCookie("popupnext");
+        if (Math.random() > 0.05) { // hide popup most of the time
+            document.getElementById('popup').style.display="none";
+        }
+    }
+</script><div id="cookiebanner" class="modal show fade" data-bs-backdrop="static" style="display:block;">
+    <div class="position-fixed top-0 left-0 w-100 h-100" style="background-color:rgba(0,0,0,.5)"></div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Privacy Settings</h5>
+                <button type="button" class="btn-close" aria-label="Close" onclick="$('#cookiebanner').hide();"></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                We use cookies that are necessary for the basic functionality of our website so that it can be continuously optimized for you and its user-friendliness
+                improved. We also use the Matomo web analysis tool, which tracks data anonymously. This enables us to statistically evaluate the use of our website.
+                Your consent to the use of Matomo can be revoked at any time via the <a href="/dataprotection">privacy policy</a>.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="setCookie('cookieconsent_status', 'deny'); $('#cookiebanner').hide();">Refuse</button>
+                <button type="button" class="btn btn-primary" onclick="setCookie('cookieconsent_status', 'accept'); $('#cookiebanner').hide();">Accept</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    if ( getCookie("cookieconsent_status") != "" ) {
+        $('#cookiebanner').hide()
+    }
+    var _paq = window._paq = window._paq || [];
+    _paq.push(['requireCookieConsent']);
+    if ( getCookie("cookieconsent_status") == "accept" ) {
+        _paq.push(['setCookieConsentGiven']);
+    }
+    // tracker methods like "setCustomDimension" should be called before "trackPageView"
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function() {
+        var u="https://webstats.gfz.de/";
+        _paq.push(['setTrackerUrl', u+'matomo.php']);
+        _paq.push(['setSiteId', '45']);
+        var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+        g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+    })();
+</script>    </body>
+</html>

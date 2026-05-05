@@ -129,7 +129,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[concepts/kalman-filter]] | Kalman Filter | KF, EKF |
 | [[concepts/unscented-kalman-filter]] | Unscented Kalman Filter | UKF, unscented transform |
 
-## Decisions (12)
+## Decisions (13)
 
 | Number | Title | Status | Decided |
 |---|---|---|---|
@@ -145,6 +145,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[decisions/010-phantom-typed-time-and-state]] | Phantom-typed Time<Scale> and State<Frame> with bespoke tag types | accepted | 2026-05-05 |
 | [[decisions/011-reference-data-shipping]] | Reference data: small artefacts vendored, large artefacts fetched at configure time | accepted | 2026-05-05 |
 | [[decisions/012-eigen-with-apsis-math-aliases]] | Eigen 3.4 underneath, apsis::math type aliases at the public API | accepted | 2026-05-05 |
+| [[decisions/013-class-d-software-classification]] | Software classification: NPR 7150.2D Class D (mission-support / engineering) with reasonable conventions | accepted | 2026-05-05 |
 
 ## Components (0)
 

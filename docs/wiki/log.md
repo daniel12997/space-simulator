@@ -380,3 +380,25 @@ Seven decisions landed in one session ahead of writing the Phase 0 and Phase 1 p
 - Concept back-links from ADR-012 to [[concepts/pinocchio-library]] — judged too tangential (the ADR cites the concept as a constraint, not as a canonical implementation of it).
 
 These ADRs unblock writing `docs/phase-0-plan.md` (project bootstrap) and `docs/phase-1-plan.md` (propagator core) — the implementation plans that immediately follow this decision batch.
+
+## [2026-05-05] decision + process | 013 Class D classification + SMP/SDP/STP skeleton
+
+Established Apsis's NASA software-classification posture and the Class D process artefacts that NPR 7150.2D mandates for that class.
+
+- **[[decisions/013-class-d-software-classification]]** — Apsis is Class D (mission-support / engineering software) under NPR 7150.2D. Justifies the choice against Class A/B (flight-grade — would invalidate ADRs 005/007/009/012 and add 6–12 months of structural rework for guarantees ground software doesn't need to provide), Class C (overkill — added rigor doesn't change defect-detection outcomes for our workload), and Class E (under-rigorous — strips the test-plan formalism the regression-case discipline depends on). Includes a mandatory-practice mapping table from each Class D requirement to the Apsis artefact that addresses it.
+- **`docs/process/software-management-plan.md`** (SMP) — project organisation, lifecycle model (QRSPI iterative loop), configuration management, risk management, tooling, standards-adherence claims.
+- **`docs/process/software-development-plan.md`** (SDP) — development environment, project-internal coding standards (frames-first-class, time-scales-first-class, VE contract, strategy-interface-only-at-real-seams, vocabulary discipline, conformance-via-the-interface), source-tree layout, branch / PR / review process, build infrastructure, documentation requirements.
+- **`docs/process/software-test-plan.md`** (STP) — test categories (smoke / unit / conformance / regression / sanitizer / bench), coverage targets (≥ 80% statement on first-party code; gcov gate as Phase 1 followup), reference regression cases per phase, requirements-traceability mechanism (test-file frontmatter + lint script as Phase 1 followup), reporting cadence.
+
+**Tracked Phase 1 followups added by this batch:**
+- gcov coverage gate in CI with PR-comment delta rendering (STP §3).
+- `tools/lint/req_traceability.py` for REQ-* ↔ test mapping (STP §7).
+- GitHub branch-protection rules on `main` before first external PR (SDP §4).
+- Release process document at Phase 6 completion (SDP §8, SMP §6).
+- Reclassification clause: if a derived Apsis component is integrated into flight software, the consuming flight project performs its own classification of that component independently (ADR-013 Consequences).
+
+**Not landed yet (deferred):**
+- Updating `CLAUDE.md` "Commit Message Prefixes" with `process:` (or normalising on `meta:`). Skipped to keep this PR scoped to the Class D paperwork itself.
+- Updating `docs/00-design-overview.md` "Design decisions" section to mention ADR-013. Substantive design-doc edits remain deliberate human-or-jointly-authored passes.
+
+This batch is process bolt-on — no code touched, no architectural ADRs revised, no existing artefacts moved. The Class D envelope is documentation of the framework Apsis already implements in spirit, not a new development discipline.

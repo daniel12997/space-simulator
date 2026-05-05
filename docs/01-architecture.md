@@ -1,6 +1,6 @@
 # Apsis — System Architecture Overview
 
-> **Status:** Draft v0.1
+> **Status:** Draft v0.2 (revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 > **Scope:** High-fidelity spaceflight simulator for satellite engineering, GNC development, Monte Carlo verification, and full-catalog conjunction analysis.
 
 ---
@@ -70,11 +70,11 @@ The design explicitly rejects two common shortcuts. It does not use a generic ga
 
 ### Foundation
 
-**Time system.** TAI/TT/UTC/UT1/TDB with leap-second tables and IERS Bulletin A polar motion / DUT1 data. Two-component time representation (`epoch_jd + offset_seconds`, both `f64`) for nanosecond precision over multi-decade arcs. SOFA-backed.
+**Time system.** TAI/TT/UTC/UT1/TDB with leap-second tables and IERS Bulletin A polar motion / DUT1 data, plus optional TCG/TCB for relativistic-strict use cases. Two-component time representation (`epoch_jd + offset_seconds`, both `f64`) for nanosecond precision over multi-decade arcs. SOFA-backed.
 
 **Ephemerides.** SPICE kernels (SPK for positions, PCK for body orientations, FK for frame definitions, LSK for leap seconds, CK for spacecraft attitude history). `SpkEzr`-style queries return position and velocity of any body in any frame at any TDB epoch.
 
-**Frames.** Right-handed throughout. Inertial root: ICRF/J2000. Body-centered inertial (CCI): one per major body. Body-centered fixed (CCF): rotating with the body. Per-spacecraft frames (vehicle, NTW, RSW, LVLH) for GNC. IAU 2006/2000A precession-nutation for ICRF↔ITRF.
+**Frames.** Right-handed throughout. Inertial root: **ICRF** (current realization ICRF3); the J2000 mean-equator-and-equinox frame is treated as a distinct frame related to ICRF by the constant ~17 mas frame bias. Body-centered inertial (CCI): one per major body. Body-centered fixed (CCF): rotating with the body. Per-spacecraft frames (vehicle, NTW, RSW, LVLH) for GNC. IAU 2006/2000A precession-nutation for ICRF↔ITRF via the **CIO-based pipeline** (see ADR-001) implemented through SOFA `iauC2t06a` and supporting routines.
 
 **Math.** Eigen for linear algebra. Custom symplectic integrators where Eigen-based ODE libraries don't suffice. Compensated summation utilities.
 
@@ -107,7 +107,7 @@ The world holds **everything that exists** in the simulation. Built on EnTT or f
 - `CelestialBody` — Sun, planets, moons; ephemeris-driven
 - `ActiveSpacecraft` — full propagator, multi-body, GNC; references SpacecraftDynamics
 - `CatalogObject` — SGP4-propagated, low-fidelity
-- `Debris` — J2-only, lightweight
+- `Debris` — J2-only, lightweight, used for synthetic debris populations and testing (distinct from `CatalogObject` which is SGP4-propagated tracked debris from the SSN catalog; statistical sub-tracking-threshold MMOD flux per ORDEM is OOS for v1)
 
 **Components (capabilities):**
 - `DragProperties { Cd, area_to_mass }`
@@ -137,7 +137,7 @@ A `SpacecraftDynamics` object referenced from the ECS by handle. Owns:
 - **Internal state** — joint positions, joint rates, wheel speeds, fuel mass, etc.
 - **Floating-base coupling** — the URDF root joint is the orbital state from the ECS
 
-The URDF describes geometry and inertia; a sidecar configuration file (YAML) describes effectors and sensors attached to named links. URDF flexibility (modal coordinates) is out of scope for v1; rigid-body only.
+The URDF describes geometry and inertia; a sidecar configuration file (YAML) describes effectors and sensors attached to named links. **Flexible-body modal coordinates** for solar arrays, antennas, and other appendages are supported per the hybrid-coordinate method (Likins 1970 JPL TR 32-1329) — added as URDF-extension elements that the Apsis loader recognizes (vanilla URDF has no native modal-coordinate support). **Slosh modes** are added as additional pendulum joints in the URDF tree, anchored at the tank link, parameterized per Abramson 1966 NASA SP-106 and Dodge 2000.
 
 ### GNC stack
 
@@ -184,17 +184,19 @@ Python via pybind11. A scenario file describes:
 
 | Capability | Library | Notes |
 |---|---|---|
-| Time conversions, IAU models | SOFA (C) | Official IAU library |
-| Ephemerides, frames, SPK/PCK kernels | SPICE / CSPICE | JPL NAIF, free |
-| Multi-body dynamics | Pinocchio (C++) | Featherstone algorithms, autodiff support |
-| URDF parsing | urdfdom (C++) | ROS standard |
+| Time conversions, IAU models | SOFA (C) v18+ | Official IAU library; permissive license |
+| Ephemerides, frames, SPK/PCK kernels | SPICE / CSPICE | JPL NAIF, free; CSPICE is thread-unsafe — serialize or per-thread instance |
+| Multi-body dynamics | Pinocchio (C++) | Featherstone algorithms (ABA / RNEA / CRBA), **analytical derivatives** (Carpentier & Mansard 2018 — 30-60% faster than autodiff+codegen, numerically exact), autodiff support |
+| URDF parsing | urdfdom (C++) | ROS standard; complemented by Xacro for templating |
 | Linear algebra | Eigen (C++) | Header-only, ubiquitous |
 | ODE integrators (standard) | Boost.Numeric.Odeint | RK45, RK78 |
 | ECS framework | EnTT or flecs | Header-only / batteries-included |
-| Atmospheric density | NRLMSISE-00 reference | Free FORTRAN, C ports |
-| Geomagnetic field | IGRF-13 reference | Free FORTRAN, C ports |
-| Geopotential coefficients | EGM2008 | Free, ICGEM hosts |
-| TLE / SGP4 | Vallado SGP4 reference | Canonical implementation |
+| Atmospheric density (default) | NRLMSISE-00 reference | Free FORTRAN, C ports |
+| Atmospheric density (alternative) | JB2008 reference | Free C/Fortran from Space Environment Technologies (`sol.spacenvironment.net`); requires F10/S10/M10/Y10/Dst space-weather indices |
+| Geomagnetic field | IGRF-14 reference (or current) | Free FORTRAN, C ports; coefficient text file from IAGA / NOAA NCEI / BGS |
+| Geopotential coefficients | EGM2008 (Earth), GRGM900C/GRGM1200A (Moon) | Free; vendored EGM2008, additional models from ICGEM (`icgem.gfz.de`) |
+| TLE / SGP4 | Vallado SGP4 reference (WGS-72 constants) | Canonical implementation; WGS-72 per STR#3 to match operational AFSPC predictions |
+| CCSDS CDM ingest | Custom parser (KVN + XML) | CCSDS 508.0-B-1 Blue Book is small; no dominant third-party C++ library |
 | Python bindings | pybind11 | C++/Python glue |
 | Serialization | Cap'n Proto or Protobuf | For checkpoints, telemetry |
 | Result storage | Parquet (Apache Arrow) | Columnar, pandas-friendly |
@@ -220,7 +222,7 @@ Everything else is glue around well-tested libraries.
 |---|---|---|
 | 1. Propagator core | 6-8 weeks | Single spacecraft, force models, integrators, SPICE integration. Validate against published ephemerides. |
 | 2. ECS world + catalog | 3-4 weeks | EnTT/flecs integration, SGP4 catalog, spatial index, conjunction screening. |
-| 3. Multi-body / URDF | 6-8 weeks | Pinocchio integration, floating-base coupling, effectors, validate angular momentum conservation. |
+| 3. Multi-body / URDF | 6-8 weeks | Pinocchio integration, floating-base coupling, effectors, flexible-body modal coordinates (per Likins 1970 hybrid-coordinate method) and slosh DOFs (per Abramson/Dodge), validate angular momentum conservation. |
 | 4. GNC layer | 4-6 weeks | Sensor models, MEKF, basic controllers, message bus, multi-rate scheduling. |
 | 5. Monte Carlo | 3-4 weeks | Snapshot/restore, RNG management, parallel trials, result aggregation. |
 | 6. Scenario layer | 3-4 weeks | pybind11 bindings, Python DSL, examples. |

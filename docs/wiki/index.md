@@ -129,7 +129,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[concepts/kalman-filter]] | Kalman Filter | KF, EKF |
 | [[concepts/unscented-kalman-filter]] | Unscented Kalman Filter | UKF, unscented transform |
 
-## Decisions (5)
+## Decisions (12)
 
 | Number | Title | Status | Decided |
 |---|---|---|---|
@@ -138,6 +138,13 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[decisions/003-tagged-time-scale-types]] | Time is a type tagged with its scale; scale mixing is a compile-time error | accepted | 2026-05-05 |
 | [[decisions/004-hybrid-attitude-estimation-mode-logic]] | Attitude estimation uses hybrid mode logic — boot-USQUE plus NIS-monitored MEKF, never single-estimator default | accepted | 2026-05-05 |
 | [[decisions/005-broad-phase-strategy-pluggable]] | Broad-phase pair filtering is a strategy interface; spatial-hash default, sort-and-sweep required alternative, trajectory-tube as future extension | accepted | 2026-05-05 |
+| [[decisions/006-cmake-cpm-build-system]] | CMake plus CPM.cmake for build system and upstream dependency management | accepted | 2026-05-05 |
+| [[decisions/007-googletest-test-framework]] | GoogleTest as the project test framework | accepted | 2026-05-05 |
+| [[decisions/008-vendor-sofa-and-cspice]] | Vendor IAU SOFA and JPL CSPICE C source under external/ | accepted | 2026-05-05 |
+| [[decisions/009-hand-rolled-integrator-family]] | Hand-rolled DOP853, Yoshida-4, and Gauss-Jackson 8 integrator family behind one IIntegrator seam | accepted | 2026-05-05 |
+| [[decisions/010-phantom-typed-time-and-state]] | Phantom-typed Time<Scale> and State<Frame> with bespoke tag types | accepted | 2026-05-05 |
+| [[decisions/011-reference-data-shipping]] | Reference data: small artefacts vendored, large artefacts fetched at configure time | accepted | 2026-05-05 |
+| [[decisions/012-eigen-with-apsis-math-aliases]] | Eigen 3.4 underneath, apsis::math type aliases at the public API | accepted | 2026-05-05 |
 
 ## Components (0)
 

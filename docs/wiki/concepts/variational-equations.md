@@ -156,6 +156,7 @@ This is the operationalisation of *"the interface is the test surface"* from the
 ## See also
 
 - [[decisions/002-variational-equations-between-measurements]] — why Φ is propagated between measurements rather than as augmented state.
+- [[decisions/009-hand-rolled-integrator-family]] — the `IIntegrator` adapters (DOP853, Yoshida-4, GJ8) that step `(state, Φ, dt)` together; the canonical Apsis home of this concept.
 - [[concepts/kalman-filter]] — the orbit EKF is a primary consumer.
 - [[concepts/floating-base-dynamics]] — the orbit-state subset of the floating-base configuration; Apsis's variational equations are over orbit state only at v1, not the joint configuration.
 - [[sources/foster-estes-1992-jsc-25898-pc]] — Pc method whose covariance roll-forward consumes Φ.

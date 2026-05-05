@@ -64,3 +64,7 @@ The ∇⁻² second-sum operator accumulates a running sum of accelerations over
 - [[sources/berry-healy-2004-gauss-jackson]] — derivation, eighth-order ordinate-form coefficient tables, startup procedure, accuracy/stability analysis, predictor-only variant.
 - Vallado "Fundamentals of Astrodynamics and Applications" Ch. 8 (cited in [[sources/berry-healy-2004-gauss-jackson]] reference [14]) — textbook treatment with worked examples. INDEX-only paywalled.
 - Coefficient-generating code at `http://hdl.handle.net/1903/2202` (UMD repository) — generates GJ coefficients to any order; useful as a verification oracle for Apsis's hard-coded GJ8 tables.
+
+## See also
+
+- [[decisions/009-hand-rolled-integrator-family]] — Apsis's GJ8 sits alongside DOP853 and Yoshida-4 behind one `IIntegrator` seam; this ADR is the canonical implementation decision for that family.

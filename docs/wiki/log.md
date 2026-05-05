@@ -355,3 +355,28 @@ Process / meta-documentation moved to new `synthesis/development-state-2026-05-0
 Net effect: design doc is now ~191 rendered lines at 100-char wrap (within the 200 budget); synthesis page is ~95 rendered lines and grows as needed.
 
 Reasoning for the split: the design doc should be a **declarative statement** about what Apsis IS and DECIDES — a stable artifact that doesn't drift as the spec docs get reorganised or as deepenings continue. Process / development-state content is its own concern with its own update cadence and lives where similar artifacts (audit syntheses) already live.
+
+## [2026-05-05] decision-batch | 006–012 phase-0/phase-1 implementation ADRs
+
+Seven decisions landed in one session ahead of writing the Phase 0 and Phase 1 plan documents (`docs/phase-0-plan.md`, `docs/phase-1-plan.md`). Driven by the brainstorm → design → structure → plan workflow: structure outline (`docs/structure.md`) committed Apsis to specific seams without pinning the implementation libraries, languages of those seams, or the bootstrap stack — these ADRs close that gap.
+
+**Tooling tier (006–008, 011):**
+- [[decisions/006-cmake-cpm-build-system]] — CMake ≥ 3.25 with CPM.cmake (vendored single header) for upstream fetches. Rejected vcpkg / Conan / Meson / Bazel / submodules.
+- [[decisions/007-googletest-test-framework]] — GoogleTest 1.15.2 with gmock. Rejected Catch2 / doctest. Per user preference; gmock equivalence in alternatives is a separate dep.
+- [[decisions/008-vendor-sofa-and-cspice]] — both libraries vendored as `external/sofa/` and `external/cspice/` with hand-written CMakeLists; pinned by upstream-tarball SHA-256; CSPICE thread-unsafety contained at the `IEphemeris` seam.
+- [[decisions/011-reference-data-shipping]] — two-tier policy: small canonical slices vendored under `data/` (DE440 truncated, EOP slice, EGM2008 deg-20, ISS reference vectors); large artefacts (full DE441, full EGM2008) fetched at configure time gated by `APSIS_FETCH_LARGE_DATA=ON`.
+
+**Architectural tier (009–010, 012):**
+- [[decisions/009-hand-rolled-integrator-family]] — DOP853 (adaptive RK), Yoshida-4 (symplectic), Gauss-Jackson 8 (multi-step) all hand-rolled behind one `IIntegrator` seam, all stepping `(state, Φ, dt)` directly to honour the VE contract from [[decisions/002-variational-equations-between-measurements]]. Rejected Boost.Odeint (its observer-pattern step interface fights the VE contract) and SUNDIALS (heavy; non-stiff).
+- [[decisions/010-phantom-typed-time-and-state]] — operationalises [[decisions/003-tagged-time-scale-types]] (which decided *that* tagging exists) by deciding *how*: bespoke phantom tag types in `apsis::time::tags` and `apsis::frames::tags` with `Time<Scale>` and `State<Frame>` class templates. Rejected Mp-Units / Boost.Units (overkill; we don't need dimensional analysis), strong-typedef libraries (no compose with two-component representation).
+- [[decisions/012-eigen-with-apsis-math-aliases]] — Eigen 3.4 underneath, `apsis::math::{Vec3, Mat3, Mat6, Quat, ...}` `using` aliases at the public API. Pinocchio (Phase 3) forces Eigen into the dep tree; choosing anything else creates a two-library design with conversions at every MBD seam. L3a "alias-only" form chosen with a documented escape hatch to L3b "wrapper struct" if compile-time errors motivate it.
+
+**Cross-references updated:**
+- [[concepts/long-arc-state-conditioning]], [[concepts/variational-equations]], [[concepts/gauss-jackson-integration]] gain back-links to ADR-009 as the canonical Apsis implementation of the integrator family.
+- [[concepts/time-scales]] gains a back-link to ADR-010 as the canonical Apsis tagging implementation.
+
+**Not landed yet (deferred):**
+- Updating `docs/00-design-overview.md` "Design decisions" section from "Five accepted ADRs" to twelve. Substantive design-doc edits are deliberate; flagging for a separate human-or-jointly-authored pass.
+- Concept back-links from ADR-012 to [[concepts/pinocchio-library]] — judged too tangential (the ADR cites the concept as a constraint, not as a canonical implementation of it).
+
+These ADRs unblock writing `docs/phase-0-plan.md` (project bootstrap) and `docs/phase-1-plan.md` (propagator core) — the implementation plans that immediately follow this decision batch.

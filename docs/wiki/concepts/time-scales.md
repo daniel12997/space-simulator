@@ -63,6 +63,8 @@ Notes:
 
 ## See also
 
+- [[decisions/003-tagged-time-scale-types]] — why scale-mixing is a compile error.
+- [[decisions/010-phantom-typed-time-and-state]] — how Apsis implements the tagging (phantom tag types over `Time<Scale>` templates).
 - [[sources/sofa-2023-time-scale-cookbook]] — implementation cookbook.
 - [[sources/sofa-2023-earth-attitude-cookbook]] — Earth-attitude transforms that consume time scales.
 - [[concepts/earth-rotation-angle]] — UT1 → ERA function.

@@ -168,6 +168,8 @@ These tests are CI gates ([REQ-OBS-005](../../../REQUIREMENTS.md), REQ-OBS-006).
 ## See also
 
 - [[decisions/003-tagged-time-scale-types]] — why `Time` is tagged at the type level.
+- [[decisions/009-hand-rolled-integrator-family]] — the integrator family (DOP853, Yoshida-4, Gauss-Jackson 8) that all three pillars feed; the canonical Apsis implementation home for this concept.
+- [[decisions/010-phantom-typed-time-and-state]] — how the tagged `Time` and `State` are implemented (phantom tag types) so the two-component-time pillar lands as a type, not a convention.
 - [[concepts/time-scales]] — the seven astronomical time scales and the conversion graph between them. Distinct concern from the time *representation* covered here.
 - [[concepts/variational-equations]] — the Variational Equations integrator consumes all three pillars (tagged Time, optionally Encke for long Pc roll-forwards, vectorised compensated accumulator for Φ).
 - [[concepts/gauss-jackson-integration]] — one of several base integrators that benefits from being wrapped by Encke for long-arc work.

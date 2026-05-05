@@ -22,4 +22,11 @@ function(apsis_apply_compile_options target)
     target_compile_options(${target} PRIVATE -fsanitize=address,undefined)
     target_link_options(${target} PRIVATE -fsanitize=address,undefined)
   endif()
+  # Per ADR-013 (Class D classification): gcov coverage instrumentation on
+  # first-party targets only. Vendored SOFA/CSPICE keep -w and stay
+  # un-instrumented (their CMakeLists do NOT call apsis_apply_compile_options).
+  if(APSIS_ENABLE_COVERAGE AND NOT MSVC)
+    target_compile_options(${target} PRIVATE --coverage)
+    target_link_options(${target} PRIVATE --coverage)
+  endif()
 endfunction()

@@ -12,8 +12,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(APSIS_BUILD_TESTS       "Build the Apsis test suite"                    ON)
 option(APSIS_FETCH_LARGE_DATA  "Fetch large reference data (DE441, full EGM2008)" OFF)
 option(APSIS_ENABLE_SANITIZERS "Enable ASan+UBSan in non-Release builds"       OFF)
+option(APSIS_ENABLE_COVERAGE   "Enable gcov coverage instrumentation (ADR-013)" OFF)
 
 include(cmake/apsis_compile_options.cmake)
+include(cmake/coverage.cmake)
 
 # Pull SOFA / CSPICE upstream tarballs into external/_cache and extract them
 # under external/<lib>/{src,include,...}. Idempotent: skipped when the

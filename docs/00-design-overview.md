@@ -1,60 +1,54 @@
 # Apsis — Design Overview
 
-> **Purpose**: alignment checkpoint. This is the lowest-cost point for direction changes — read here before investing in detailed planning or code.
+> **Purpose**: alignment checkpoint. Lowest-cost point for direction changes — read here before investing in detailed planning or code.
 > **Status**: 2026-05-05. After four architecture-review deepenings; before code.
-> **Audience**: anyone joining the project, or returning to it after time away. Read CLAUDE.md first; this next; then drill into REQUIREMENTS / architecture / subsystems / wiki.
+> **Audience**: anyone joining or returning to the project. Read CLAUDE.md first; this next; then drill into REQUIREMENTS / architecture / subsystems / wiki.
 
 ## What Apsis is
 
-Apsis is a **flight-dynamics-grade spaceflight simulator**. C++17 core, Python (pybind11) scenario layer. Targets four use cases simultaneously:
+A **flight-dynamics-grade spaceflight simulator**. C++17 core, Python (pybind11) scenario layer. Targets four use cases simultaneously:
 
 1. Single-spacecraft mission simulation at engineering fidelity (multi-body, full force model, closed-loop GNC, interplanetary).
-2. GNC development — swappable controllers/estimators with proper continuous-discrete plant separation.
+2. GNC development — swappable controllers/estimators with continuous-discrete plant separation.
 3. Monte Carlo verification — thousands of deterministic trials with statistical aggregation.
 4. Catalog-scale conjunction screening — ~50,000 SGP4-propagated objects screened against active spacecraft.
 
-Sits in the gap between game-engine physics (lacks precision over multi-decade arcs) and research-grade tools like MONTE / GMAT / Orekit (precision but not architected for swappable GNC + Monte Carlo + catalog work in one package).
+Sits in the gap between game-engine physics (lacks long-arc precision) and research tools like MONTE / GMAT / Orekit (precise but not architected for swappable GNC + Monte Carlo + catalog work in one package).
 
 ## Current state (2026-05-05)
 
-**No source code exists yet.** What exists is a thoroughly-developed design corpus:
+**No source code yet.** Design corpus:
 
-- **Three authoritative spec documents at `docs/` root** (REQUIREMENTS, architecture, subsystems), all currently at v0.6.
-- **Wiki at `docs/wiki/`** with 47 source pages (research corpus — every paper / spec / standard the design depends on, summarised), 30 concept pages (algorithms + architectural patterns), 5 ADRs, 4 audit synthesis pages.
-- **All 50 raw research artifacts** (32 papers, 17 specs, 1 article) ingested under `docs/raw/`.
+- Three authoritative specs at `docs/` root (REQUIREMENTS, architecture, subsystems), all v0.6.
+- Wiki at `docs/wiki/`: 47 source pages (research corpus), 30 concept pages, 5 ADRs, 4 audit syntheses.
+- All 50 raw research artifacts ingested under `docs/raw/`.
 
-Four deepenings (per the `improve-codebase-architecture` skill) have turned previously-scattered spec fragments into named modules with explicit interfaces, conformance discipline, and load-bearing ADRs:
+Four deepenings (per the `improve-codebase-architecture` skill) have turned scattered spec fragments into named modules:
 
 | Deepening | What it consolidated |
 |---|---|
-| **Variational Equations** (v0.3) | Force-model partials contract + Φ propagation — was 1 line of REQ-PHY-016, now a named subsystem with conformance harness |
-| **Long-arc state conditioning** (v0.4) | Two-component time + Encke + compensated summation — three pillars under one architectural principle |
-| **Attitude Estimator Family** (v0.5) | MEKF + USQUE + hybrid mode logic — was a 1-line subsystems aside, now a manager-plus-policy module |
-| **Conjunction Screening Pipeline** (v0.6) | 14 REQ-CAT IDs + scattered subsystems content → one named pipeline with 4 phases and a strategy-pluggable broad-phase |
+| **Variational Equations** (v0.3) | Force-model partials contract + Φ propagation — was 1 line of REQ-PHY-016 |
+| **Long-arc state conditioning** (v0.4) | Two-component time + Encke + compensated summation under one principle |
+| **Attitude Estimator Family** (v0.5) | MEKF + USQUE + hybrid mode logic — was a 1-line aside |
+| **Conjunction Screening Pipeline** (v0.6) | 14 REQ-CAT IDs → one named pipeline with 4 phases |
 
-What's **still scattered** (remaining audit candidates, by priority):
-
-- **GNC Message Bus Contract** (premature without code).
-- **Deterministic Monte Carlo Contract** (bounded; assemble-existing-pieces).
-- **Floating-Base Coupling** (lowest-risk extension of existing concept page).
-- **Spacecraft Fidelity Scope** (ADR-shaped, not a deepening).
-- **CAM Planning** (downstream of Conjunction Screening; planned future deepening).
+Remaining candidates: GNC Message Bus (premature without code), Deterministic MC Contract (bounded), Floating-Base Coupling (low-risk), Spacecraft Fidelity Scope (ADR-shaped), CAM Planning (downstream of Conjunction Screening).
 
 ## Desired end state (v1.0)
 
 Per REQUIREMENTS §18, v1.0 ships when **all M (Must) requirements** are implemented and tested, plus:
 
 - Validation report reproduces ≥3 published reference cases within tolerance.
-- Performance requirements met on reference hardware (1000× real-time cruise on single core; 50k-object catalog in <1 sec/epoch; <60 sec for 7-day Pc screen on 50k catalog).
-- All example scenarios run end-to-end (LEO, GEO stationkeeping, lunar/Mars transfers, attitude slew, conjunction avoidance).
-- 1k-trial Monte Carlo reference campaign runs and produces correctly-shaped dispersion statistics.
-- Conjunction screening reproduces a known historical close-approach event from public TLE data within published miss-distance tolerance.
-- Documentation suite complete: API reference (Doxygen), architecture overview, subsystem design, user guide, validation report.
+- Performance: 1000× real-time cruise on single core; 50k-object catalog <1 sec/epoch; <60 sec for 7-day Pc screen on 50k catalog.
+- Example scenarios (LEO, GEO stationkeeping, lunar/Mars transfers, attitude slew, conjunction avoidance) all run end-to-end.
+- 1k-trial Monte Carlo reference campaign produces correctly-shaped dispersion statistics.
+- Conjunction screening reproduces a known historical close-approach event within published miss-distance tolerance.
+- Documentation suite complete (Doxygen API, architecture, subsystem, user guide, validation report).
 - CI passes on Linux + Windows.
 
-Phased build plan (from `01-architecture.md` §7, ~6-8 months sustained):
+Phased build plan (`01-architecture.md` §7, ~6-8 months sustained):
 
-1. **Propagator core** (6-8 wk) — single spacecraft, force models with Variational Equations contract, integrators (incl. Encke wrapper), SPICE.
+1. **Propagator core** (6-8 wk) — single spacecraft, force models with VE contract, integrators incl. Encke wrapper, SPICE.
 2. **ECS world + catalog** (3-4 wk) — EnTT/flecs, conjunction-screening pipeline.
 3. **Multi-body / URDF** (6-8 wk) — Pinocchio, floating-base coupling, effectors, flexible/slosh DOFs.
 4. **GNC layer** (4-6 wk) — sensors, AttitudeEstimator manager, controllers, message bus.
@@ -62,113 +56,86 @@ Phased build plan (from `01-architecture.md` §7, ~6-8 months sustained):
 6. **Scenario layer** (3-4 wk) — pybind11, Python DSL, examples.
 7. **Hardening** (ongoing) — higher-fidelity force models, advanced GNC, validation campaigns.
 
-End of Phase 6 produces a usable simulator. Phases 1-2 (~10 weeks) alone are sufficient for trajectory studies and conjunction analysis without GNC.
+End of Phase 6 produces a usable simulator. Phases 1-2 alone (~10 weeks) suffice for trajectory studies and conjunction analysis without GNC.
 
 ## Design decisions
 
 Five accepted ADRs (in `docs/wiki/decisions/`):
 
-- **ADR-001** — ICRS↔ITRS uses the **CIO-based pipeline** (X, Y, s, ERA), not equinox-based. SOFA `iauC2t06a`. Rationale: ERA is linear in UT1; no equation-of-equinoxes; modern IAU recommendation; new code has no legacy obligation.
-- **ADR-002** — Variational equations are propagated **between measurements**, not as augmented natural state. Decouples Φ accuracy from natural-state step controller; avoids state-vector bloat.
-- **ADR-003** — `Time` is **type-tagged with its scale** (`TtTime`, `TaiTime`, etc.). Scale mixing is a compile-time error. Conversions explicit, route through SOFA.
-- **ADR-004** — Attitude estimation uses **hybrid mode logic** — boot-USQUE plus NIS-monitored MEKF. Direct covariance hand-off (MRP-flavoured GRP for both filters). Mission FSM may pin via `pin_mode()`.
-- **ADR-005** — Broad-phase pair filtering is a **strategy interface**. Spatial-hash default, sort-and-sweep required alternative, trajectory-tube as future extension. v0.5's implicit "spatial hash only" replaced with two adapters at the seam.
+- **ADR-001** — ICRS↔ITRS uses the **CIO-based pipeline** (X, Y, s, ERA), not equinox. SOFA `iauC2t06a`.
+- **ADR-002** — Variational equations propagated **between measurements**, not as augmented natural state.
+- **ADR-003** — `Time` is **type-tagged with its scale**. Scale mixing is a compile-time error.
+- **ADR-004** — Attitude estimation uses **hybrid mode logic** — boot-USQUE plus NIS-monitored MEKF.
+- **ADR-005** — Broad-phase pair filtering is a **strategy interface**. Spatial-hash default, sort-and-sweep alternative.
 
-Other load-bearing choices that aren't ADRs but appear repeatedly across the design:
+Other load-bearing choices that aren't ADRs:
 
-- **f64 throughout, no wider precision.** Numerical robustness comes from frame partitioning, two-component time, Encke, compensated summation, and structure-preserving integrators (Long-arc state conditioning concept page).
-- **SPICE for ephemerides + frames; SOFA for time + IAU; Pinocchio for MBD; Vallado SGP4 (WGS-72) for catalog.** Build the things that don't exist; don't rebuild the things that do.
-- **No global mutable state.** RNGs, time, force-model state passed explicitly. Per-trial determinism is non-negotiable for Monte Carlo.
+- **f64 throughout, no wider precision.** Robustness from frame partitioning, two-component time, Encke, compensated summation, structure-preserving integrators.
+- **SPICE for ephemerides + frames; SOFA for time + IAU; Pinocchio for MBD; Vallado SGP4 (WGS-72) for catalog.** Build what doesn't exist; reuse what does.
+- **No global mutable state.** RNGs, time, force-model state passed explicitly. Per-trial determinism is non-negotiable.
 
 ## Patterns to follow
 
-**Deep modules with internal seams** (LANGUAGE.md vocabulary). The architectural style established across all four deepenings:
+**Deep modules with internal seams** (LANGUAGE.md vocabulary). Every deepening so far follows this:
 
-- One **outer module** with a small public interface (e.g. `ConjunctionScreeningPipeline::screen`, `AttitudeEstimator::predict`/`update`, `VariationalEquationsIntegrator::propagate`).
-- Multiple **inner-stage modules** behind the seam, each independently testable (e.g. `TcaRefiner`, `Mekf`, `OrbitElementPreFilter`).
-- **Strategy interfaces** introduced only where ≥2 adapters are real (broad-phase, base integrator wrapped by Encke). One-adapter "seams" are just indirection.
+- One outer module with a small public interface (e.g. `ConjunctionScreeningPipeline::screen`, `AttitudeEstimator::predict/update`).
+- Multiple inner-stage modules behind the seam, each independently testable.
+- Strategy interfaces only where ≥2 adapters are real (broad-phase, base integrator wrapped by Encke). One-adapter "seams" are just indirection.
 
-**Vocabulary discipline**. The `improve-codebase-architecture` skill establishes a fixed vocabulary — Module / Interface / Depth / Seam / Adapter / Leverage / Locality — used in every concept page, ADR, and audit. Never "component" / "service" / "boundary." Worth maintaining as the project grows; consistent vocabulary is what lets a new contributor read any page and immediately know what's load-bearing.
+**Vocabulary discipline.** Module / Interface / Depth / Seam / Adapter / Leverage / Locality used everywhere. Never "component" / "service" / "boundary."
 
-**Conformance via the interface, not past it**. The Variational Equations conformance harness (a single CI gate over every registered force model checking analytical partials against finite differences) is the canonical pattern. New strategy-pluggable subsystems should follow: define the contract; one conformance test parameterised over implementations.
+**Conformance via the interface.** The Variational Equations harness — one CI gate over every registered force model checking analytical partials against finite differences — is the canonical pattern. New strategy-pluggable subsystems should follow.
 
-**Frames are first-class.** Every state, position, velocity, attitude claim names its frame. ICRF and J2000 are distinct (frame bias). CCI vs CCF transitions happen at precision-rich boundaries, not mid-orbit. Body-fixed vs body-centered-inertial confusion is a load-bearing failure mode.
+**Frames are first-class.** Every state / position / velocity / attitude claim names its frame. ICRF and J2000 are distinct (frame bias). Frame transitions happen at precision-rich boundaries.
 
 **Time scales are first-class.** TAI / TT / UTC / UT1 / TDB are not interchangeable — type-tagged per ADR-003. SOFA is the only conversion authority.
 
-**Conservation invariants are validation.** Angular momentum for MBD; energy for symplectic gravity-only; mass for fueled craft. Every dynamics component should name which invariant is its validation hook.
+**Conservation invariants are validation.** Angular momentum for MBD; energy for symplectic gravity-only; mass for fueled craft. Every dynamics component names its validation hook.
 
-**Tiered fidelity per entity.** Active spacecraft (full multi-body) ≠ catalog (SGP4) ≠ debris (J2-only). Don't conflate them across concept / requirement / subsystem boundaries.
+**Tiered fidelity per entity.** Active spacecraft (full multi-body) ≠ catalog (SGP4) ≠ debris (J2-only). Don't conflate across concept / requirement / subsystem.
 
-**ADR shape.** A real choice + non-obvious rejection of an alternative + future-reader confusion ⇒ write an ADR. Cosmetic or obvious choices ⇒ don't. The five existing ADRs are the model.
+**ADR shape.** Real choice + non-obvious rejection of alternative + future-reader confusion ⇒ write an ADR. Otherwise, don't.
 
-**Wiki citation discipline.** Every factual claim in the wiki traces to a source under `docs/raw/`. Inline `[[sources/<slug>]]` at the claim. `code:<path>:<line>` for code references (when source code starts existing). Concept pages cite multiple sources; source pages cite multiple consumer concepts.
+**Wiki citation discipline.** Every factual claim in the wiki traces to a source under `docs/raw/`. Inline `[[sources/<slug>]]` at the claim. `code:<path>:<line>` for code (when source exists).
 
-**Project-specific guidance** (CLAUDE.md):
-- Numerical conditioning matters more than precision.
-- Determinism is non-negotiable for Monte Carlo (no global RNG, no within-trial parallelism, no hash-iteration-order dependencies).
-- Monte Carlo trials are single-threaded; parallelism is across trials.
+**Project-specific (CLAUDE.md):** numerical conditioning > raw precision; determinism non-negotiable for Monte Carlo (no global RNG, no within-trial parallelism, no hash-iteration-order dependence); MC trials single-threaded; parallelism is across trials.
+
+## Patterns from specific deepenings
+
+- **Per-process service vs per-screen module.** `CatalogStore` lives outside the screening pipeline (process lifetime); `ConjunctionScreeningPipeline` is per-screen. Persistent state in services; transient pipelines query them.
+- **Internal seams aren't external interfaces.** A deep module can have many testable internal seams without exposing them. Don't promote internal seams just because tests use them.
+- **Pure-logic policy classes.** `AttitudeEstimationPolicy` takes synthetic inputs, produces decisions. No dependencies; trivially unit-testable. Use this shape wherever non-trivial decision logic appears.
+- **Method registry with validity predicates.** Pc method registry (Foster + MC default; Patera optional) generalises: each method declares its own predicate; pipeline picks first-valid-in-order; selected method recorded in event for audit. Apply when adding alternative algorithms with overlapping regimes.
 
 ## What Apsis is explicitly NOT building (v1)
 
-REQUIREMENTS §17 lists 13 OOS items in spec form. The narrative for the most consequential ones:
+REQUIREMENTS §17 lists 13 OOS items. The most consequential:
 
-- **No real-time 3D visualisation** — recorded telemetry (Parquet) is the v1 output; visualisation is a separate companion tool.
-- **No mission-design optimisation** — Apsis executes missions, doesn't design them. Lambert / pork-chop / low-thrust optimal control belong in GMAT or PyKEP, run offline; their outputs feed Apsis as scenario inputs.
-- **No thermal / power / comms-budget modelling** — geometric visibility yes; data-rate / link budgets / thermal CFD no. These are companion-tool territory.
-- **No re-entry aerothermo / hypersonic CFD** — drag and simple heating only.
-- **No FDIR controller logic** — failure *injection* is in scope (REQ-SEN-010, REQ-GNC-012); the response logic is deferred.
-- **No contact-constrained MBD** — capture, berthing, surface contact are deferred (the Mistry-2010 floating-base inverse-dynamics math is in the corpus but not v1 implementation).
-- **No sub-tracking-threshold MMOD flux** — ORDEM 3.1 is in the corpus but not part of the v1 catalog pipeline.
-- **No multi-panel high-fidelity drag/SRP** — cannonball drag and N-plate SRP only.
-
-Read REQUIREMENTS §17 OOS-001..013 for the spec list.
+- No real-time 3D visualisation (recorded telemetry is the v1 output).
+- No mission-design optimisation (GMAT / PyKEP companion offline; outputs feed Apsis).
+- No thermal / power / comms-budget modelling beyond geometric visibility.
+- No re-entry aerothermo / hypersonic CFD.
+- No FDIR controller logic (failure *injection* yes, response logic no).
+- No contact-constrained MBD (capture, berthing, surface contact deferred).
+- No sub-tracking-threshold MMOD flux (ORDEM ingested but not in v1 pipeline).
+- No multi-panel high-fidelity drag/SRP.
 
 ## Risks and open questions
 
-These are the non-trivial uncertainties. They aren't show-stoppers but warrant attention before or during the relevant phase:
+- **Performance budget viability.** REQ-PERF-004 (60 sec for 7-day 50k-catalog screening) is aggressive. Phase 1+2 implementation will reveal whether the strategy-pluggable broad-phase + Φ-based covariance roll-forward fit. Fallbacks: tighter pre-filter thresholds, parallelism within screening, sample-rate compromise.
+- **Long-arc precision validated.** Two-component time + Encke + compensated summation achieves REQ-TIME-009 on paper; Phase 1's regression tests against published reference cases (JPL DE round-trip 10 yr; ISS state vectors) are the empirical check.
+- **CSPICE thread-unsafety.** SPICE access must be serialised or use per-thread instances. Wire correctly in orchestration; surfaced in `[[wiki/sources/naif-spice-required-reading]]`.
+- **Catalog-data redistribution licensing.** Space-Track terms-of-service constrain example-data shipping. Settle for the example scenarios (REQUIREMENTS Appendix B).
+- **Cluster-scale Monte Carlo.** v1 targets local 32-core; cluster (MPI / Ray / Celery) is a v1.x extension.
 
-- **Performance budget viability.** REQ-PERF-004 (60 sec for 7-day 50k-catalog screening, single core) is aggressive. The Phase-1+Phase-2 implementation will reveal whether the strategy-pluggable broad-phase + Φ-based covariance roll-forward fit the budget. If not, decisions to revisit: tighter pre-filter thresholds, parallelism within screening, or a sample-rate compromise.
-- **Conformance discipline scaling.** The Variational Equations conformance harness is a CI gate over every registered force model. As force models multiply (panel-drag, Earth radiation pressure, relativistic terms, user-defined empiricals), the harness grows linearly. Likely fine; worth monitoring CI runtime.
-- **Two-component time + Encke + compensated summation, validated.** The trifecta achieves REQ-TIME-009 on paper; Phase 1's long-arc regression tests against published reference cases (JPL DE round-trip over 10 years; ISS state vectors) are the empirical check.
-- **Pinocchio thread-safety for Monte Carlo.** Per-trial isolation requires per-thread Pinocchio Data instances (Model is shared, Data is per-call). Standard pattern but worth confirming early.
-- **CSPICE thread-unsafety.** Per ADR-implicit guidance, Apsis serialises SPICE access or uses per-thread instances. Must be wired correctly in the orchestration layer; surfaced explicitly in the [[wiki/sources/naif-spice-required-reading]] notes.
-- **Catalog-data redistribution licensing.** Space-Track has terms-of-service constraints; CelesTrak is more permissive. Need to settle for example-data shipping (REQUIREMENTS Appendix B, open question).
-- **Cluster-scale Monte Carlo.** v1 targets local-machine parallelism (32 cores). Cluster-scale (MPI / Ray / Celery) is an Appendix-B open question; expected to be a v1.x extension.
-- **HIL transport choice.** REQ-GNC-013 calls for hardware-in-the-loop mode but the transport (UDP / shared-memory / RTI DDS) isn't picked. Likely v2 territory.
-- **Future deepening: CAM Planning.** When picked up, will sit downstream of Conjunction Screening per the v0.6 architecture. Bombardelli-2015 source page is fully developed; audit Cluster G frames the choice (analytic optimal vs along-track-restricted).
+## Reading order
 
-## Reading order — how to navigate the corpus
+CLAUDE.md → this file → REQUIREMENTS → 01-architecture → 02-subsystems → wiki/index. From wiki/index drill into specific concepts as needed. The five "deep concept" pages from the deepenings (`variational-equations`, `long-arc-state-conditioning`, `attitude-estimation-policy`, `usque`, `conjunction-screening`) and their ADRs are the most load-bearing. Source pages for citation verification only. Synthesis directory holds audits and cross-cutting analyses.
 
-Approximate path through ~50 KB of authoritative content + 80+ wiki pages:
-
-1. **CLAUDE.md** — project schema and conventions; ~15 minutes.
-2. **This file (`00-design-overview.md`)** — alignment / orientation.
-3. **`docs/REQUIREMENTS.md`** — feature-level requirements with priorities; ~20 minutes.
-4. **`docs/01-architecture.md`** — high-level architecture; ~15 minutes.
-5. **`docs/02-subsystems.md`** — detailed per-subsystem design; ~30 minutes.
-6. **`docs/wiki/index.md`** — wiki catalog; jumping-off point.
-7. **Wiki concept pages** — drill into specific algorithms/patterns as needed. The five "deep concept" pages from the deepenings (`variational-equations`, `long-arc-state-conditioning`, `attitude-estimation-policy`, `usque`, `conjunction-screening`) and their ADRs are the most load-bearing.
-8. **Wiki source pages** — drill when a citation needs verification. `[[sources/<slug>]]` traces every claim back to a real paper / spec.
-9. **`docs/wiki/synthesis/`** — audit reports and cross-cutting analyses. The audit-summary-2026-05-05 is the prior baseline (v0.1 → v0.2); deepening logs are the increment from v0.2 to v0.6.
-
-For a contributor implementing a specific subsystem, the path narrows: CLAUDE.md → this file → relevant subsystems §X → relevant concept page(s) → relevant source page(s) when verifying. Skip what isn't on path; the corpus is wide.
-
-## Additional patterns worth naming
-
-Beyond the headline patterns:
-
-- **"Per-process service vs per-screen module"** — `CatalogStore` lives outside the screening pipeline (process lifetime); `ConjunctionScreeningPipeline` is per-screen. Persistent state lives in services queried by transient pipelines. Apply this distinction wherever there's state with a different lifetime scope than its consumers.
-- **"Internal seams aren't external interfaces"** — A deep module can have many testable internal seams without exposing them. The Variational Equations integrator's `propagate` is the external interface; per-force partials, A assembly, and Φ stepping are internal seams. Don't promote internal seams to the external interface just because tests use them — that's the LANGUAGE.md "interface is the test surface" rule applied tightly.
-- **"Pure-logic policy classes"** — `AttitudeEstimationPolicy` is a small, dependency-free class that takes synthetic inputs and produces decisions. Same shape applies wherever non-trivial decision logic appears (mode-switching, fallback selection, threshold-driven escalation): factor the logic out, test it against synthetic histories.
-- **"Method registry with validity predicates"** — the Pc method registry pattern (Q5 of the screening deepening) generalises. Multiple algorithms with overlapping but distinct regimes of validity → registry where each method declares its own predicate; pipeline picks first-valid-in-order. The `pc_method` diagnostic field on the conjunction event is the audit trail. Apply this pattern when adding alternative algorithms (e.g., a future broad-phase fallback hierarchy, or alternative atmospheric density models with regime-specific accuracy).
+For a contributor implementing one subsystem: CLAUDE.md → this file → relevant subsystems §X → relevant concept page(s) → source pages when verifying. Skip what's not on path; the corpus is wide.
 
 ## How to extend this doc
 
-- New ADR accepted → add to "Design decisions" §.
-- Major deepening landed → update the deepenings table in "Current state" + add to remaining-candidates list if new ones surface.
-- Phase boundary reached → update "Desired end state" phased plan.
-- Doc-version bump → update the v0.x marker.
-- Risks resolved or new ones surfaced → update "Risks and open questions".
+New ADR → add to "Design decisions". Major deepening landed → update deepenings table + remaining candidates. Phase boundary reached → update phased plan. Doc-version bump → update v0.x marker. Risks resolved or new ones surfaced → update Risks.
 
 This is the alignment artifact, not a spec. Specs are REQUIREMENTS / architecture / subsystems. Wiki concept and decision pages are the substantive design content. This doc orients; it does not authorise.

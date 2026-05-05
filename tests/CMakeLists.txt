@@ -40,3 +40,4 @@ function(apsis_add_test name)
 endfunction()
 
 add_subdirectory(smoke)
+add_subdirectory(unit)

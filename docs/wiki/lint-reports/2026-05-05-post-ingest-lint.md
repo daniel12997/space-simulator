@@ -17,7 +17,7 @@ Pattern: a backslash-escaped pipe inside the alias separator caused the parser t
 
 **Affected pages:** `concepts/kalman-filter`, `concepts/time-scales`, `sources/iers-conventions-2010` (×4), `sources/likins-1970-flexible-space-vehicles`, `sources/naif-spice-required-reading`, `sources/urdf-xacro-pinocchio-docs`.
 
-**Fix:** global `sed -i 's/\\|/|/g'` across `docs/wiki/`. Resolved.
+**Fix:** global `sed -i 's/\|/|/g'` across `docs/wiki/`. Resolved.
 
 ### 2. Undefined `composite-rigid-body-algorithm` concept (6 sites)
 

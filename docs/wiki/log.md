@@ -201,7 +201,7 @@ Wiki state: 47 source pages, 23 concept pages, 1 decision page (proposed).
 Full-wiki lint after the bibliography pipeline reached steady state.
 
 **Fixed during pass:**
-- 8 backslash-escaped pipes (`\|`) in wikilink-with-alias syntax — global sed-fix.
+- 8 backslash-escaped pipes (`|`) in wikilink-with-alias syntax — global sed-fix.
 - 6 references to undefined `composite-rigid-body-algorithm` concept — created the concept page (CRBA met the 2-citation threshold).
 - 6 orphan source pages — added inbound wikilinks from canonical sister pages.
 

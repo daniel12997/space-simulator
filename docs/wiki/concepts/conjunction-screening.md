@@ -149,7 +149,7 @@ Apsis uses a **Pc method registry**. Each registered method declares a validity 
 
 | Method | Validity | Cost | Notes |
 |---|---|---|---|
-| **Foster 2D analytic** (REQ-CAT-009) | `ε < 1e-3` | ~µs per pair | Primary for short-term encounters (LEO close approaches); short-term-encounter assumption per [[sources/foster-estes-1992-jsc-25898-pc\|Foster & Estes 1992]]. Apsis uses Chan series ([[sources/bombardelli-2015-collision-avoidance\|Bombardelli 2015]] Eq. 4) as the numerically convenient evaluator |
+| **Foster 2D analytic** (REQ-CAT-009) | `ε < 1e-3` | ~µs per pair | Primary for short-term encounters (LEO close approaches); short-term-encounter assumption per [[sources/foster-estes-1992-jsc-25898-pc|Foster & Estes 1992]]. Apsis uses Chan series ([[sources/bombardelli-2015-collision-avoidance|Bombardelli 2015]] Eq. 4) as the numerically convenient evaluator |
 | **Patera 2D extended-duration** (REQ-CAT-015, S) | `ε < 1e-1` | ~ms per pair | Optional alternative covering moderate-ε regime where Foster fails but MC cost is undesirable. Registered by configuration, not default |
 | **Monte Carlo** | always valid | ~ms per pair (default N=10,000 samples) | Default fallback for `ε > 1e-3`. Sample joint state from `C_joint(TCA)`, count fraction within `HBR_combined`, divide by N. Per-pair seeded RNG (REQ-MC-003); the seed is part of the conjunction event for reproducibility |
 

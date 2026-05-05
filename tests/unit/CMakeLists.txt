@@ -8,3 +8,4 @@
 add_subdirectory(math)
 add_subdirectory(time)
 add_subdirectory(frames)
+add_subdirectory(ephemeris)

@@ -72,3 +72,33 @@ Edits to existing pages: `mekf` got a "USQUE" section discussing the UKF variant
 Two items surfaced for human review (no silent spec edits):
 1. **MEKF can fail to converge from large initial errors.** REQ-GNC-003 mandates MEKF without a fallback; subsystems §5.3 doesn't address this. Worth considering USQUE as contingency / safe-mode / acquisition variant. Cost: ~2× MEKF.
 2. **The "UKF avoids Jacobians" advantage is reduced for Apsis** because Pinocchio's analytical derivatives are competitive with sigma-point cost. The reason to prefer UKF for orbit estimation (REQ-GNC-005) should be framed as "robustness to nonlinearity," not "Jacobian avoidance." Worth a sentence in subsystems §5.3.
+
+## [2026-05-04] ingest batch | Time/Frames + Force Models clusters (12 sources)
+
+Quick-ingest pass through the time/frames and force-models clusters (per user mandate "keep going until all raw files are done"). Twelve sources:
+
+**Time / frames (7):**
+- `mathews-2002-mhb2000-nutation` — IAU 2000A nutation derivation (MHB2000), the official IAU model.
+- `wallace-capitaine-2006-iau2006-procedures` — practical procedures for IAU 2006 precession + IAU 2000A nutation, including CEO and equinox-based forms.
+- `capitaine-wallace-2008-concise-cio` — concise CIO-based precession-nutation formulations (computational-cost minimization for operational use).
+- `charlot-2020-icrf3` — Third realization of the ICRF, defining the inertial axes Apsis treats as the "true" ICRS.
+- `folkner-2009-de421` — JPL DE421 ephemeris (predecessor to DE440/DE441).
+- `park-2021-de440-de441` — JPL DE440/DE441, **the canonical Apsis ephemeris** per REQ-ENV-001.
+- `lyddane-1963-small-eccentricity-inclination` — companion to Brouwer 1959, eliminates e=0 / i=0 singularities via Poincaré canonical variables. Together they form the "Brouwer-Lyddane mean elements" that SGP4 uses.
+
+**Force models (5):**
+- `pavlis-2012-egm2008` — EGM2008 Earth gravity to degree 2190; the Apsis Earth-gravity reference per REQ-PHY-003.
+- `lemoine-2014-grgm900c` — GRGM900C lunar gravity to degree 900; Apsis lunar reference (predecessor to GRGM1200A which subsystems §2.2 names).
+- `picone-2002-nrlmsise-00` — NRLMSISE-00 thermospheric density (REQ-PHY-006 default).
+- `bowman-2008-jb2008` — JB2008 thermospheric density (REQ-PHY-008 alternative).
+- `brouwer-1959-artificial-satellite-theory` — foundational mean-element analytical satellite theory (Delaunay variables + von Zeipel averaging) underlying SGP4.
+
+**One new concept page**: `spherical-harmonic-geopotential` — the umbrella for both EGM (Earth) and GRGM (Moon) models; threshold met (cited by Pavlis 2012 + Lemoine 2014 + future expected from spec ingests).
+
+**Edits to existing concepts**: `precession-nutation` and `iau-2006-precession` got back-fill citations from Mathews 2002 and Wallace-Capitaine 2006 to triangulate the IAU 2006/2000A construction.
+
+**Items surfaced for human review (no silent spec edits)**:
+1. Subsystems §2.2 names "GRGM1200A to 165×165 for low orbits" — current corpus has GRGM900C (Lemoine 2014); methodology unchanged but should grab the GRGM1200A reference paper when convenient. GRGM900C usable in the meantime.
+2. JB2008 (REQ-PHY-008) requires four solar indices (F10, S10, M10, Y10) plus Dst — broader space-weather ingestion than NRLMSISE-00 (just F10.7 + Ap). Worth confirming REQ-ENV-005/006 cover the additional indices.
+3. Brouwer 1959's series diverge at the **critical inclination** (i ≈ 63.43°). SGP4 implementations use Lyddane's reformulation everywhere; Apsis's mean-element propagator should do the same — worth a note in subsystems §3 if not already there.
+4. DE441 covers ±13,200 years from J2000; DE440 ±100 years. Apsis should default to DE440 (smaller, fits in memory) and load DE441 only for long-arc / historical cases.

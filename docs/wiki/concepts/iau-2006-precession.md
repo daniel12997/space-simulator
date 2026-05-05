@@ -43,7 +43,7 @@ Apsis delegates to SOFA. Relevant routines:
 
 - `iauP06e` — IAU 2006 precession angles
 - `iauPmat06` — IAU 2006 precession matrix (frame-bias × precession)
-- `iauPnm06a` — full precession-nutation matrix (IAU 2006 precession + IAU 2000A nutation)
+- `iauPnm06a` — full precession-nutation matrix (IAU 2006 precession + IAU 2000A nutation, see [[sources/mathews-2002-mhb2000-nutation]] for the nutation series derivation)
 - `iauXys06a` — CIP X, Y, s for the CEO-based pipeline
 
 (See SOFA's `tools` documentation, to be ingested separately.)

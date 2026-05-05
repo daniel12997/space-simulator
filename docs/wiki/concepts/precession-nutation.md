@@ -23,7 +23,7 @@ Apsis's architecture (§3 Foundation > Frames) and subsystems (§1.3) specify "I
 | Component | Model | Reference |
 |---|---|---|
 | Precession | IAU 2006 (≡ P03) | [[sources/capitaine-2003-iau2000-precession-p03]] |
-| Nutation   | IAU 2000A         | Mathews, Herring & Buffett (2002) — not yet ingested |
+| Nutation   | IAU 2000A         | [[sources/mathews-2002-mhb2000-nutation]] |
 
 The architecture's "/" is a **product**, not an "/or": both apply together. See [[concepts/iau-2006-precession]] for the precession side specifically.
 

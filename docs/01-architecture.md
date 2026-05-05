@@ -1,6 +1,6 @@
 # Apsis — System Architecture Overview
 
-> **Status:** Draft v0.5 (v0.5: Attitude Estimator Family deepening per [[wiki/concepts/attitude-estimation-policy]], [[wiki/concepts/usque]], and [[wiki/decisions/004-hybrid-attitude-estimation-mode-logic]]; v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.6 (v0.6: Conjunction Screening Pipeline deepening per [[wiki/concepts/conjunction-screening]] and [[wiki/decisions/005-broad-phase-strategy-pluggable]]; v0.5: Attitude Estimator Family deepening per [[wiki/concepts/attitude-estimation-policy]], [[wiki/concepts/usque]], and [[wiki/decisions/004-hybrid-attitude-estimation-mode-logic]]; v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 > **Scope:** High-fidelity spaceflight simulator for satellite engineering, GNC development, Monte Carlo verification, and full-catalog conjunction analysis.
 
 ---
@@ -124,7 +124,7 @@ The world holds **everything that exists** in the simulation. Built on EnTT or f
 - `HighFidelityPropagationSystem` — drives the integrator for active spacecraft
 - `SOITrackerSystem` — determine which body's SOI each spacecraft is in
 - `SpatialIndexSystem` — maintain conjunction-screening data structure
-- `ConjunctionScreeningSystem` — detect candidate close-approach pairs
+- `ConjunctionScreeningSystem` — drives the [[wiki/concepts/conjunction-screening|ConjunctionScreeningPipeline]]: catalog → pre-filters → strategy-pluggable broad-phase → per-pair assessment → conjunction events. Broad-phase strategy is configurable per [[wiki/decisions/005-broad-phase-strategy-pluggable|ADR-005]].
 - `EclipseSystem`, `GroundContactSystem`, etc.
 
 ### Spacecraft internals (per active spacecraft)
@@ -212,7 +212,7 @@ The novel engineering — and the project's value-add — is in:
 - The **Long-arc state conditioning subsystem** ([[wiki/concepts/long-arc-state-conditioning]]) — three pillars: two-component time (tagged at type level per [[wiki/decisions/003-tagged-time-scale-types|ADR-003]]), Encke wrapper over base integrators, compensated (Kahan-Neumaier) summation primitives. Together they let `f64` hold satellites stable over decades.
 - The **Variational Equations subsystem** ([[wiki/concepts/variational-equations]]) — per-force partials contract, framework assembly of A, Φ propagation between measurements; bridges force models to orbit estimation and Pc covariance propagation
 - The **Monte Carlo harness** (snapshot/restore, deterministic seeding, parallel execution, aggregation)
-- The **catalog/conjunction pipeline** (SoA SGP4, spatial indexing, refinement)
+- The **conjunction screening pipeline** ([[wiki/concepts/conjunction-screening]]) — catalog ingest (TLE + CDM), bulk SGP4 propagation, two-layer pre-filtering (orbit-element + analytical orbit-distance bounds), strategy-pluggable broad-phase, TCA refinement with all-local-minima discovery, Φ-based covariance roll-forward, registry-driven Pc (Foster + Monte Carlo default, Patera optional), event emission. Distinct from collision-avoidance maneuver planning, which is a separate downstream concept consuming events from the pipeline
 - The **scenario DSL** in Python
 - **Tiered-fidelity entity management** — active spacecraft, catalog, debris in the same world
 

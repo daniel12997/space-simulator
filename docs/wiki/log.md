@@ -309,3 +309,26 @@ Third deepening from the architecture-review candidate list (#5: MEKF + USQUE + 
 This deepening fully resolves audit finding F8.1 (MEKF mandate had no fallback) and resolves audit Cluster F at the structural level — the estimator family is now a named module with operational policy in one place, not three scattered fragments.
 
 Three deepenings landed in this session; five candidates remain (#1 Conjunction Pipeline, #4 GNC Bus, #6 Deterministic MC, #7 Floating-Base Coupling, #8 Fidelity Scope ADR).
+
+## [2026-05-05] deepening | Conjunction Screening Pipeline
+
+Fourth deepening from the architecture-review candidate list (#1: Conjunction Assessment Pipeline, scope-narrowed in Q1 to screening only — CAM deferred to a future deepening). Largest deepening of the session: 14+ stages across 4 phases, two new requirement IDs (REQ-CAT-016, REQ-CAT-017), one promoted optional method (REQ-CAT-015 Patera at S), one new ADR (ADR-005 strategy interface).
+
+Grilled through 6 design questions:
+- **Q1 Scope**: split — Screening this session, CAM as a future deepening (different shapes — streaming pipeline vs discrete algorithm).
+- **Q2 Name**: `conjunction-screening` (matches NASA CARA terminology; CAM is a downstream peer concept).
+- **Q3 Stage decomposition**: 4 phases (catalog state → propagation → pair reduction → per-pair assessment); user pushed back on broad-phase, leading to revised Phase 3 with three layers (orbit-element pre-filter + analytical distance bounds + strategy-pluggable broad-phase).
+- **Q4 Composition**: outer `ConjunctionScreeningPipeline` with named inner-stage modules (Variational Equations pattern); broad-phase is a strategy interface; `CatalogStore` is external persistent service.
+- **Q5 Pc method**: registry pattern (Foster + Monte Carlo default; Patera registered alternative at S priority); each method declares its own validity predicate; first-valid-method-in-registry-order rule; `pc_method` diagnostic recorded in event.
+- **Q6 Doc threading**: REQ-CAT-006 expanded into two pre-filter layers; REQ-CAT-007 reworded for strategy interface; REQ-CAT-008 adds all-local-minima invariant; REQ-CAT-009 expanded for Pc registry; REQ-CAT-010 reworded for full event payload contract; new REQ-CAT-015 (Patera S), REQ-CAT-016 (pipeline interface M), REQ-CAT-017 (broad-phase strategy interface M).
+
+**Deliverables:**
+- New concept page: [[concepts/conjunction-screening]] (~340 lines — phase walkthrough, pipeline shape, performance budget, tuning knobs).
+- New ADR: [[decisions/005-broad-phase-strategy-pluggable]] (strategy interface for broad-phase; spatial-hash default, sort-and-sweep required alternative, trajectory-tube as future extension; rejection of pinning one method).
+- REQUIREMENTS.md v0.5 → v0.6: 5 reworded (REQ-CAT-006 / -007 / -008 / -009 / -010); 3 new (REQ-CAT-015 / -016 / -017).
+- 01-architecture.md v0.5 → v0.6: ECS Systems entry expanded; build-list bullet rewritten for the screening pipeline.
+- 02-subsystems.md v0.5 → v0.6: §6 introduction added; §6.1-§6.5 restructured to match concept page's 4-phase organisation; broad-phase strategy interface added; Pc registry pattern documented; CAM moved to forward-pointer.
+
+This deepening resolves the audit's first finding-cluster about scattered conjunction-assessment requirements (14 REQ-CAT IDs spanning a single coherent pipeline) into a named module with explicit phase boundaries, strategy seams, and per-stage testability. Sets up CAM as a clean downstream peer concept for a future deepening — events flow from screening to CAM via a documented payload contract.
+
+Four deepenings landed in this session; four candidates remain (#4 GNC Bus, #6 Deterministic MC, #7 Floating-Base Coupling, #8 Fidelity Scope ADR — plus the deferred CAM as effectively a #9).

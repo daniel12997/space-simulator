@@ -2,7 +2,7 @@
 
 > Companion to `01-architecture.md`. Detailed designs for each major subsystem.
 >
-> **Status:** Draft v0.5 (v0.5: Attitude Estimator Family deepening per [[wiki/concepts/attitude-estimation-policy]], [[wiki/concepts/usque]], and [[wiki/decisions/004-hybrid-attitude-estimation-mode-logic]]; v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.6 (v0.6: Conjunction Screening Pipeline deepening per [[wiki/concepts/conjunction-screening]] and [[wiki/decisions/005-broad-phase-strategy-pluggable]]; v0.5: Attitude Estimator Family deepening per [[wiki/concepts/attitude-estimation-policy]], [[wiki/concepts/usque]], and [[wiki/decisions/004-hybrid-attitude-estimation-mode-logic]]; v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 
 ---
 
@@ -538,9 +538,11 @@ Injected via the scenario file or interactively.
 
 ## 6. Catalog and conjunction analysis
 
-### 6.1 Catalog ingestion
+The conjunction-screening pipeline is a deep module — `ConjunctionScreeningPipeline` per [[wiki/concepts/conjunction-screening]] — composing named inner stages across four phases: catalog state maintenance (§6.1), propagation over the screening window (§6.2), pair reduction (§6.3), and per-pair assessment (§6.4). Each stage is independently testable. Collision-avoidance maneuver planning is a downstream concept consuming events from the pipeline (§6.5 — future deepening).
 
-TLEs from Space-Track or CelesTrak, refreshed daily. Each TLE becomes a `CatalogObject` entity with `OrbitalState`, `TLEData`, `SGP4State`, and (if uploaded by JSpOC) `Covariance`.
+### 6.1 Catalog state maintenance
+
+The `CatalogStore` is a persistent service (per-process lifetime, queried by the screening pipeline per invocation). It ingests TLEs from Space-Track or CelesTrak (refreshed daily; classic 80-column 2-line format with modulo-10 checksum; bad-checksum lines logged but not fatal by default) and CCSDS 508 CDMs (per §6.1.1 below). Each catalog object carries `OrbitalState`, `TLEData`, `SGP4State`, optional `Covariance` (when CDM-provided), drag/SRP coefficients, and HBR (Apsis-side config since CDM doesn't carry HBR — see REQ-CAT-013).
 
 **TLE format** per CelesTrak / Spacetrack Report No. 3: classic 80-column 2-line format with implicit-decimal-point fields, modulo-10 checksum. Apsis logs but does not fail on bad-checksum lines (operational catalogs occasionally contain them; behavior is configurable).
 
@@ -554,40 +556,76 @@ Conjunction Data Messages per CCSDS 508.0-B-1 Blue Book are ingested in both KVN
 
 CDMs do **not** carry **Hard-Body Radius (HBR)**. Apsis maintains a per-spacecraft HBR config (REQ-CAT-013) and combines as `HBR = HBR_primary + HBR_secondary` for Pc computation. Apsis-computed Pc supersedes the originator-provided value; both are emitted in the conjunction event for traceability.
 
-### 6.2 SGP4 propagation
+### 6.2 Propagation phase
 
-Vallado's reference SGP4 implementation, integrated as a system over `CatalogObject` entities. Hot loop, SoA layout, optional SIMD batching. Per-object cost ~10 µs; 50,000-object catalog propagates in ~500 ms per epoch.
+For each screening invocation over `[t₀, t₁]` (default 7-day forward window per REQ-CAT-005):
 
-### 6.3 Spatial indexing
+- **Catalog propagation** — Vallado's reference SGP4 (WGS-72 constants per STR#3), integrated as a system over `CatalogObject` entities. Hot loop, SoA layout, optional SIMD batching. Per-object cost ~10 µs; 50,000-object catalog propagates in ~500 ms per epoch (REQ-PERF-003).
+- **Active spacecraft propagation** — high-fidelity (full force model) propagation of the user's active spacecraft over the same window, with dense output enabled (REQ-INT-008) so §6.4 TCA evaluation can interpolate freely.
 
-A spatial hash maintained per epoch. Each object's position is hashed into a 3D voxel (typical voxel size 100 km). Pair-checking iterates only over same-voxel and neighbor-voxel pairs.
+Both feed §6.3 with sample-epoch geometry; the active spacecraft also retains its dense output for sub-millisecond TCA evaluation.
 
-For longer-horizon screening, **orbit-based pre-filters** apply first:
-- Apogee/perigee filter — if A's apogee < B's perigee or vice versa, skip
-- Inclination filter — for shared central body, large inclination differences imply small mutual altitude window
-- These filters typically eliminate 99%+ of pairs before any geometric check
+### 6.3 Pair reduction
 
-### 6.4 Conjunction refinement
+Three-layer cascade reducing the candidate pair count from O(N×M) to a manageable residual that survives to §6.4:
 
-For candidate pairs (those passing pre-filters and spatial hashing):
+#### 6.3.1 Orbit-element pre-filters (REQ-CAT-006a)
 
-1. **TCA bracketing.** Find the time interval containing the closest approach using coarse-grained relative position evaluation.
-2. **TCA localization.** Brent's method on `d/dt |r_A - r_B|² = 0` over the bracketed interval.
-3. **Miss distance and relative velocity.** Evaluated at TCA.
-4. **Joint covariance roll-forward.** Per-object 6×6 covariance is propagated from CDM epoch to TCA via the **Variational Equations integrator** (§3.6, [[wiki/concepts/variational-equations]]) — `P(TCA) = Φ · P(t_epoch) · Φᵀ` for each object, then summed into the joint covariance at TCA.
-5. **Probability of collision (Pc).** Computed from miss distance, relative velocity, and combined covariance using Foster's, Akella-Alfriend's, or Chan's method.
+- **Apogee/perigee filter** — if `apogee(A) < perigee(B)` or vice versa, the orbits cannot intersect. Skip.
+- **Inclination filter** — large inclination differences imply small mutual-altitude window; eliminable for shared central body.
 
-### 6.5 Avoidance maneuver planning
+These eliminate **99%+ of pairs** before any geometric evaluation.
 
-When `Pc` exceeds a threshold (default 10⁻⁵), the system flags the conjunction. For active spacecraft, Apsis's automated CAM planner (REQ-CAT-011) computes the **optimal impulsive Δv** per Bombardelli & Hernando-Ayuso (2015):
+#### 6.3.2 Analytical orbit-distance bounds (REQ-CAT-006b)
 
+A second per-pair pre-filter using **Hoots-Crawford / Healy analytical orbit-distance bounds**: for two elliptical orbits with similar periods, compute a lower bound on the minimum mutual distance purely from orbital elements. If the bound exceeds `HBR + screening_margin`, the pair cannot conjunct in this window. Eliminates an additional 50-90% of the post-3.1 residual at negligible cost.
+
+#### 6.3.3 Geometric broad-phase (REQ-CAT-007 + REQ-CAT-017)
+
+Implemented as a **strategy interface** ([[wiki/decisions/005-broad-phase-strategy-pluggable|ADR-005]]):
+
+```cpp
+class BroadPhase {
+public:
+    virtual std::vector<CandidatePair> filter(
+        const PropagatedCatalog& catalog,
+        std::span<const PropagatedActive> active,
+        Time t0, Time t1
+    ) = 0;
+};
 ```
-maximize  Δvᵀ A Δv     subject to  |Δv| ≤ Δv_max
-```
 
-with `A = Mᵀ Q M` (max-miss-distance) or `A = Mᵀ Q* M` (min-Pc), where `M` is the linear b-plane-displacement-per-Δv matrix and `Q*` is the inverse b-plane covariance. The optimal direction is the eigenvector of `A` corresponding to the largest eigenvalue — generally **not** along-track. Along-track-restricted CAM is available as a constrained-mode option (when operational policy mandates a fixed maneuver direction).
+v1 ships two implementations:
 
-CAM is typically planned 1-3 orbits before TCA. The simulator re-evaluates the conjunction after maneuver insertion. For finite-thrust CAMs (where the impulsive assumption breaks down) or multi-burn sequences, Apsis falls back to numerical optimization (constrained NMPC, REQ-GNC-008).
+- **`SpatialHashBroadPhase` (default)** — uniform 3D voxel grid (default voxel size 100 km, configurable). Pair-checking iterates over same-voxel and neighbor-voxel pairs only. O(N + K) per epoch.
+- **`SortAndSweepBroadPhase`** — sweep-and-prune along the radial axis. AABBs sorted; sweep finds overlaps. Incremental updates between sample epochs are very cheap when orderings persist.
+
+Future trajectory-tube intersection (CARA's COSINE / SOCRATES-style) is an extension point, not a v1 deliverable. Strategy selection is per-scenario configurable.
+
+### 6.4 Per-pair assessment
+
+For each candidate pair surviving §6.3:
+
+1. **TCA bracketing** — evaluate `|r_A(t) - r_B(t)|` at sample epochs across the candidate interval; identify all sign changes of `d/dt |r_A - r_B|²`. Each marks a local minimum. **Multiple local minima per pair are valid** (REQ-CAT-008) — a pair with similar-period orbits can have several close approaches in a 7-day window; each is a separate conjunction event candidate.
+2. **TCA localization** — Brent's method on `d/dt |r_A - r_B|² = 0` over each bracketed minimum (REQ-CAT-008). Sub-millisecond precision targets the 10 m miss-distance bound at typical relative velocities.
+3. **Miss distance and relative velocity** — evaluated at TCA from each object's propagated state.
+4. **Joint covariance roll-forward** — per-object 6×6 covariance propagated from epoch to TCA via the **Variational Equations integrator** (§3.6, [[wiki/concepts/variational-equations]]) — `P(TCA) = Φ · P(t_epoch) · Φᵀ` for each object, then summed: `C_joint(TCA) = Φ_A · C_A · Φ_Aᵀ + Φ_B · C_B · Φ_Bᵀ`.
+5. **Probability of collision (Pc) — registry pattern** (REQ-CAT-009). Methods are registered with their own validity predicates; the pipeline picks the **first valid method in registry order**. Default registry: `[foster_2d, monte_carlo]`:
+   - **Foster 2D analytic** — primary; valid when `ε = t_c/T_orbit < 1e-3` (the short-term-encounter regime; typical LEO close approaches). Apsis uses Chan series ([[wiki/sources/bombardelli-2015-collision-avoidance|Bombardelli 2015]] Eq. 4) as the numerically convenient evaluator.
+   - **Monte Carlo** — default catch-all fallback when Foster's validity fails. Sample joint state from `C_joint(TCA)`, count fraction within `HBR_combined`, divide by N (default 10,000 samples). Uses per-pair seeded RNG (REQ-MC-003); the seed is part of the conjunction event for reproducibility.
+   - **Patera 2D extended-duration** (REQ-CAT-015, S) — optional alternative for the moderate-ε regime where Foster fails but MC cost is undesirable. Registered by configuration; precedes MC when present.
+6. **HBR resolution** (REQ-CAT-013) — `HBR_combined = HBR_primary + HBR_secondary` from the Apsis-side per-spacecraft HBR config (CDM doesn't carry HBR).
+7. **Conjunction event emission** (REQ-CAT-010) — when `Pc > pc_threshold` (default 1e-5), emit `ConjunctionEvent` with: TCA, miss distance, relative velocity, Pc, **`pc_method` diagnostic tag**, combined HBR, per-object state and covariance at TCA, identifiers, and screening diagnostics (broad-phase strategy used, sample-epoch count, MC seed if applicable, originator-Pc from CDM if any).
+
+### 6.5 Event emission and downstream consumers
+
+The screening pipeline's output is a `std::vector<ConjunctionEvent>`. Downstream consumers:
+
+- **Collision-avoidance maneuver (CAM) planning** (REQ-CAT-011) — a separate concept (future deepening, currently scoped per [[wiki/sources/bombardelli-2015-collision-avoidance|Bombardelli & Hernando-Ayuso 2015]] for analytic optimal Δv on the eigenvector of `MᵀQM` or `MᵀQ*M`). The CAM planner consumes events with Pc above its action threshold and produces optimal impulsive Δv. Along-track-restricted CAM is available as a constrained-mode option per audit Cluster G.
+- **Operations dashboards / mission-scheduler** — visualisation, maneuver-window planning, conjunction-rate trend analysis.
+- **Recording / telemetry** (REQ-OBS-002) — events stream to the telemetry recorder with full payload.
+
+The pipeline itself does not perform CAM; it produces the data CAM and other consumers need.
 
 ## 7. Monte Carlo
 

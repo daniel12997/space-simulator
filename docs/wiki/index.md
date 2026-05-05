@@ -95,10 +95,11 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 |---|---|---|---|---|
 | [[sources/urdf-xacro-pinocchio-docs]] | URDF / Xacro / Pinocchio documentation snapshots | spec | authoritative | 2026-05-05 |
 
-## Concepts (28)
+## Concepts (29)
 
 | Slug | Canonical name | Aliases |
 |---|---|---|
+| [[concepts/conjunction-screening]] | Conjunction Screening | conjunction screening pipeline, conjunction assessment, CA pipeline |
 | [[concepts/attitude-estimation-policy]] | Attitude Estimation Policy | attitude estimator family, attitude estimation under uncertainty, attitude estimator mode logic |
 | [[concepts/usque]] | Unscented Quaternion Estimator | USQUE, UKF-attitude |
 | [[concepts/long-arc-state-conditioning]] | Long-arc state conditioning | conditioning over precision, two-component time, Encke perturbation, compensated summation, Kahan-Neumaier summation |
@@ -128,7 +129,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[concepts/kalman-filter]] | Kalman Filter | KF, EKF |
 | [[concepts/unscented-kalman-filter]] | Unscented Kalman Filter | UKF, unscented transform |
 
-## Decisions (4)
+## Decisions (5)
 
 | Number | Title | Status | Decided |
 |---|---|---|---|
@@ -136,6 +137,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[decisions/002-variational-equations-between-measurements]] | Variational equations propagated between measurements, not as augmented state | accepted | 2026-05-05 |
 | [[decisions/003-tagged-time-scale-types]] | Time is a type tagged with its scale; scale mixing is a compile-time error | accepted | 2026-05-05 |
 | [[decisions/004-hybrid-attitude-estimation-mode-logic]] | Attitude estimation uses hybrid mode logic — boot-USQUE plus NIS-monitored MEKF, never single-estimator default | accepted | 2026-05-05 |
+| [[decisions/005-broad-phase-strategy-pluggable]] | Broad-phase pair filtering is a strategy interface; spatial-hash default, sort-and-sweep required alternative, trajectory-tube as future extension | accepted | 2026-05-05 |
 
 ## Components (0)
 

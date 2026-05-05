@@ -288,3 +288,24 @@ Second deepening from the architecture-review candidate list (Two-Component Time
 - 02-subsystems.md v0.3 → v0.4: §1.1 cross-reference; §1.2 expanded with auto-rectification + tagged-type sections; §3.3 expanded with vectorised aggregator; §3.4 expanded with wrapper-pattern detail.
 
 This deepening operationalises the architecture's "Conditioning over precision" design principle (§2): three previously-scattered fragments (REQ-TIME-002 + REQ-INT-006 + REQ-INT-007) plus a new compile-time-safety guarantee (REQ-TIME-013) become one coherent named subsystem with one concept page, one ADR, and explicit composition rules. REQ-TIME-009 (mm precision out to 50 AU) now has a single citable mechanism rather than three independent enabling requirements.
+
+## [2026-05-05] deepening | Attitude Estimator Family
+
+Third deepening from the architecture-review candidate list (#5: MEKF + USQUE + mode logic). Resolves audit Cluster F. Grilled through 6 design questions; landed on:
+
+- **Two pages** (Q1): `concepts/usque` (algorithmic — peer of `concepts/mekf`) and `concepts/attitude-estimation-policy` (operational umbrella).
+- **Hybrid trigger** (Q3): boot-USQUE + NIS-monitored MEKF; convergence trigger `||MRP|| < 10° AND trace(P) < threshold`; inconsistency trigger `NIS > χ²_{p=0.99}` for `N=5` consecutive samples; mission-FSM override via `pin_mode()`.
+- **Direct covariance hand-off** (Q4): mandate matching `(a=1, f=1)` MRP-flavoured GRP for USQUE so covariance is structurally identical to MEKF's MRP; hand-off is direct copy of `(q, P_att, b, P_bias)`.
+- **Manager + pure-logic policy architecture** (Q5): `AttitudeEstimator` (manager satisfying existing `Estimator` interface) wraps `Mekf` + `Usque` + `AttitudeEstimationPolicy` (pure logic, testable against synthetic histories).
+
+**Deliverables:**
+- New concept page: [[concepts/usque]] (~150 lines, algorithm + GRP parameterisation + sigma-point construction + Crassidis-Markley discrete-process-noise covariance + when USQUE wins).
+- New concept page: [[concepts/attitude-estimation-policy]] (~190 lines, hybrid mode logic + manager architecture + hand-off mechanism + tuning knobs + validation invariants).
+- New ADR: [[decisions/004-hybrid-attitude-estimation-mode-logic]] (boot-USQUE + NIS-monitored MEKF; rejection of always-MEKF / boot-only-no-NIS / always-USQUE / FSM-only alternatives).
+- REQUIREMENTS.md v0.4 → v0.5: REQ-GNC-003 reworded; REQ-GNC-014 promoted from S to M and expanded with hybrid-policy details + GRP parameterisation mandate; new REQ-GNC-016 (AttitudeEstimator manager).
+- 01-architecture.md v0.4 → v0.5: §3 GNC stack note on manager pattern + ADR-004 cross-reference.
+- 02-subsystems.md v0.4 → v0.5: §5.3 restructured into 5 subsections (5.3.1 MEKF, 5.3.2 USQUE, 5.3.3 AttitudeEstimator manager + policy, 5.3.4 Orbit estimator, 5.3.5 User-swappable estimators), each with code skeleton and cross-references.
+
+This deepening fully resolves audit finding F8.1 (MEKF mandate had no fallback) and resolves audit Cluster F at the structural level — the estimator family is now a named module with operational policy in one place, not three scattered fragments.
+
+Three deepenings landed in this session; five candidates remain (#1 Conjunction Pipeline, #4 GNC Bus, #6 Deterministic MC, #7 Floating-Base Coupling, #8 Fidelity Scope ADR).

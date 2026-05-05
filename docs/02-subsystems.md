@@ -2,7 +2,7 @@
 
 > Companion to `01-architecture.md`. Detailed designs for each major subsystem.
 >
-> **Status:** Draft v0.4 (v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.5 (v0.5: Attitude Estimator Family deepening per [[wiki/concepts/attitude-estimation-policy]], [[wiki/concepts/usque]], and [[wiki/decisions/004-hybrid-attitude-estimation-mode-logic]]; v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 
 ---
 
@@ -455,13 +455,7 @@ Typical rates:
 
 ### 5.3 Estimators
 
-**MEKF (Multiplicative Extended Kalman Filter)** for attitude. Global state is a 4-component unit quaternion. Covariance state is the 3-vector **MRP (Modified Rodrigues Parameters)** error representation per Markley (2003), which is non-singular for attitude errors up to 360°. The default Apsis MEKF is the **second-order extension** per Markley 2003 (preserves quaternion normalization to second order in the error, more robust than first-order MEKF for moderate errors). State also includes gyro bias (Farrenkopf model per Lefferts et al. 1982) and optionally other parameters. Updates use star tracker, sun sensor, magnetometer measurements.
-
-For **acquisition mode** (large initial attitude errors where MEKF can fail to converge — Crassidis & Markley 2003 demonstrated this on a single-magnetometer TRMM simulation), Apsis provides a **USQUE (UnScented QUaternion Estimator)** fallback per Crassidis & Markley 2003 — a UKF-attitude variant that uses generalized-Rodrigues-parameter sigma points and converges from large initial errors at ~2× MEKF cost. Mode logic switches from USQUE to MEKF once attitude error is bounded.
-
-**EKF / UKF** for orbit. State is position + velocity + (optional) drag coefficient, SRP coefficient, empirical accelerations. EKF predict step obtains Φ from the **Variational Equations integrator** (§3.6, [[wiki/concepts/variational-equations]]); parameter augmentation (e.g. Cd) consumes `partial_dadp` from the per-force-model interface. UKF (per Wan & van der Merwe 2000 scaled-UT, augmented-state formulation) is the alternative for highly nonlinear regimes or where Jacobian computation is awkward. Updates from GPS, ground tracking, optical navigation.
-
-Both are user-swappable. The estimator interface is:
+All estimators implement a common interface:
 
 ```cpp
 class Estimator {
@@ -471,6 +465,48 @@ public:
     virtual EstimatedState current_estimate() const = 0;
 };
 ```
+
+#### 5.3.1 MEKF — small-angle attitude estimation
+
+**MEKF (Multiplicative Extended Kalman Filter)** for attitude. Global state is a 4-component unit quaternion. Covariance state is the 3-vector **MRP (Modified Rodrigues Parameters)** error representation per Markley (2003), which is non-singular for attitude errors up to 360°. The default Apsis MEKF is the **second-order extension** per Markley 2003 (preserves quaternion normalisation to second order in the error, more robust than first-order MEKF for moderate errors). State also includes gyro bias (Farrenkopf model per Lefferts et al. 1982) and optionally other parameters. Updates use star tracker, sun sensor, magnetometer measurements. See [[wiki/concepts/mekf]] for algorithmic detail.
+
+#### 5.3.2 USQUE — sigma-point attitude estimation for large errors
+
+**USQUE (Unscented Quaternion Estimator)** for cases where MEKF's small-angle linearisation fails — large initial attitude errors, sparse measurements, recovery from anomalies. Sigma-point propagation through the full nonlinear attitude-and-bias dynamics; converges from initial errors that hang MEKF for hours ([[wiki/sources/crassidis-2003-ukf-attitude|Crassidis & Markley 2003]] Figure 3). Apsis mandates the `(a=1, f=1)` MRP-flavoured GRP parameterisation (algebraically identical to MEKF's MRP), so covariance hand-off between USQUE and MEKF is a direct copy. Cost is ~2× MEKF; well within Apsis's GNC budget for the acquisition / recovery sub-windows where USQUE runs. See [[wiki/concepts/usque]] for algorithmic detail.
+
+#### 5.3.3 AttitudeEstimator — manager and policy
+
+External callers see a single `AttitudeEstimator` (satisfies `Estimator`) that wraps MEKF and USQUE plus a pure-logic `AttitudeEstimationPolicy` controlling which algorithm is active:
+
+```cpp
+class AttitudeEstimator : public Estimator {
+public:
+    AttitudeEstimator(AttitudeEstimationConfig);
+    void predict(const Time& t) override;
+    void update(const Measurement& m) override;
+    EstimatedState current_estimate() const override;
+
+    EstimatorMode current_mode() const;          // diagnostic: MEKF or USQUE
+    void pin_mode(EstimatorMode);                // override hook for mission FSM
+    void unpin();
+private:
+    Mekf mekf_;
+    Usque usque_;
+    AttitudeEstimationPolicy policy_;            // pure logic — testable in isolation
+    EstimatorMode active_mode_;
+    std::optional<EstimatorMode> pinned_;
+};
+```
+
+Default operation is the **hybrid mode logic** of [[wiki/decisions/004-hybrid-attitude-estimation-mode-logic|ADR-004]]: boot in USQUE; switch to MEKF on convergence (`||MRP|| < 10°` AND `trace(P_attitude) < threshold_acquired`); continuously monitor MEKF via NIS chi-squared test on innovations (default `p=0.99`, `N=5` consecutive samples); revert to USQUE on sustained inconsistency. The policy is configurable per scenario and can be overridden by the broader GNC mode FSM (REQ-GNC-009) via `pin_mode()`. Hand-off is a direct copy of `(q_global, P_attitude, b_gyro, P_bias)` — the matching MRP-flavoured GRP parameterisation makes the four state blocks structurally identical between filters. See [[wiki/concepts/attitude-estimation-policy]] for the full policy and tuning knobs.
+
+#### 5.3.4 Orbit estimator (EKF / UKF)
+
+**EKF / UKF** for orbit. State is position + velocity + (optional) drag coefficient, SRP coefficient, empirical accelerations. EKF predict step obtains Φ from the **Variational Equations integrator** (§3.6, [[wiki/concepts/variational-equations]]); parameter augmentation (e.g. Cd) consumes `partial_dadp` from the per-force-model interface. UKF (per Wan & van der Merwe 2000 scaled-UT, augmented-state formulation) is the alternative for highly nonlinear regimes or where Jacobian computation is awkward. Updates from GPS, ground tracking, optical navigation.
+
+#### 5.3.5 User-swappable estimators
+
+The `Estimator` interface is the extension point for user-defined estimators (REQ-GNC-010, REQ-EXT-004) — particle filters, IMM filters, unscented variants, or wholly custom designs. They participate in the message bus on equal footing with the built-in estimators.
 
 ### 5.4 Controllers
 

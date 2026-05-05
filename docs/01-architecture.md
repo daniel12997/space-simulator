@@ -1,6 +1,6 @@
 # Apsis — System Architecture Overview
 
-> **Status:** Draft v0.4 (v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.5 (v0.5: Attitude Estimator Family deepening per [[wiki/concepts/attitude-estimation-policy]], [[wiki/concepts/usque]], and [[wiki/decisions/004-hybrid-attitude-estimation-mode-logic]]; v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 > **Scope:** High-fidelity spaceflight simulator for satellite engineering, GNC development, Monte Carlo verification, and full-catalog conjunction analysis.
 
 ---
@@ -145,7 +145,7 @@ The URDF describes geometry and inertia; a sidecar configuration file (YAML) des
 Each active spacecraft has an attached GNC stack consisting of:
 
 - **Sensors** — produce `Measurement` messages at their declared rates with realistic noise/bias models
-- **Estimator** — consumes measurements, produces state estimates (typically MEKF for attitude, EKF/UKF for orbit)
+- **Estimator** — consumes measurements, produces state estimates. Attitude estimation uses an `AttitudeEstimator` manager that wraps MEKF and USQUE under a hybrid mode logic (boot-USQUE plus NIS-monitored MEKF) per [[wiki/concepts/attitude-estimation-policy]] and [[wiki/decisions/004-hybrid-attitude-estimation-mode-logic|ADR-004]]; orbit estimation uses EKF or UKF.
 - **Controller** — consumes estimates, produces effector commands at its declared rate
 - **Effectors** — consume commands, produce forces/torques on links
 

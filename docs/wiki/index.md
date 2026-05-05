@@ -95,10 +95,12 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 |---|---|---|---|---|
 | [[sources/urdf-xacro-pinocchio-docs]] | URDF / Xacro / Pinocchio documentation snapshots | spec | authoritative | 2026-05-05 |
 
-## Concepts (26)
+## Concepts (28)
 
 | Slug | Canonical name | Aliases |
 |---|---|---|
+| [[concepts/attitude-estimation-policy]] | Attitude Estimation Policy | attitude estimator family, attitude estimation under uncertainty, attitude estimator mode logic |
+| [[concepts/usque]] | Unscented Quaternion Estimator | USQUE, UKF-attitude |
 | [[concepts/long-arc-state-conditioning]] | Long-arc state conditioning | conditioning over precision, two-component time, Encke perturbation, compensated summation, Kahan-Neumaier summation |
 | [[concepts/variational-equations]] | Variational Equations | state-transition matrix propagation, force-model linearization, Φ propagation |
 | [[concepts/precession-nutation]] | Precession-Nutation | precession, nutation |
@@ -126,13 +128,14 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[concepts/kalman-filter]] | Kalman Filter | KF, EKF |
 | [[concepts/unscented-kalman-filter]] | Unscented Kalman Filter | UKF, unscented transform |
 
-## Decisions (3)
+## Decisions (4)
 
 | Number | Title | Status | Decided |
 |---|---|---|---|
 | [[decisions/001-use-ceo-based-icrs-to-itrs]] | Use CEO-based pipeline (X, Y, s, ERA) for ICRS↔ITRS transformations | accepted | 2026-05-05 |
 | [[decisions/002-variational-equations-between-measurements]] | Variational equations propagated between measurements, not as augmented state | accepted | 2026-05-05 |
 | [[decisions/003-tagged-time-scale-types]] | Time is a type tagged with its scale; scale mixing is a compile-time error | accepted | 2026-05-05 |
+| [[decisions/004-hybrid-attitude-estimation-mode-logic]] | Attitude estimation uses hybrid mode logic — boot-USQUE plus NIS-monitored MEKF, never single-estimator default | accepted | 2026-05-05 |
 
 ## Components (0)
 

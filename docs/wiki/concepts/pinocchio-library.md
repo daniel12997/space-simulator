@@ -23,7 +23,7 @@ The introductory paper [[sources/carpentier-2019-pinocchio]] and the analytical-
 - **[[concepts/composite-rigid-body-algorithm|CRBA]]** — joint-space inertia matrix M(q).
 - **[[concepts/articulated-body-algorithm|ABA]]** — forward dynamics. The one Apsis calls every integrator step.
 - **Constrained forward dynamics, impulse dynamics, inverse-of-mass-matrix, centroidal dynamics**.
-- **Analytical derivatives** of RNEA and ABA — first MBD framework to do this natively. See [[sources/carpentier-2018-rbd-analytical-derivatives]].
+- **Analytical derivatives** of RNEA and ABA — first MBD framework to do this natively, derived in [[sources/carpentier-2018-rbd-analytical-derivatives]]. 3-5× the cost of one dynamics call; 6-27× faster than finite differences depending on DOF; 30-60% faster than autodiff+codegen; numerically exact (no rounding noise on partials that should be identically zero). See [[concepts/analytical-rbd-derivatives]] for the chain-rule structure that makes ABA-derivatives a free byproduct of RNEA-derivatives.
 - **Automatic differentiation** via templated scalar type (ADOL-C, CasADi, CppAD).
 - **Runtime code generation** via CppADCodeGen for performance-critical specialised builds.
 

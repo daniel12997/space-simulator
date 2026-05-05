@@ -31,6 +31,10 @@ Two passes over the kinematic tree:
 
 The forward pass is identical to forward-kinematics-to-second-order; the backward pass is what produces the torques.
 
+## Derivatives
+
+Analytical partial derivatives of RNEA with respect to (`q`, `q̇`, `τ`, `f^ext`) are derived in [[sources/carpentier-2018-rbd-analytical-derivatives]] (Algorithms 2, 3). Six lines added to the forward pass and four to the backward pass propagate motion-set and force-set partial derivatives alongside the dynamics quantities, preserving kinematic-tree sparsity and matching the O(n) complexity of RNEA itself. See [[concepts/analytical-rbd-derivatives]] for the algorithmic structure and the load-bearing chain-rule identity that makes ABA-derivatives a free byproduct.
+
 ## What it does NOT do
 
 RNEA does not invert the dynamics in either direction it can't reach:
@@ -43,4 +47,4 @@ RNEA does not invert the dynamics in either direction it can't reach:
 - **[[sources/carpentier-2019-pinocchio]]** §II.F.c — brief overview.
 - **Luh, Walker & Paul (1980)** — *On-line computational scheme for mechanical manipulators*, J. Dyn. Sys. Meas. Control 102(2):69-76. The original derivation. INDEX-only.
 - **Featherstone (2008)** — *Rigid Body Dynamics Algorithms*, Springer Ch. 5. Textbook treatment. INDEX-only.
-- **[[sources/carpentier-2018-rbd-analytical-derivatives]]** — analytical derivatives of RNEA (planned next ingest).
+- **[[sources/carpentier-2018-rbd-analytical-derivatives]]** — analytical derivatives of RNEA, with the algorithm pseudo-code (Algorithms 2, 3) and benchmarks vs finite differences and autodiff.

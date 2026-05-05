@@ -57,6 +57,10 @@ Performance for Apsis-scale spacecraft (10-15 DOF): ~1-2 µs per call — not a 
 - **Constrained ABA** — handles closed-loop kinematic constraints via Lagrange multipliers; Pinocchio implements via a constrained-dynamics extension. Apsis spacecraft are open-tree by construction (URDF root + tree of links); no closed loops, so plain ABA suffices.
 - **Impulse dynamics** — a discrete-event variant for instantaneous velocity changes (collisions, latch-engagement, instantaneous Δv). Apsis impulsive maneuvers (architecture §3 Dynamics core > Thrust) typically modify the floating-base velocity directly without invoking impulse-ABA.
 
+## Derivatives
+
+For controllers that need a dynamics gradient (LQR linearization, MPC, gradient-based trajectory optimization), [[concepts/analytical-rbd-derivatives]] provides ∂a/∂(q, v, τ, f_ext) at 3-5× the cost of one ABA call. The crucial structural identity ([[sources/carpentier-2018-rbd-analytical-derivatives]] Eq. 24): `∂FD/∂u = -M(q)⁻¹ · ∂ID/∂u`. Apsis derives ABA-derivatives this way rather than independently — half the implementation surface, same numerics.
+
 ## Validation
 
 The conservation invariant tied to ABA is **angular momentum conservation under no external torques** (REQ-MBD-004, REQ-INT-012). With gravity zero, no external wrenches, no joint torques, and no friction — `a_ω,floating-base + Σ J_i,ang · v_internal = const`. A long-arc no-torque test should hold this to integrator precision. Useful regression check.
@@ -66,4 +70,4 @@ The conservation invariant tied to ABA is **angular momentum conservation under 
 - **[[sources/carpentier-2019-pinocchio]]** §II.F.e — brief overview as implemented in Pinocchio.
 - **Featherstone (1983)** — *The Calculation of Robot Dynamics Using Articulated-Body Inertias*, IJRR 2(1):13-30. The original derivation. INDEX-only.
 - **Featherstone (2008)** — *Rigid Body Dynamics Algorithms*, Springer Ch. 7. Extended treatment in textbook form. INDEX-only.
-- **Carpentier & Mansard (2018)** — analytical derivatives of ABA — see [[sources/carpentier-2018-rbd-analytical-derivatives]] (next planned ingest).
+- **[[sources/carpentier-2018-rbd-analytical-derivatives]]** — analytical derivatives of ABA via the chain-rule reduction to RNEA-derivatives.

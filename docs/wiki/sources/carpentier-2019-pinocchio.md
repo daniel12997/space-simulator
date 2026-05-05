@@ -62,7 +62,7 @@ Plus constrained forward dynamics, impulse dynamics, inverse-of-mass-matrix, cen
 
 ## Analytical derivatives — the differentiator
 
-§II.G: *"To the best of our knowledge, Pinocchio is the first rigid body framework which implements this feature natively."* Analytical derivatives of RNEA and ABA with respect to (`q`, `v`, `τ`, external forces) are critical for whole-body trajectory optimization, MPC, and LQR around a reference trajectory. Fig. 4 reports analytical derivatives 1-2 orders of magnitude faster than finite-difference equivalents on KUKA-LWR, HyQ, Atlas, and TALOS. The derivation is in [[sources/carpentier-2018-rbd-analytical-derivatives]] (next planned ingest).
+§II.G: *"To the best of our knowledge, Pinocchio is the first rigid body framework which implements this feature natively."* Analytical derivatives of RNEA and ABA with respect to (`q`, `v`, `τ`, external forces) are critical for whole-body trajectory optimization, MPC, and LQR around a reference trajectory. Fig. 4 reports analytical derivatives 1-2 orders of magnitude faster than finite-difference equivalents on KUKA-LWR, HyQ, Atlas, and TALOS. The derivation is in [[sources/carpentier-2018-rbd-analytical-derivatives]]; the standalone concept is [[concepts/analytical-rbd-derivatives]].
 
 For Apsis, this directly enables REQ-GNC-008 (MPC attitude/orbit controller, S priority) at compute cost competitive with simpler EKF-based control approaches.
 

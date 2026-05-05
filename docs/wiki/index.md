@@ -2,7 +2,7 @@
 
 The catalog of every page in this wiki. Read this first when querying. Updated on every ingest, document, query-fileback, and lint operation.
 
-## Sources (4)
+## Sources (5)
 
 | Slug | Title | Type | Reliability | Ingested |
 |---|---|---|---|---|
@@ -10,8 +10,9 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[sources/berry-healy-2004-gauss-jackson]] | Implementation of Gauss-Jackson Integration for Orbit Propagation | paper | peer-reviewed | 2026-05-04 |
 | [[sources/carpentier-2019-pinocchio]] | The Pinocchio C++ library — A fast and flexible implementation of rigid body dynamics algorithms and their analytical derivatives | paper | peer-reviewed | 2026-05-04 |
 | [[sources/carpentier-2018-rbd-analytical-derivatives]] | Analytical Derivatives of Rigid Body Dynamics Algorithms | paper | peer-reviewed | 2026-05-04 |
+| [[sources/lefferts-1982-mekf]] | Kalman Filtering for Spacecraft Attitude Estimation | paper | peer-reviewed | 2026-05-04 |
 
-## Concepts (14)
+## Concepts (17)
 
 | Slug | Canonical name | Aliases |
 |---|---|---|
@@ -29,6 +30,9 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[concepts/recursive-newton-euler-algorithm]] | Recursive Newton-Euler Algorithm | RNEA |
 | [[concepts/floating-base-dynamics]] | Floating-Base Dynamics | free-flyer joint |
 | [[concepts/analytical-rbd-derivatives]] | Analytical RBD Derivatives | analytical dynamics gradients |
+| [[concepts/mekf]] | Multiplicative Extended Kalman Filter | MEKF |
+| [[concepts/quaternion-attitude-representation]] | Quaternion Attitude Representation | unit quaternion |
+| [[concepts/farrenkopf-gyro-model]] | Farrenkopf Gyro Model | ARW/RRW gyro model |
 
 ## Decisions (1)
 

@@ -46,3 +46,17 @@ Back-fill citations into existing pages: `concepts/articulated-body-algorithm` a
 No new decision pages — the choice of analytical (over autodiff or finite-differences) is implementation-detail, belongs on a future MPC component page when there's code.
 
 One item surfaced for human review (no silent spec edits): the architecture's build-vs-reuse table at `docs/01-architecture.md` §5 credits Pinocchio for *"Featherstone algorithms, autodiff support"* — undersells the actual capability. **Analytical derivatives are 30-60% faster than autodiff+codegen and numerically exact**; should be the canonical MPC derivative path with autodiff as fallback. Worth one sentence in the arch text.
+
+## [2026-05-04] ingest | Kalman Filtering for Spacecraft Attitude Estimation (Lefferts, Markley & Shuster 1982)
+
+Created `sources/lefferts-1982-mekf` — the seminal MEKF paper. Survey-and-derivation work that reviews the historical development of attitude Kalman filtering, establishes the quaternion as the canonical attitude state via Stuelpnagel's no-go theorem, formalises the Farrenkopf gyro model, and compares three covariance representations to demonstrate the 6×6 multiplicative form is the only one that's both non-singular by construction and numerically robust in finite precision.
+
+Three new concept pages: `mekf` (the algorithm — multiplicative error parameterisation, incremental-update-and-reset pattern, Joseph form, sequential scalar updates), `quaternion-attitude-representation` (Stuelpnagel's theorem, multiplicative composition convention matching rotation-matrix order rather than Hamilton's, the periodic Newton renormalisation step), `farrenkopf-gyro-model` (canonical rate-mode gyro model: ω = ũ - b - n₁; db/dt = n₂; ARW ↔ √Q₁, RRW ↔ √Q₂; Markov-bias variant for finite τ).
+
+Anchors REQ-GNC-003 (MEKF mandate), REQ-SEN-005 (gyro/IMU with bias drift Markov model + ARW + RRW per axis), and the gyro-stellar attitude-determination architecture that REQ-SEN-001/002 + REQ-SEN-005 collectively realise.
+
+`kalman-filter` standalone concept page deferred — folded a brief recap into `mekf`, plan to break it out on the next ingest (Crassidis 2003 UKF) when a second source cross-cites it.
+
+No new decision pages — REQ-GNC-003 is unambiguous about MEKF; the multiplicative-vs-additive choice is what this paper *argues for* and what the requirement *settled on*.
+
+One item surfaced for human review (no silent spec edits): `docs/02-subsystems.md` §5.3 says *"Error parameterization is a 3-vector (small rotation), so the covariance is non-singular."* Correct but slightly underspecified — doesn't make explicit the structural separation between the **estimate** state (4-component quaternion on the unit-norm manifold) and the **covariance** state (3-component vector part of the error quaternion in unconstrained R³). Worth one sentence to head off the easy misreading that "we use a three-parameter rotation representation", which Stuelpnagel proves is impossible globally — and that's precisely *why* MEKF separates estimate from covariance.

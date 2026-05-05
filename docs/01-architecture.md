@@ -1,6 +1,6 @@
 # Apsis — System Architecture Overview
 
-> **Status:** Draft v0.2 (revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.3 (v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 > **Scope:** High-fidelity spaceflight simulator for satellite engineering, GNC development, Monte Carlo verification, and full-catalog conjunction analysis.
 
 ---
@@ -80,7 +80,7 @@ The design explicitly rejects two common shortcuts. It does not use a generic ga
 
 ### Dynamics core
 
-**Force model.** Pluggable `ForceModel` interface. Each force is a class (`PointMassGravity`, `SphericalHarmonicGravity`, `ThirdBody`, `AtmosphericDrag`, `SolarRadiationPressure`, `EarthRadiationPressure`, `RelativisticCorrection`, `EmpiricalAcceleration`). Each provides `acceleration(state, t)` and `partial_dadr()` for variational equations. Force lists are configured per-entity and can be enabled/disabled at runtime.
+**Force model.** Pluggable `ForceModel` interface. Each force is a class (`PointMassGravity`, `SphericalHarmonicGravity`, `ThirdBody`, `AtmosphericDrag`, `SolarRadiationPressure`, `EarthRadiationPressure`, `RelativisticCorrection`, `EmpiricalAcceleration`). Each implements the **Variational Equations contract** ([[wiki/concepts/variational-equations]]): `acceleration(state, t)` plus `partial_dadr` / `partial_dadv` / `partial_dadp` (the last for statically-declared estimable parameters such as Cd, Cr). Analytical partials are required by default; force models without them opt in to a centralised finite-difference helper. A generic conformance harness (CI gate) verifies analytical partials against finite differences for every registered force model. Force lists are configured per-entity and can be enabled/disabled at runtime.
 
 **Integrators.** Multiple, selected per regime:
 - Dormand-Prince 8(7) adaptive RK — general purpose
@@ -89,6 +89,7 @@ The design explicitly rejects two common shortcuts. It does not use a generic ga
 - Bulirsch-Stoer — high-precision when needed
 - Keplerian analytical — cruise phases
 - SGP4 — catalog objects
+- **Variational Equations integrator** — propagates the state-transition matrix Φ between measurement / observation epochs, atop the dense output of whichever natural-state integrator is active. Default RK4 for the linear ODE `dΦ/dt = A·Φ`. Φ is propagated on demand, not as augmented natural state ([[wiki/decisions/002-variational-equations-between-measurements|ADR-002]])
 
 **State conversions.** Cartesian (canonical), classical orbital elements, modified equinoctial elements, Brouwer-Lyddane mean elements, TLE-compatible. Quaternions (canonical) ↔ DCM ↔ Euler ↔ MRPs for attitude.
 
@@ -209,6 +210,7 @@ The novel engineering — and the project's value-add — is in:
 - The **floating-base coupling** between Pinocchio and the orbital propagator
 - The **GNC plant/controller architecture** (message bus, sample-and-hold, failure injection)
 - **Encke-style perturbation propagation** built on top of analytical references
+- The **Variational Equations subsystem** ([[wiki/concepts/variational-equations]]) — per-force partials contract, framework assembly of A, Φ propagation between measurements; bridges force models to orbit estimation and Pc covariance propagation
 - The **Monte Carlo harness** (snapshot/restore, deterministic seeding, parallel execution, aggregation)
 - The **catalog/conjunction pipeline** (SoA SGP4, spatial indexing, refinement)
 - The **scenario DSL** in Python

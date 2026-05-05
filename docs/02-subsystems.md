@@ -2,7 +2,7 @@
 
 > Companion to `01-architecture.md`. Detailed designs for each major subsystem.
 >
-> **Status:** Draft v0.2 (revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.3 (v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 
 ---
 
@@ -59,14 +59,44 @@ The state vector is transformed and the integrator continues in the new frame. C
 class ForceModel {
 public:
     virtual Vector3d acceleration(const State& s, const Time& t) const = 0;
+
+    // Variational Equations contract — see [[wiki/concepts/variational-equations]].
     virtual Matrix3d partial_dadr(const State& s, const Time& t) const = 0;
     virtual Matrix3d partial_dadv(const State& s, const Time& t) const = 0;
+    virtual std::vector<ParameterPartial> partial_dadp(const State& s, const Time& t) const {
+        return {};   // default: no estimable parameters
+    }
+    virtual std::vector<std::string> estimable_parameters() const { return {}; }
+
+    // Conformance verification (REQ-PHY-020):
+    virtual std::vector<TestPoint> conformance_grid() const { return DEFAULT_GRID; }
+    virtual double conformance_tolerance() const { return 1e-8; }
+
     virtual std::string name() const = 0;
     virtual bool is_conservative() const = 0;  // for symplectic integrator selection
+};
+
+struct ParameterPartial {
+    std::string name;       // matches estimable_parameters() order
+    Vector3d daudp;         // ∂a/∂p_i
 };
 ```
 
 A spacecraft's force list is a `std::vector<std::unique_ptr<ForceModel>>`. The propagator sums contributions. Per-force enable flags and timing instrumentation are first-class.
+
+**Analytical partials are required by default.** Force models without analytical partials (table-lookup atmospheres, prototype empirical forces, user-defined perturbations) opt in to a centralised finite-difference helper:
+
+```cpp
+class MyEmpiricalForce : public ForceModel {
+public:
+    Matrix3d partial_dadr(const State& s, const Time& t) const override {
+        return FiniteDifferenceJacobian::dadr(*this, s, t);
+    }
+    // ... etc.
+};
+```
+
+The opt-in is deliberate (not a base-class default) so the analytical-vs-FD choice surfaces at the force-model declaration site, not silently inside the EKF loop. The same `FiniteDifferenceJacobian` helper is used by the conformance harness to verify analytical implementations. See [[wiki/concepts/variational-equations]] for the full contract and [[wiki/decisions/002-variational-equations-between-measurements|ADR-002]] for the framework-side propagation choice.
 
 ### 2.2 Gravity
 
@@ -209,6 +239,37 @@ The integrator integrates `g(s, t) = 0` event functions alongside the dynamics. 
 
 Detected events trigger callbacks that may modify state, switch frames, or terminate the integration step.
 
+### 3.6 Variational Equations integrator
+
+A dedicated module ([[wiki/concepts/variational-equations]]) propagates the **state-transition matrix Φ** between measurement / observation epochs, consuming per-force partials (REQ-PHY-016) and the natural-state integrator's dense output (REQ-INT-008). Φ is **not** carried in the natural-state vector — see [[wiki/decisions/002-variational-equations-between-measurements|ADR-002]] for the rationale.
+
+```cpp
+class VariationalEquationsIntegrator {
+public:
+    // Propagate Φ from t0 to t1 given the natural state's dense output
+    // and the per-spacecraft force-model list.
+    MatrixXd propagate(
+        const StateHistory& state_dense_output,
+        Time t0, Time t1,
+        const std::vector<const ForceModel*>& forces
+    );  // returns Φ(t1, t0); initialised internally as Φ(t0, t0) = I.
+};
+```
+
+Internally:
+
+1. Initialises `Φ = I_{(6+n_p) × (6+n_p)}` at `t₀` (where `n_p` is the count of estimable parameters declared across the force list).
+2. Steps from `t₀` to `t₁` using **RK4** by default — Φ's ODE `dΦ/dt = A(t)·Φ` is linear, so the symplectic / Gauss-Jackson machinery used for the natural state is unnecessary.
+3. At each step, queries the natural-state integrator's dense output for `(r, v)`, evaluates each force's `partial_dadr` / `partial_dadv` / `partial_dadp` at that state, sums into `A(t) = [[0, I, 0]; [Σ ∂a/∂r, Σ ∂a/∂v, Σ ∂a/∂p]; [0, 0, 0]]`, advances Φ.
+4. Step size matches the natural-state integrator's dense-output node spacing — partials are evaluated at the same `(r, v)` the natural state actually passed through.
+5. Returns `Φ(t₁, t₀)`.
+
+Consumers:
+- **Orbit EKF** (§5.3) — requests `Φ(t_{k+1}, t_k)` between measurement updates.
+- **Pc covariance propagation** (§6.4) — requests `Φ(TCA, t_epoch)` over screening windows up to 7 days.
+
+Conformance with the per-force partials interface (REQ-PHY-020) is verified by a generic CI-gated test harness that auto-discovers registered force models and compares analytical partials against finite differences over each model's declared `conformance_grid()`.
+
 ## 4. Spacecraft and multi-body
 
 ### 4.1 URDF model
@@ -349,7 +410,7 @@ Typical rates:
 
 For **acquisition mode** (large initial attitude errors where MEKF can fail to converge — Crassidis & Markley 2003 demonstrated this on a single-magnetometer TRMM simulation), Apsis provides a **USQUE (UnScented QUaternion Estimator)** fallback per Crassidis & Markley 2003 — a UKF-attitude variant that uses generalized-Rodrigues-parameter sigma points and converges from large initial errors at ~2× MEKF cost. Mode logic switches from USQUE to MEKF once attitude error is bounded.
 
-**EKF / UKF** for orbit. State is position + velocity + (optional) drag coefficient, SRP coefficient, empirical accelerations. EKF uses analytical state-transition matrix from variational equations (REQ-PHY-016); UKF (per Wan & van der Merwe 2000 scaled-UT, augmented-state formulation) is the alternative for highly nonlinear regimes or where Jacobian computation is awkward. Updates from GPS, ground tracking, optical navigation.
+**EKF / UKF** for orbit. State is position + velocity + (optional) drag coefficient, SRP coefficient, empirical accelerations. EKF predict step obtains Φ from the **Variational Equations integrator** (§3.6, [[wiki/concepts/variational-equations]]); parameter augmentation (e.g. Cd) consumes `partial_dadp` from the per-force-model interface. UKF (per Wan & van der Merwe 2000 scaled-UT, augmented-state formulation) is the alternative for highly nonlinear regimes or where Jacobian computation is awkward. Updates from GPS, ground tracking, optical navigation.
 
 Both are user-swappable. The estimator interface is:
 
@@ -428,7 +489,8 @@ For candidate pairs (those passing pre-filters and spatial hashing):
 1. **TCA bracketing.** Find the time interval containing the closest approach using coarse-grained relative position evaluation.
 2. **TCA localization.** Brent's method on `d/dt |r_A - r_B|² = 0` over the bracketed interval.
 3. **Miss distance and relative velocity.** Evaluated at TCA.
-4. **Probability of collision (Pc).** Computed from miss distance, relative velocity, and combined covariance using Foster's, Akella-Alfriend's, or Chan's method.
+4. **Joint covariance roll-forward.** Per-object 6×6 covariance is propagated from CDM epoch to TCA via the **Variational Equations integrator** (§3.6, [[wiki/concepts/variational-equations]]) — `P(TCA) = Φ · P(t_epoch) · Φᵀ` for each object, then summed into the joint covariance at TCA.
+5. **Probability of collision (Pc).** Computed from miss distance, relative velocity, and combined covariance using Foster's, Akella-Alfriend's, or Chan's method.
 
 ### 6.5 Avoidance maneuver planning
 

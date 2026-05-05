@@ -1,6 +1,6 @@
 # Apsis — Feature-Level Requirements
 
-> **Status:** Draft v0.2 (revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.3 (v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 > **Purpose:** Feature-level requirements for the Apsis spaceflight simulator. These describe *what* the system shall do, not *how* it implements them. Lower-level technical requirements (algorithms, data structures, library choices) are captured in the architecture and subsystem documents.
 
 ## Conventions
@@ -73,10 +73,11 @@
 | REQ-PHY-013 | The system MAY implement Lense-Thirring and de Sitter relativistic corrections. | C |
 | REQ-PHY-014 | The system SHALL implement solid Earth tides, ocean tides, and pole tides per IERS Conventions 2010 Ch. 7-8. Default-on for conjunction-assessment scenarios; default-off for low-precision use. | S |
 | REQ-PHY-015 | The system SHALL implement empirical accelerations (constant or piecewise-constant) in user-selectable frames. | M |
-| REQ-PHY-016 | Each force model SHALL provide partial derivatives `∂a/∂r` and `∂a/∂v` for use in variational equations (consumed by orbit estimation REQ-GNC-004 and Pc covariance propagation REQ-CAT-009). | M |
+| REQ-PHY-016 | Each force model SHALL implement the **Variational Equations contract** ([[wiki/concepts/variational-equations]]): `partial_dadr(state, t) → Matrix3d`, `partial_dadv(state, t) → Matrix3d`, and `partial_dadp(state, t) → vector<ParameterPartial>` returning partials with respect to its statically-declared estimable parameters. The contract is consumed by orbit estimation (REQ-GNC-004) and Pc covariance propagation (REQ-CAT-009). | M |
 | REQ-PHY-017 | The system SHALL provide per-force runtime enable/disable flags. | M |
 | REQ-PHY-018 | The system SHALL provide per-force timing instrumentation. | M |
 | REQ-PHY-019 | The system SHALL use the **zero-tide** permanent-tide convention per IERS Conventions 2010 default. Mismatch with input gravity-coefficient files SHALL be detected and either converted automatically or flagged as an error. | M |
+| REQ-PHY-020 | Each ForceModel implementation SHALL pass a finite-difference conformance test (analytical partials within `conformance_tolerance()` of finite-difference oracle over the model's declared `conformance_grid()`) per [[wiki/concepts/variational-equations]]. The conformance harness SHALL be a CI gate covering all registered force models, including user-defined ones. | M |
 
 ## 3. Integration and propagation
 
@@ -95,6 +96,7 @@
 | REQ-INT-011 | The system SHALL allow user-defined event functions and callbacks. | M |
 | REQ-INT-012 | The system SHALL preserve total angular momentum to within integrator tolerance over a 1-year propagation when no external torques are applied. | M |
 | REQ-INT-013 | The system SHALL preserve total energy to within integrator tolerance over a 100-year propagation under symplectic integration with conservative forces only. | S |
+| REQ-INT-014 | The system SHALL provide a **Variational Equations integrator** ([[wiki/concepts/variational-equations]]) that propagates the state-transition matrix Φ between measurement / observation epochs, consuming per-force partials (REQ-PHY-016) and the natural-state integrator's dense output (REQ-INT-008). Φ propagation SHALL initialise `Φ(t₀, t₀) = I` per invocation, use a method appropriate for the linear ODE `dΦ/dt = A(t)·Φ` (default RK4), and return `Φ(t₁, t₀)` to the caller. Φ SHALL NOT be carried in the natural-state vector ([[wiki/decisions/002-variational-equations-between-measurements|ADR-002]]). | M |
 
 ## 4. Spacecraft modeling
 
@@ -158,7 +160,7 @@
 | REQ-GNC-001 | The system SHALL separate the continuous-time plant from the discrete-time GNC stack, communicating via a typed message bus. | M |
 | REQ-GNC-002 | GNC components SHALL declare their sample rates; the system SHALL schedule them via multi-rate timing with explicit zero-order hold on outputs. | M |
 | REQ-GNC-003 | The system SHALL provide a Multiplicative Extended Kalman Filter (MEKF) for attitude estimation, using MRP (Modified Rodrigues Parameters) as the 3-vector covariance state per Markley (2003) and the second-order MEKF extension as default. | M |
-| REQ-GNC-004 | The system SHALL provide an EKF for orbit estimation with at minimum position, velocity, and Cd as estimated parameters. | M |
+| REQ-GNC-004 | The system SHALL provide an EKF for orbit estimation with at minimum position, velocity, and Cd as estimated parameters. State-transition matrix Φ for the predict step SHALL be obtained from the Variational Equations integrator (REQ-INT-014); parameter augmentation (e.g. Cd) consumes `partial_dadp` from REQ-PHY-016. | M |
 | REQ-GNC-005 | The system SHOULD provide a UKF as an alternative orbit estimator (per Wan & van der Merwe 2000 scaled-UT formulation with augmented state). | S |
 | REQ-GNC-006 | The system SHALL provide attitude controllers including: a PD-on-quaternion-error controller (small-angle / pointing-stability regime), a Lyapunov-stable nonlinear controller per Schaub, Vadali & Junkins (1998) (large-slew regime), and an LQR controller. | M |
 | REQ-GNC-007 | The system SHALL provide a stationkeeping controller with deadband-on-elements logic. | M |
@@ -196,7 +198,7 @@
 | REQ-CAT-006 | The system SHALL apply orbit-based pre-filters (apogee/perigee, inclination) before geometric screening. | M |
 | REQ-CAT-007 | The system SHALL apply spatial hashing or equivalent broad-phase filter before refined TCA computation. | M |
 | REQ-CAT-008 | The system SHALL compute time of closest approach (TCA) and miss distance for candidate pairs to better than 10 m miss-distance precision (which implies sub-millisecond TCA timing precision at typical relative velocities). | M |
-| REQ-CAT-009 | The system SHALL compute probability of collision (Pc) using Foster's 2D analytic method (Foster & Estes 1992 NASA JSC-25898) as primary, with Chan's series formulation as a numerically convenient equivalent, when covariance is available. | M |
+| REQ-CAT-009 | The system SHALL compute probability of collision (Pc) using Foster's 2D analytic method (Foster & Estes 1992 NASA JSC-25898) as primary, with Chan's series formulation as a numerically convenient equivalent, when covariance is available. Joint covariance roll-forward from epoch to TCA SHALL use the Variational Equations integrator (REQ-INT-014). | M |
 | REQ-CAT-010 | The system SHALL emit conjunction events with full TCA/miss/Pc data when Pc exceeds a configurable threshold. | M |
 | REQ-CAT-011 | The system SHOULD provide an automated avoidance maneuver planner that produces optimal impulsive Δv per Bombardelli & Hernando-Ayuso (2015) — eigenvector of `MᵀQM` for either max-miss-distance or min-Pc objective. Along-track burns are a constrained-mode option, not the default. | S |
 | REQ-CAT-012 | The system MAY perform full N×N conjunction screening across the catalog (not just against active spacecraft). | C |

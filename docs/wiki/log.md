@@ -251,3 +251,23 @@ User reviewed audit summary and authorized "make the fixes". Applied all 62 audi
 **ADR-001:** status `proposed` → `accepted` (2026-05-05). Now cited as load-bearing from all three v0.2 docs.
 
 Audit reports retained as historical record; they accurately describe the state at v0.1. Future audits should be quick deltas against v0.2.
+
+## [2026-05-05] deepening | Variational Equations module
+
+Applied the `improve-codebase-architecture` skill — explore + present-candidates + grilling — to the design corpus. Picked candidate #2 (Force-Model Variational Equations) as the first deepening; grilled through 7 design questions (scope, name, interface shape, FD fallback, conformance, Φ propagation placement, doc threading); landed on:
+
+- **Scope:** full chain — per-force partials → A assembly → Φ propagation.
+- **Name:** Variational Equations (domain-standard astrodynamics term).
+- **Per-force interface:** `partial_dadr`, `partial_dadv`, `partial_dadp` (the last w.r.t. statically-declared estimable parameters via `estimable_parameters()`).
+- **FD fallback:** opt-in `FiniteDifferenceJacobian` helper, base-class methods stay pure-virtual.
+- **Conformance:** generic harness over registered force models, gates CI; per-force `conformance_grid()` + `conformance_tolerance()`.
+- **Φ propagation:** between-measurement (Option C) atop parallel-integrator mechanism (Option B); RK4 for Φ; step matches state-integrator dense output. Φ not part of natural-state vector — see ADR-002.
+
+**Deliverables:**
+- New concept page: [[concepts/variational-equations]] (~200 lines, full contract + math + interface + conformance + consumers + numerical conditioning).
+- New ADR: [[decisions/002-variational-equations-between-measurements]] (Option C atop Option B, with rationale and Option A rejection).
+- REQUIREMENTS.md v0.2 → v0.3: rewording REQ-PHY-016 / REQ-GNC-004 / REQ-CAT-009; new REQ-PHY-020 (conformance gate, M); new REQ-INT-014 (Variational Equations integrator, M).
+- 01-architecture.md v0.2 → v0.3: §3 Force model paragraph reworded; integrator list expanded with VE integrator; §6 build-list adds VE subsystem bullet.
+- 02-subsystems.md v0.2 → v0.3: §2.1 ForceModel C++ skeleton expanded; new §3.6 Variational Equations integrator; §5.3 EKF and §6.4 Pc roll-forward cross-reference §3.6.
+
+This deepening resolves the audit's HIGH finding F2.1 by promoting variational-equations partials from a one-line aside in REQ-PHY-016 to a first-class named module with its own concept page, ADR, requirement IDs (REQ-PHY-016, REQ-PHY-020, REQ-INT-014), conformance discipline, and explicit consumers (REQ-GNC-004, REQ-CAT-009).

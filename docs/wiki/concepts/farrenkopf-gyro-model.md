@@ -84,6 +84,7 @@ N̄ ≈ [ Q₁ Δt + ⅓ Q₂ Δt³        ½ Q₂ Δt² ;
 ## References
 
 - **[[sources/lefferts-1982-mekf]]** §5, Eqs 48-54 — the canonical exposition.
+- **[[sources/crassidis-2003-ukf-attitude]]** §"Attitude Kinematics and Sensor Models", Eqs 25-26 — same model, σ_v / σ_u notation; Eq. 42 gives the closed-form discrete process-noise covariance for use in any quaternion attitude filter.
 - **Farrenkopf 1978** — *Analytic Steady-State Accuracy Solutions for Two Common Spacecraft Attitude Estimators*, J. Guid. Control 1(4):282-284. AIAA paywall.
 - **Farrenkopf 1974** — *Generalized Results for Precision Attitude Reference Systems Using Gyros*, AIAA Paper 74-903. AIAA paywall.
 - **IEEE Std 952** — Allan-variance characterization of single-axis FOG. INDEX-only paywalled (already cataloged in `docs/raw/INDEX.md`).

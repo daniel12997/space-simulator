@@ -112,14 +112,14 @@ The standard MEKF state is `[q̄, b]`. Optional state extensions seen in practic
 
 Out-of-scope at the MEKF level (handled separately): orbit estimation (use a separate orbit EKF / UKF — Apsis's REQ-GNC-004), thrust calibration, slosh-state estimation. The clean separation between attitude and orbit estimation is standard practice; coupling between them is at the application layer, not in the filter.
 
-## When MEKF isn't enough
+## When MEKF isn't enough — USQUE (UKF for attitude)
 
-The EKF-style local linearization fails when the error grows large between updates — typically after a long gap with no attitude sensor (e.g., star tracker keepout during a slew). Two remedies:
+The EKF-style local linearization fails when the error grows large between updates — typically after a long gap with no attitude sensor (star tracker keepout during a slew), at acquisition with poor a-priori, or with a single vector measurement (TAM-only mode). Two remedies:
 
 - **Crank up the process noise** during the gap so the covariance grows realistically; the estimator then trusts the next measurement strongly.
-- **Switch to a Unscented Kalman Filter** (UKF) variant — see [[sources/crassidis-2003-ukf-attitude]] (next ingest) — which propagates the covariance through nonlinear sigma points and handles larger error spans.
+- **Switch to a [[concepts/unscented-kalman-filter|UKF]] variant** — [[sources/crassidis-2003-ukf-attitude]] derives **USQUE** (UnScented QUaternion Estimator), which combines the [[concepts/unscented-kalman-filter|unscented transform]]'s sigma-point propagation with the multiplicative quaternion error and a generalized-Rodrigues-parameter (GRP) representation of the 3-D error vector. Cost is ~2-2.5× MEKF; the gain is convergence from arbitrarily large initial errors. [[sources/crassidis-2003-ukf-attitude]] Figure 3 shows MEKF *never* converging from `(−50°, 50°, 160°)` initial error + 20°/hr bias; USQUE converges in 3.5 orbits.
 
-For Apsis the MEKF is the default; the UKF is an alternative under REQ-GNC-005 (S priority).
+For Apsis the MEKF is the default for nominal operation; USQUE is a strong candidate for safe-mode / acquisition / contingency. REQ-GNC-005 mandates UKF for orbit (S priority); for attitude it's not currently in REQ-* but worth considering.
 
 ## References
 

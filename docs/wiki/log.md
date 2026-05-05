@@ -60,3 +60,15 @@ Anchors REQ-GNC-003 (MEKF mandate), REQ-SEN-005 (gyro/IMU with bias drift Markov
 No new decision pages — REQ-GNC-003 is unambiguous about MEKF; the multiplicative-vs-additive choice is what this paper *argues for* and what the requirement *settled on*.
 
 One item surfaced for human review (no silent spec edits): `docs/02-subsystems.md` §5.3 says *"Error parameterization is a 3-vector (small rotation), so the covariance is non-singular."* Correct but slightly underspecified — doesn't make explicit the structural separation between the **estimate** state (4-component quaternion on the unit-norm manifold) and the **covariance** state (3-component vector part of the error quaternion in unconstrained R³). Worth one sentence to head off the easy misreading that "we use a three-parameter rotation representation", which Stuelpnagel proves is impossible globally — and that's precisely *why* MEKF separates estimate from covariance.
+
+## [2026-05-04] ingest | Unscented Filtering for Spacecraft Attitude Estimation (Crassidis & Markley 2003)
+
+Created `sources/crassidis-2003-ukf-attitude` — the canonical USQUE (UnScented QUaternion Estimator) paper. UKF + multiplicative quaternion + GRP error representation; converges from large initial errors where MEKF fails outright (Figure 3 — 8h non-convergence vs 30 min convergence on TRMM single-magnetometer simulation).
+
+Two new concept pages: `kalman-filter` (the umbrella, finally broken out per the deferred plan from the MEKF ingest — now justified by 2 cross-citations) and `unscented-kalman-filter` (the UKF algorithm — sigma points, unscented transform, λ tuning, EKF cost comparison).
+
+Edits to existing pages: `mekf` got a "USQUE" section discussing the UKF variant for attitude as the MEKF fallback; `farrenkopf-gyro-model` back-filled with the Crassidis 2003 citation (same model, σ_v/σ_u letter notation, with the closed-form discrete process-noise covariance in Eq. 42). Deferred `generalized-rodrigues-parameters` and `usque` standalone concept pages — only one source citing each currently; will create when Markley 2003 (in corpus) is ingested.
+
+Two items surfaced for human review (no silent spec edits):
+1. **MEKF can fail to converge from large initial errors.** REQ-GNC-003 mandates MEKF without a fallback; subsystems §5.3 doesn't address this. Worth considering USQUE as contingency / safe-mode / acquisition variant. Cost: ~2× MEKF.
+2. **The "UKF avoids Jacobians" advantage is reduced for Apsis** because Pinocchio's analytical derivatives are competitive with sigma-point cost. The reason to prefer UKF for orbit estimation (REQ-GNC-005) should be framed as "robustness to nonlinearity," not "Jacobian avoidance." Worth a sentence in subsystems §5.3.

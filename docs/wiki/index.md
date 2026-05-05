@@ -143,10 +143,11 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 
 (none yet)
 
-## Synthesis (4)
+## Synthesis (5)
 
 | Slug | Title | Date |
 |---|---|---|
+| [[synthesis/development-state-2026-05-05]] | Development state of the Apsis design corpus | 2026-05-05 |
 | [[synthesis/audit-summary-2026-05-05]] | Audit summary — REQUIREMENTS, architecture, subsystems | 2026-05-05 |
 | [[synthesis/audit-requirements-2026-05-05]] | Audit of REQUIREMENTS.md against the wiki corpus | 2026-05-05 |
 | [[synthesis/audit-architecture-2026-05-05]] | Audit of 01-architecture.md against the wiki corpus | 2026-05-05 |

@@ -332,3 +332,26 @@ Grilled through 6 design questions:
 This deepening resolves the audit's first finding-cluster about scattered conjunction-assessment requirements (14 REQ-CAT IDs spanning a single coherent pipeline) into a named module with explicit phase boundaries, strategy seams, and per-stage testability. Sets up CAM as a clean downstream peer concept for a future deepening — events flow from screening to CAM via a documented payload contract.
 
 Four deepenings landed in this session; four candidates remain (#4 GNC Bus, #6 Deterministic MC, #7 Floating-Base Coupling, #8 Fidelity Scope ADR — plus the deferred CAM as effectively a #9).
+
+## [2026-05-05] design-doc refactor + new synthesis page
+
+Refactored `docs/00-design-overview.md` to focus on Apsis-the-system (forward-looking design statements) rather than mixing design content with process/meta-documentation about how the design was developed. Specifically:
+
+- Removed the "Current state" deepenings table and wiki-state inventory (process content).
+- Removed the standalone "Reading order" navigation section.
+- Replaced `Per REQUIREMENTS §X / 01-architecture.md §Y` cross-references with direct design statements — doc no longer reads as a meta-summary of spec section locations.
+- Merged "Patterns from specific deepenings" into the main "Patterns to follow" section.
+- Reordered for clarity: What is → Where going → Build sequence → Decisions → Patterns → Out of scope → Risks → Extending.
+
+Process / meta-documentation moved to new `synthesis/development-state-2026-05-05`:
+- Corpus inventory (page counts by type)
+- Deepenings landed table (with links to concept pages and ADRs per deepening)
+- Remaining deepening candidates
+- Audit history pointer
+- Corpus organisation diagram
+- Reading order through the corpus
+- Self-supersession pattern documented (in-place update for drift; successor page for major snapshots)
+
+Net effect: design doc is now ~191 rendered lines at 100-char wrap (within the 200 budget); synthesis page is ~95 rendered lines and grows as needed.
+
+Reasoning for the split: the design doc should be a **declarative statement** about what Apsis IS and DECIDES — a stable artifact that doesn't drift as the spec docs get reorganised or as deepenings continue. Process / development-state content is its own concern with its own update cadence and lives where similar artifacts (audit syntheses) already live.

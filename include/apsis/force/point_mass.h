@@ -12,6 +12,11 @@ namespace apsis::force {
 
 class PointMass final : public IForceModel {
  public:
+  // ADR-009 conformance flag: partials() below is analytical (closed form
+  // ∂a/∂r derived from the inverse-cube law). The VE-contract conformance
+  // test parameterises over adapters with `kAnalyticalPartials == true`.
+  static constexpr bool kAnalyticalPartials = true;
+
   // mu in SI: m^3 / s^2.
   explicit PointMass(double mu) noexcept : mu_(mu) {}
 

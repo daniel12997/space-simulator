@@ -11,6 +11,19 @@
 // The 3x6 shape is per the plan §5 deliverable. Force models with no
 // velocity dependence return zeros in cols 3..5; the conformance test
 // validates this against central-difference perturbations.
+//
+// VE-CONTRACT CONFORMANCE — `kAnalyticalPartials`:
+//
+// Each concrete adapter SHALL declare a `static constexpr bool
+// kAnalyticalPartials` indicating whether its `partials()` is implemented
+// analytically (and is therefore eligible for the VE-contract conformance
+// test that compares analytical partials to a finite-difference oracle).
+// Adapters whose partials are themselves finite-difference (e.g. the
+// Phase 1 SphericalHarmonic, pending the Phase 7 Pines analytical
+// gradient) declare `kAnalyticalPartials = false` and are excluded from
+// the conformance gate. ADR-009 requires analytical partials in the
+// steady state; the flag exists to keep that requirement honest while
+// the long pole (Pines) is being implemented.
 
 #pragma once
 

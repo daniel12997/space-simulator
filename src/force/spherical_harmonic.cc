@@ -181,10 +181,16 @@ apsis::math::Vec3 SphericalHarmonic::acceleration(
 apsis::math::Mat36 SphericalHarmonic::partials(
     apsis::time::Time<apsis::time::tags::TT> t,
     const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
-  // Central-difference on the analytical acceleration. h = 1.0 m gives
-  // second-order error of (h^2 / 6) * |∂^3 a/∂r^3| ≈ 1e-13 for typical
-  // LEO states — well inside the 1e-5 conformance tolerance the plan
-  // declares for SH partials.
+  // FD partials, pending the Phase 7 Pines analytical-gradient
+  // implementation. Tracked as Phase 7 follow-up issue (Pines analytical
+  // gradient for SphericalHarmonic). Per ADR-009's Phase 1 Implementation
+  // Note this adapter declares `kAnalyticalPartials = false` and is
+  // excluded from the VE-contract conformance test parameterisation —
+  // comparing this FD output against an independent FD oracle would have
+  // been a tautology. h = 1.0 m gives second-order error of (h^2 / 6) *
+  // |∂^3 a/∂r^3| ≈ 1e-13 for typical LEO states, which is sufficient for
+  // the Phase 1 callers (the integrator's Phi propagation and the
+  // adapter's own internal sanity tests).
   apsis::math::Mat36 J = apsis::math::Mat36::Zero();
   constexpr double h = 1.0;
   for (int i = 0; i < 3; ++i) {

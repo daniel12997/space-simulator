@@ -11,12 +11,14 @@
 //
 // Acceleration is computed analytically via Cunningham's V/W functions
 // (Cunningham 1970; Vallado §8.6). Partials are computed by central
-// difference of the analytical acceleration with h = 1.0 m — Phase 1
-// trade per the plan's note "spherical-harmonic gets 1e-5 due to
-// coefficient noise". The full analytical Pines-gradient upgrade is a
-// Phase 7 hardening item; the conformance test's role here is to catch
-// sign flips and indexing bugs in the Cunningham recursion (an
-// independent numerical re-evaluation at h = 10 m provides the oracle).
+// difference of the analytical acceleration with h = 1.0 m — a Phase 1
+// trade pending the Phase 7 analytical Pines-gradient implementation.
+// Because both sides of the VE-contract conformance test would be FD
+// evaluations of the same gradient (a tautology), this adapter declares
+// `kAnalyticalPartials = false` and is **excluded** from that gate.
+// ADR-009 Phase 1 Implementation Note documents the deferral; the Phase
+// 7 follow-up issue is "Pines analytical gradient for SphericalHarmonic;
+// re-include in VE-contract conformance test".
 
 #pragma once
 
@@ -29,6 +31,17 @@ namespace apsis::force {
 
 class SphericalHarmonic final : public IForceModel {
  public:
+  // ADR-009 conformance flag: partials() below is **finite-difference**
+  // pending the Phase 7 Pines analytical-gradient implementation. The
+  // VE-contract conformance test (which compares analytical partials
+  // against an independent FD oracle) is **not meaningful** on this
+  // adapter while both sides are FD evaluations of the same gradient,
+  // so it is excluded from the gate. See ADR-009 Phase 1 Implementation
+  // Note. (Internal sanity is still covered by
+  // tests/unit/force/spherical_harmonic_test.cc.)
+  static constexpr bool kAnalyticalPartials = false;
+
+
   // Coefficient block. Phase 1 holds normalised C/S directly; the
   // un-normalising recurrence is built into the Cunningham recursion in
   // the .cc file.

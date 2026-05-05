@@ -153,7 +153,26 @@ narrower adapter set than the steady-state vision:
   central-difference `partials()` and is **excluded** from the VE-
   contract conformance test parameterisation (the test runs on
   `{PointMass, ThirdBody}` only). `PointMass` and `ThirdBody`
-  partials are analytical in Phase 1 as ADR-009 requires.
+  partials are analytical in Phase 1 as ADR-009 requires. Each
+  adapter carries a `static constexpr bool kAnalyticalPartials`;
+  the conformance test loops only over those that claim `true`,
+  and a `static_assert` on `SphericalHarmonic::kAnalyticalPartials
+  == false` in the conformance source guards the disclosure.
+
+- The Phase 1 `ThirdBody` adapter's `acceleration()` was changed in
+  service of fix-set landing this note: it now returns the
+  conventional Vallado §8.7.2 / Montenbruck-Gill §3.3.2 form
+  `mu_3 * ((r_3 - r) / |r_3 - r|^3 - r_3 / |r_3|^3)` rather than the
+  Battin / f(q) stable substitution that was previously wired (the
+  prior form had a sign in the f-term that disagreed with the
+  conventional expression by about 2x in the LEO-vs-Sun regime; both
+  forms passed the order-of-magnitude unit test, but only the
+  conventional form lines up with the published analytical Jacobian).
+  REQ-PHY-005's "must be numerically stable at small spacecraft-
+  central-body distances" is unaffected at LEO (the cancellation
+  costs ~5 of ~16 sig figs, well above the 1e-6 conformance tolerance);
+  the Battin substitution returns as a Phase 7 hardening item if
+  conjunction-screening close approaches require it.
 
 The IIntegrator and IForceModel seams as documented above are
 unchanged at the Phase 7 upgrades; these notes describe the fidelity

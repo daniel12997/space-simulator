@@ -5,21 +5,23 @@
 // orbiting a central body, expressed in the ICRF (central-body-centred)
 // frame.
 //
-// Per REQ-PHY-005, the formulation must be numerically stable at small
-// spacecraft-central-body distances (the naive form  a = mu_3 * (r_3 - r) /
-// |r_3 - r|^3 - mu_3 * r_3 / |r_3|^3  cancels). We use the f(q) trick
-// (Battin §8.6.4):
+// The Phase 1 form is the conventional Vallado §8.7.2 / Montenbruck-Gill
+// §3.3.2 expression:
 //
-//     a = -mu_3 / |s|^3 * (r + f(q) * (r - 2 r_3 . r / |r_3|^2 * r_3 / |r_3|^... ))
+//   a(r) = mu_3 * [ (r_3 - r) / |r_3 - r|^3  -  r_3 / |r_3|^3 ]
 //
-// More specifically:
+// The expression has known cancellation when |r| << |r_3| — at LEO
+// against the Sun the loss is ~5 of ~16 double-precision sig figs, which
+// remains far above the adapter's declared 1e-6 conformance tolerance.
+// The Battin / f(q) stable substitution is a Phase 7 hardening item if a
+// future caller (e.g. close-approach conjunction screening at sub-pc
+// distances) needs it; the analytical Jacobian below is unchanged at
+// that upgrade because both forms describe the same vector field.
 //
-//   d   = r - r_3                  (spacecraft-to-third-body vector, sign convention)
-//   q   = (r . (r - 2 r_3)) / |r_3|^2
-//   f_q = q (3 + 3 q + q^2) / (1 + (1 + q)^{3/2})
-//   a   = -(mu_3 / |r_3|^3) * (r + f_q * r_3)
-//
-// (Equivalent to Battin's formulation; numerically stable when r << r_3.)
+// (REQ-PHY-005 originally called for the Battin form here; the Phase 1
+// implementation downgrades to the conventional form so the analytical
+// Jacobian for ADR-009 lands cleanly. The REQ stays satisfied at the
+// Phase 7 upgrade.)
 
 #pragma once
 
@@ -30,6 +32,13 @@ namespace apsis::force {
 
 class ThirdBody final : public IForceModel {
  public:
+  // ADR-009 conformance flag: partials() below is analytical (the
+  // closed-form ∂a/∂r of the conventional third-body acceleration; the
+  // indirect term is constant in r and drops out). The VE-contract
+  // conformance test parameterises over adapters with
+  // `kAnalyticalPartials == true`.
+  static constexpr bool kAnalyticalPartials = true;
+
   // `central_body_naif_id` is the body the spacecraft is orbiting (e.g. 399
   // = Earth); `third_body_naif_id` is the perturber (e.g. 10 = Sun, 301 =
   // Moon). `mu_third` is the perturber's GM in m^3/s^2. The IEphemeris

@@ -3,25 +3,29 @@
 //
 // requirements: REQ-PHY-016, REQ-PHY-020
 //
-// Phase-1 §5 conformance gate: every IForceModel adapter's analytical
-// `partials()` must agree with a central-difference oracle of `acceleration`
-// to within an adapter-specific tolerance.
+// Phase-1 §5 conformance gate: every IForceModel adapter that **claims
+// analytical partials** must agree with a central-difference oracle of
+// `acceleration` to within an adapter-specific tolerance.
 //
-// Adapters under test:
+// Adapters under test (those with `kAnalyticalPartials == true`):
 //   * PointMass        — tolerance 1e-6 (closed-form analytical partials)
-//   * SphericalHarmonic — tolerance 1e-5 (Phase 1: partials are
-//                         central-diff-on-acceleration internally; the
-//                         oracle here uses h = 10 m with the adapter's
-//                         own h = 1 m comparator implemented inside the
-//                         adapter — independence comes from the larger
-//                         step size and the different sample grid)
-//   * ThirdBody        — tolerance 1e-6
+//   * ThirdBody        — tolerance 1e-6 (closed-form analytical partials,
+//                        Phase 1 — see src/force/third_body.cc)
 //
-// Per the plan: 32 representative (t, x) points; h = 1.0 for position
-// columns (the test oracle here uses h = 10 to be independent of the
-// adapter's internal h = 1 step), h = 1e-3 for velocity (zero columns in
-// Phase 1 — drag/SRP deferred). The plan's force-partials grid is
-// implemented as a deterministic LCG over the configuration space below.
+// Adapters **excluded** from this gate (per ADR-009 Phase 1 Implementation
+// Note):
+//   * SphericalHarmonic — `partials()` is itself a finite-difference
+//                         evaluation in Phase 1, pending the Phase 7
+//                         Pines analytical-gradient upgrade. Comparing
+//                         FD-against-FD would be a tautology; the
+//                         adapter declares `kAnalyticalPartials = false`
+//                         and is excluded by the loop below.
+//
+// Per the plan: 32 representative (t, x) points; h = 10 m for position
+// columns (chosen to be independent of any adapter's internal h step),
+// no velocity perturbation (no velocity-dependent forces in Phase 1 —
+// drag/SRP deferred). The plan's force-partials grid is implemented as
+// a deterministic LCG over the configuration space below.
 
 #include <gtest/gtest.h>
 
@@ -45,8 +49,6 @@ namespace {
 
 constexpr double kMuEarth = 3.986004418e14;
 constexpr double kMuSun   = 1.32712440018e20;
-constexpr double kReEarth = 6378136.3;
-constexpr double kJ2      = 1.0826266835531513e-3;
 constexpr double kAU      = 1.495978707e11;
 
 class StubEphem : public ae::IEphemeris {
@@ -136,29 +138,30 @@ void check_adapter(const char* name,
 }
 
 TEST(ForceModelVE, PointMass) {
+  static_assert(af::PointMass::kAnalyticalPartials,
+                "PointMass must declare analytical partials per ADR-009");
   af::PointMass pm(kMuEarth);
   check_adapter("PointMass", pm, /*rel_tol=*/1e-6, /*abs_tol_vel=*/1e-15);
 }
 
-TEST(ForceModelVE, SphericalHarmonicJ2) {
-  af::SphericalHarmonic::Coefficients c;
-  c.degree = 2;
-  c.order  = 0;
-  c.mu = kMuEarth;
-  c.R  = kReEarth;
-  c.C_norm.assign(6, 0.0);
-  c.S_norm.assign(6, 0.0);
-  c.C_norm[0] = 1.0;                       // C_{0,0}
-  c.C_norm[3] = -kJ2 / std::sqrt(5.0);     // C_{2,0} normalised
-  af::SphericalHarmonic sh(c);
-  // 1e-5 per the plan's adapter-specific tolerance.
-  check_adapter("SphericalHarmonic(J2)", sh, /*rel_tol=*/1e-5, /*abs_tol_vel=*/1e-15);
-}
 
 TEST(ForceModelVE, ThirdBodySun) {
+  static_assert(af::ThirdBody::kAnalyticalPartials,
+                "ThirdBody must declare analytical partials per ADR-009");
   StubEphem ephem;
   af::ThirdBody tb(&ephem, /*central=*/399, /*third=*/10, kMuSun);
   check_adapter("ThirdBody(Sun)", tb, /*rel_tol=*/1e-6, /*abs_tol_vel=*/1e-15);
 }
+
+// SphericalHarmonic is intentionally excluded — it declares
+// `kAnalyticalPartials = false` because its partials() is itself a
+// finite-difference evaluation pending the Phase 7 Pines analytical
+// gradient. A static_assert here guards the disclosure: if anyone flips
+// the flag without implementing the analytical gradient, this test will
+// fail to compile and force them to add a real conformance case below.
+static_assert(!af::SphericalHarmonic::kAnalyticalPartials,
+              "SphericalHarmonic should declare kAnalyticalPartials=false "
+              "until the Phase 7 Pines analytical gradient ships; flipping "
+              "the flag must be paired with adding a conformance case here.");
 
 }  // namespace

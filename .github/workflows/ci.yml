@@ -18,11 +18,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             toolchain: gcc-13
             cc: gcc-13
             cxx: g++-13
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             toolchain: clang-17
             cc: clang-17
             cxx: clang++-17
@@ -102,8 +102,8 @@ jobs:
         run: python3 tools/lint/cspice_seam.py --root .
 
   sanitizers:
-    name: ubuntu-22.04 / clang-17 / ASan+UBSan
-    runs-on: ubuntu-22.04
+    name: ubuntu-24.04 / clang-17 / ASan+UBSan
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4

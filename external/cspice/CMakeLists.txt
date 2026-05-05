@@ -15,6 +15,21 @@ if(NOT APSIS_CSPICE_SOURCES)
     "external/cspice/PINNED_VERSION.")
 endif()
 
+# CSPICE's f2c complex-math wrappers (c_cos.c, c_exp.c, c_log.c, c_sin.c,
+# c_sqrt.c) include <math.h> after f2c.h. On MSVC, <math.h> transitively
+# pulls in <complex.h> which defines `complex` as a macro, shadowing
+# f2c.h's `typedef struct { real r, i; } complex;` and breaking these
+# files at the function-signature level. The wrappers have zero callers
+# within the rest of CSPICE (FORTRAN-style complex intrinsics aren't used
+# by the astrodynamics code we depend on), so excluding them on MSVC is
+# the narrowest fix. NAIF ships a different CSPICE tarball for Windows
+# that addresses this differently; switching to that is the long-term
+# correct path (tracked as a Phase 1 followup).
+if(MSVC)
+  list(FILTER APSIS_CSPICE_SOURCES EXCLUDE REGEX
+    "/(c_cos|c_exp|c_log|c_sin|c_sqrt)\\.c$")
+endif()
+
 add_library(apsis_cspice STATIC ${APSIS_CSPICE_SOURCES})
 target_include_directories(apsis_cspice
   PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include

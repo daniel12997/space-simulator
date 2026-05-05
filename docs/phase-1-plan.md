@@ -33,9 +33,14 @@
 ## Phase 1 force-model scope
 
 Per the resolved Phase 1 scope: **point-mass + EGM2008 truncated to
-degree-and-order 20 + lunar/solar third-body via SPICE**. Drag and SRP
-are deferred to Phase 7. The two regression cases below do not need
-non-conservative perturbations within their declared tolerances.
+degree-and-order 20 + lunar/solar third-body via SPICE**. The
+`SphericalHarmonic` adapter ships with finite-difference partials and
+is excluded from the VE-contract conformance gate pending the Phase 7
+Pines analytical gradient (see ADR-009 Phase 1 Implementation Note);
+its acceleration is exercised by `tests/unit/force/spherical_harmonic_test.cc`
+and by composition in the regression suite. Drag and SRP are deferred
+to Phase 7. The two regression cases below do not need non-conservative
+perturbations within their declared tolerances.
 
 ## Changes
 
@@ -424,7 +429,7 @@ the test surface is mature enough that 100% REQ coverage is realistic.
 
 ### Manual
 - [ ] Walk the `apsis::time::convert` graph in `src/time/convert.cc` and verify the only path between any two scales is via TAI (TT↔TDB excepted).
-- [ ] Open `src/ephemeris/spice_ephemeris.cc` and confirm every CSPICE call (`furnsh_c`, `spkezr_c`, `spkpos_c`, `kclear_c`) is inside `std::lock_guard<std::mutex>` on the seam mutex.
+- [x] Open `src/ephemeris/spice_ephemeris.cc` and confirm every CSPICE call (`furnsh_c`, `spkezr_c`, `kclear_c`, etc.) is inside a `CspiceLock` RAII guard on the **process-wide** `cspice_global_mutex()` (per ADR-008; per-instance scope was an undisclosed deviation, fixed earlier in this PR with a covering concurrency test in `tests/unit/ephemeris/spice_concurrent_test.cc`).
 - [ ] Confirm `data/SHA256SUMS` lists every file under `data/` and the runtime check matches.
 - [ ] Spot-check `Time<UTC>` arithmetic across the 2017-01-01 leap second: `Time<UTC>{2016-12-31 23:59:59}` + `Duration{2s}` → `Time<UTC>{2017-01-01 00:00:00}`.
 - [x] Visually inspect `leo_kepler_24h` residual; confirmed numerical residual (~1.5e-2 m / 1.7e-5 m/s) sits comfortably below the asserted tolerance (0.1 m / 1e-4 m/s) and is dominated by step-controller error rather than f-and-g iteration noise.
@@ -432,12 +437,19 @@ the test surface is mature enough that 100% REQ coverage is realistic.
 ## Out of scope for Phase 1 (deferred)
 
 - **Windows / MSVC support.** Phase 0 dropped `windows-2022` from the CI matrix. NAIF distributes a separate CSPICE tarball for Windows (`PC_Windows_VisualC_64bit/packages/cspice.zip`); the Linux source we vendor has multiple small MSVC incompatibilities (the `complex` type in f2c.h getting shadowed by `<complex.h>`'s macro, `inquire.c`'s `isatty` redefining UCRT's, ...). The proper fix is OS-conditional fetch in `cmake/fetch_external.cmake` plus a parallel `external/cspice/PINNED_VERSION.windows`. Estimated 50–100 LOC of CMake + a `.zip` extraction path. Track as a Phase 1 followup; reinstate `windows-2022` in the matrix when it lands. The design overview's "CI passes on Linux + Windows" is a v1.0 release gate, not a per-phase one.
-- **Atmospheric drag, SRP** — Phase 7 hardening. Phase 1 ISS regression accepts the resulting ~km-scale 24h drift if it is the dominant residual.
-- **Higher-degree gravity (>deg 20)** — Phase 7. EGM2008 to deg 20 is sufficient for ISS regression at the chosen tolerance.
-- **Live EOP refresh tooling** — Phase 7. Phase 1 ships with a frozen EOP slice covering regression-test epochs.
-- **Relativistic corrections (Schwarzschild, Lense-Thirring)** — Phase 7. Out of regression-tolerance for ISS at 24 h.
-- **TEME↔ITRS implementation body** — stubbed in Phase 1; full implementation belongs to Phase 2 alongside SGP4.
-- **Compile-fail test framework polish** — Phase 1 uses `try_compile` with `EXPECT_FAIL`; if this proves brittle on Windows, fall back to a one-job linux-only compile-fail suite (acceptable since the language semantics are platform-independent).
+- **Real Dop853 (Hairer Vol I Table 5.2).** Phase 1 ships `Dp54` (DP5(4), Hairer Vol I Table 5.1) as a coefficient stand-in behind the IIntegrator seam. The full DOP853 upgrade is a Phase 7 hardening item; the seam, PI step controller, and Phi augmentation are unchanged at the upgrade. See ADR-009 Phase 1 Implementation Note.
+- **Berry-Healy 2004 ordinate-form Gauss-Jackson 8.** The `GaussJackson8` Phase 1 stand-in (a single `Dp54` step under the GJ8 name) was deleted because it carried zero distinct behaviour. Phase 7 reintroduces the type behind `IIntegrator` with the second-sum starter and the ordinate-form predictor-corrector.
+- **Pines analytical gradient for `SphericalHarmonic`.** Phase 1 ships SH `partials()` as a finite-difference evaluation of the Cunningham acceleration; the adapter declares `kAnalyticalPartials = false` and is excluded from the VE-contract conformance gate. Phase 7 lands the analytical Pines gradient and re-includes the adapter in the gate.
+- **Real ISS state-vector regression.** The Phase 1 regression suite ships `leo_kepler_24h` (Dp54 vs. f-and-g closed-form Kepler oracle, point-mass Earth only). Reproduction against published NASA reference vectors needs sourcing, licensing, and validation that are out of Phase 1 scope; deferred to Phase 7 with sourcing TBD.
+- **Full DE440 fetch tooling.** Phase 1 ships a hand-curated truncated kernel under `data/de440_phase1.bsp`. Automated fetch + slice + checksum-validate of the full DE440 (and follow-on DE441) lives behind `cmake/fetch_large_data.cmake` in Phase 7.
+- **Yoshida4 co-integrated Φ.** The Phase 1 Yoshida4 adapter approximates Φ via Verlet kick/drift composition; the conformance tolerance is consequently 100 m / 1e-1 m/s instead of the cleaner-but-not-symplectic analytical `dΦ/dt = A Φ` flow. Phase 7 may upgrade Φ-tracking inside Yoshida4 to a co-integrated linear ODE.
+- **`SphericalHarmonic` ICRF→body-fixed rotation.** The Phase 1 SH adapter treats body-fixed and ICRF as aligned (acceptable because Phase 1 SH content is zonal-only, so rotation is a no-op around the Z axis at the regression-test epochs). Phase 7 composes the ITRS↔ICRF rotation inside the acceleration call, removing the alignment assumption.
+- **Atmospheric drag, SRP.** Phase 7 hardening. The Phase 1 LEO Kepler regression sidesteps drag by using a point-mass-only force model; the future ISS-from-NASA-data regression will need both.
+- **Higher-degree gravity (>deg 20).** Phase 7. EGM2008 to deg 20 is sufficient for the Phase 1 force model wiring.
+- **Live EOP refresh tooling.** Phase 7. Phase 1 ships with a frozen EOP slice covering regression-test epochs.
+- **Relativistic corrections (Schwarzschild, Lense-Thirring).** Phase 7. Below regression-tolerance for the Phase 1 cases.
+- **TEME↔ITRS implementation body.** Stubbed in Phase 1; full implementation belongs to Phase 2 alongside SGP4.
+- **Compile-fail test framework polish.** Phase 1 uses `try_compile` with `EXPECT_FAIL`; if this proves brittle on Windows, fall back to a one-job linux-only compile-fail suite (acceptable since the language semantics are platform-independent).
 
 ## Codegen / fallback notes
 
@@ -454,3 +466,7 @@ the test surface is mature enough that 100% REQ coverage is realistic.
 - If a regression tolerance proves unachievable with the Phase 1 force
   model, prefer **widening the tolerance with a documented reason**
   over **adding force-model adapters**. The latter belongs in Phase 7.
+  (The original ISS regression's "widen to 5 km / 5 m/s if drag absence
+  dominates" rule is obsolete — the Phase 1 LEO Kepler regression uses
+  point-mass-only by construction; drag-vs-no-drag is no longer in
+  play for the Phase 1 gate.)

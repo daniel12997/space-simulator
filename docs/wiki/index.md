@@ -2,14 +2,15 @@
 
 The catalog of every page in this wiki. Read this first when querying. Updated on every ingest, document, query-fileback, and lint operation.
 
-## Sources (2)
+## Sources (3)
 
 | Slug | Title | Type | Reliability | Ingested |
 |---|---|---|---|---|
 | [[sources/capitaine-2003-iau2000-precession-p03]] | Expressions for IAU 2000 precession quantities | paper | peer-reviewed | 2026-05-04 |
 | [[sources/berry-healy-2004-gauss-jackson]] | Implementation of Gauss-Jackson Integration for Orbit Propagation | paper | peer-reviewed | 2026-05-04 |
+| [[sources/carpentier-2019-pinocchio]] | The Pinocchio C++ library — A fast and flexible implementation of rigid body dynamics algorithms and their analytical derivatives | paper | peer-reviewed | 2026-05-04 |
 
-## Concepts (8)
+## Concepts (13)
 
 | Slug | Canonical name | Aliases |
 |---|---|---|
@@ -21,6 +22,11 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[concepts/frame-bias]] | Frame Bias (J2000 ↔ GCRS) | frame bias |
 | [[concepts/gauss-jackson-integration]] | Gauss-Jackson Integration | GJ8, second-sum method |
 | [[concepts/f-and-g-series]] | f and g Series | Lagrange coefficients |
+| [[concepts/pinocchio-library]] | Pinocchio | pinocchio-cpp |
+| [[concepts/spatial-algebra]] | Spatial Algebra | Plücker coordinates |
+| [[concepts/articulated-body-algorithm]] | Articulated Body Algorithm | ABA |
+| [[concepts/recursive-newton-euler-algorithm]] | Recursive Newton-Euler Algorithm | RNEA |
+| [[concepts/floating-base-dynamics]] | Floating-Base Dynamics | free-flyer joint |
 
 ## Decisions (1)
 

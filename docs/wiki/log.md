@@ -142,3 +142,56 @@ Quick-ingest pass through the remaining four paper clusters (per "keep going unt
 6. JB2008 (REQ-PHY-008) needs four solar indices (F10, S10, M10, Y10) plus Dst; broader space-weather ingestion than NRLMSISE-00 (just F10.7 + Ap). Confirm REQ-ENV-005/006 cover these.
 
 All 32 papers now ingested. Specs cluster (18 items) is next.
+
+## [2026-05-04..05] ingest batch | All specs (15 sources) + ICGEM article (1)
+
+Final ingest pass — all remaining items in `docs/raw/specs/` and `docs/raw/articles/`. Sixteen sources ingested:
+
+**Earth orientation, time, and ephemeris (7):**
+- `iers-conventions-2010` — IERS Technical Note No. 36 umbrella for the 11-chapter standards bundle. The load-bearing ICRS↔ITRS spec.
+- `sofa-2023-earth-attitude-cookbook` — IAU SOFA cookbook for precession-nutation-Earth-rotation-polar-motion implementation.
+- `sofa-2023-time-scale-cookbook` — IAU SOFA cookbook for TAI/UTC/UT1/TT/TCG/TCB/TDB conversions.
+- `iau-sofa-2023-software-collection-c` — the actual C source distribution.
+- `kaplan-2005-usno-circular-179` — pedagogical companion to IERS Conventions.
+- `naif-spice-required-reading` — NAIF SPICE Toolkit "Required Reading" docs (umbrella for 28 HTMLs).
+- `archinal-2018-iau-wgccre-2015` — IAU WGCCRE 2015 planetary rotation/orientation report.
+
+**TLE / SGP4 / CDM (3):**
+- `hoots-roehrich-1980-spacetrack-report-3` — original public NORAD SGP/SGP4/SDP4/SGP8/SDP8 spec.
+- `kelso-celestrak-tle-format` — Kelso/CelesTrak TLE and GP-data format documentation (umbrella for 2 HTMLs).
+- `ccsds-508-0-b-1-cdm` — CCSDS Blue Book for the Conjunction Data Message format.
+
+**Environment models (3):**
+- `us-standard-atmosphere-1976` — time-invariant reference atmosphere; toy/sanity/fallback per REQ-PHY-006.
+- `igrf14-2024-coefficients` — 14th generation International Geomagnetic Reference Field per REQ-PHY-011.
+- `icgem-gfz-landing-snapshot` — ICGEM gravity-model repository (the article).
+
+**Conjunction (1):**
+- `krisko-2019-ordem-3-1-user-guide` — NASA Orbital Debris Engineering Model 3.1 (statistical sub-tracking-threshold debris flux per REQ-CAT-007).
+
+**MBD tooling (1):**
+- `urdf-xacro-pinocchio-docs` — URDF XML spec + urdfdom + Xacro + Pinocchio documentation umbrella for the MBD input pipeline.
+
+**One new concept page:**
+- `time-scales` — umbrella for the seven astronomical time scales (TAI/UTC/UT1/TT/TCG/TCB/TDB), the conversion graph, and the bug classes Apsis must avoid.
+
+**Items surfaced for human review (no silent spec edits):**
+1. **Permanent-tide convention** (zero-tide vs tide-free vs mean-tide) — subsystems §2.5 must explicitly select per IERS Conventions Ch. 6. Mismatch = ~30 cm offset in C₂₀.
+2. **Tides and sub-daily polar motion** (IERS Ch. 7-8) — confirm whether REQ-PHY-003 implies inclusion or whether they're optional extensions.
+3. **Relativistic acceleration** (IERS Ch. 10) — make explicit in subsystems §2.5 (recommend default-on for gravitational, default-off for Shapiro/light-time except deep-space).
+4. **WGS-72 vs WGS-84 constants in SGP4** — STR#3 mandates WGS-72; modern implementations sometimes drift to WGS-84. Subsystems §1 must specify WGS-72.
+5. **CCSDS CDM Pc field** — subsystems §6 should clarify that Apsis-computed Pc supersedes the originator-provided value (originator may use different math).
+6. **HBR per-spacecraft config** — CDM does not carry HBR; Apsis must maintain a per-spacecraft HBR alongside CDM ingest.
+7. **NAIF SPICE thread-safety** — subsystems §1 / §11 must specify serialization or per-thread-instance approach for multi-threaded MC.
+8. **ORDEM 3.1 export-controlled** — Apsis distribution must accommodate (recommend optional plug-in, not hard dep).
+9. **IGRF generation freshness** — subsystems §2.6 should specify whether Apsis enforces a recent IGRF generation or accepts SV extrapolation past the model's nominal validity (~5 years).
+10. **USStd76 vs NRLMSISE-00 vs JB2008 selection precedence** — subsystems §2.4 should document the recommendation per use case (real-time → NRLMSISE-00/JB2008 + space weather; mission-design → USStd76).
+11. **URDF flexible-body and slosh extensions** — vanilla URDF doesn't support flex modes; Apsis's Xacro extension layer must add custom URDF-extension elements that the loader recognizes.
+12. **Y2056 TLE wraparound** — subsystems §1 should document policy to migrate to OMM (4-digit year) before 2056.
+
+**All 50 raw artifacts now ingested.**
+- 32 papers in `docs/raw/papers/`
+- 17 specs in `docs/raw/specs/` (some bundled into umbrella source pages: IERS Conventions 11-chapter, NAIF SPICE 28-HTML, URDF/Xacro/Pinocchio 4-HTML, Kelso 2-HTML)
+- 1 article in `docs/raw/articles/`
+
+Wiki state: 47 source pages, 23 concept pages, 1 decision page (proposed).

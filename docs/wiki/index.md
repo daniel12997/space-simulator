@@ -2,7 +2,7 @@
 
 The catalog of every page in this wiki. Read this first when querying. Updated on every ingest, document, query-fileback, and lint operation.
 
-## Sources (32)
+## Sources (47)
 
 ### Time / frames / ephemerides
 | Slug | Title | Type | Reliability | Ingested |
@@ -63,8 +63,39 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[sources/bombardelli-2015-collision-avoidance]] | Optimal Impulsive Collision Avoidance in LEO | paper | peer-reviewed | 2026-05-04 |
 | [[sources/newman-2022-cara-best-practices]] | Conjunction Assessment: NASA Best Practices and Lessons Learned | paper | authoritative | 2026-05-04 |
 | [[sources/dicairano-2012-mpc-rendezvous]] | MPC Approach for Spacecraft Rendezvous and Proximity Maneuvering | paper | peer-reviewed | 2026-05-04 |
+| [[sources/krisko-2019-ordem-3-1-user-guide]] | NASA ORDEM 3.1 — Orbital Debris Engineering Model | spec | authoritative | 2026-05-05 |
 
-## Concepts (22)
+### Specs — Earth orientation, time, and ephemeris
+| Slug | Title | Type | Reliability | Ingested |
+|---|---|---|---|---|
+| [[sources/iers-conventions-2010]] | IERS Conventions (2010) — IERS Technical Note No. 36 | spec | authoritative | 2026-05-04 |
+| [[sources/sofa-2023-earth-attitude-cookbook]] | SOFA Tools for Earth Attitude (cookbook) | spec | authoritative | 2026-05-04 |
+| [[sources/sofa-2023-time-scale-cookbook]] | SOFA Time Scale and Calendar Tools (cookbook) | spec | authoritative | 2026-05-04 |
+| [[sources/iau-sofa-2023-software-collection-c]] | IAU SOFA Software Collection (C version, 2023) | spec | authoritative | 2026-05-05 |
+| [[sources/kaplan-2005-usno-circular-179]] | The IAU Resolutions on Astronomical Reference Systems (USNO Circular 179) | spec | authoritative | 2026-05-04 |
+| [[sources/naif-spice-required-reading]] | NAIF SPICE Required Reading documents | spec | authoritative | 2026-05-04 |
+| [[sources/archinal-2018-iau-wgccre-2015]] | IAU WGCCRE 2015 — cartographic coordinates and rotational elements | spec | authoritative | 2026-05-05 |
+
+### Specs — TLE / SGP4 / CDM
+| Slug | Title | Type | Reliability | Ingested |
+|---|---|---|---|---|
+| [[sources/hoots-roehrich-1980-spacetrack-report-3]] | Spacetrack Report No. 3 — Models for Propagation of NORAD Element Sets | spec | authoritative | 2026-05-04 |
+| [[sources/kelso-celestrak-tle-format]] | CelesTrak TLE and GP Data Formats (Kelso) | spec | authoritative | 2026-05-05 |
+| [[sources/ccsds-508-0-b-1-cdm]] | CCSDS 508.0-B-1 Conjunction Data Message | spec | authoritative | 2026-05-04 |
+
+### Specs — environment models
+| Slug | Title | Type | Reliability | Ingested |
+|---|---|---|---|---|
+| [[sources/us-standard-atmosphere-1976]] | U.S. Standard Atmosphere, 1976 | spec | authoritative | 2026-05-05 |
+| [[sources/igrf14-2024-coefficients]] | IGRF-14 (2024) — International Geomagnetic Reference Field coefficients | spec | authoritative | 2026-05-05 |
+| [[sources/icgem-gfz-landing-snapshot]] | ICGEM — International Centre for Global Earth Models (GFZ Potsdam) | article | authoritative | 2026-05-05 |
+
+### Specs — MBD tooling
+| Slug | Title | Type | Reliability | Ingested |
+|---|---|---|---|---|
+| [[sources/urdf-xacro-pinocchio-docs]] | URDF / Xacro / Pinocchio documentation snapshots | spec | authoritative | 2026-05-05 |
+
+## Concepts (23)
 
 | Slug | Canonical name | Aliases |
 |---|---|---|
@@ -75,6 +106,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[concepts/earth-rotation-angle]] | Earth Rotation Angle | ERA |
 | [[concepts/frame-bias]] | Frame Bias (J2000 ↔ GCRS) | frame bias |
 | [[concepts/spherical-harmonic-geopotential]] | Spherical-Harmonic Geopotential | Stokes coefficients, EGM, GRGM |
+| [[concepts/time-scales]] | Astronomical time scales | TAI, UTC, UT1, TT, TCG, TCB, TDB |
 | [[concepts/sgp4]] | SGP4 | SGP, SDP4, SGP4/SDP4 |
 | [[concepts/gauss-jackson-integration]] | Gauss-Jackson Integration | GJ8, second-sum method |
 | [[concepts/f-and-g-series]] | f and g Series | Lagrange coefficients |

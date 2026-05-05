@@ -238,7 +238,7 @@ acceleration depends only on the active spacecraft's position).
 
 **Files**:
 - `include/apsis/integrate/iintegrator.h` — interface stepping `(state, Φ, dt)`.
-- `include/apsis/integrate/dop853.h` + `src/integrate/dop853.cc` + `src/integrate/dop853_coeffs.h` (constexpr Hairer-Nørsett-Wanner Vol I Table 5.2 coefficients, hashed in CI).
+- `include/apsis/integrate/dp54.h` + `src/integrate/dp54.cc` + `src/integrate/dp54_coeffs.h` (Phase 1 ships Dormand-Prince 5(4) — Hairer Vol I Table 5.1 — as a coefficient stand-in. The DOP853 / Hairer Vol I Table 5.2 upgrade is a Phase 7 hardening item; see ADR-009 Phase 1 Implementation Note).
 - `include/apsis/integrate/yoshida4.h` + `src/integrate/yoshida4.cc`.
 - `include/apsis/integrate/gauss_jackson_8.h` + `src/integrate/gauss_jackson_8.cc` (Berry-Healy 2004 algorithm; uses Dop853 as starter).
 - `tests/conformance/integrator_kepler.cc` (parameterised; Kepler problem → closed-form).

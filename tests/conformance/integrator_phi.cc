@@ -18,7 +18,7 @@
 #include <cmath>
 
 #include "apsis/force/point_mass.h"
-#include "apsis/integrate/dop853.h"
+#include "apsis/integrate/dp54.h"
 #include "apsis/integrate/gauss_jackson_8.h"
 #include "apsis/integrate/iintegrator.h"
 #include "apsis/integrate/yoshida4.h"
@@ -95,9 +95,9 @@ void check_phi(ai::IIntegrator& integ, const af::IForceModel& force,
   }
 }
 
-TEST(IntegratorPhi, Dop853) {
+TEST(IntegratorPhi, Dp54) {
   af::PointMass pm(kMu);
-  ai::Dop853 d;
+  ai::Dp54 d;
   check_phi(d, pm, /*pos_tol=*/1.0, /*vel_tol=*/1e-3);
 }
 

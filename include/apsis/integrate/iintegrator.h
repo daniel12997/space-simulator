@@ -3,8 +3,10 @@
 //
 // Phase-1 §6: `IIntegrator` interface — propagates the augmented system
 // (state, Phi) by a single dt step. ADR-009 commits to three adapters
-// behind this seam: Dop853 (adaptive RK), Yoshida4 (symplectic), and
-// GaussJackson8 (multi-step).
+// behind this seam: an adaptive RK (full DOP853 in the steady state, with
+// `Dp54` shipped in Phase 1 as a stand-in coefficient table — see ADR-009
+// Phase 1 Implementation Note), `Yoshida4` (symplectic), and
+// `GaussJackson8` (multi-step; deferred to Phase 7).
 //
 // State convention: ICRF, SI units, with Phi as the 6x6 state-transition
 // matrix d(state(t+dt))/d(state(t0)). Caller seeds Phi = I when starting

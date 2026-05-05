@@ -8,7 +8,7 @@
 // Per the Phase 1 plan §10 footnote and the prompt's "self-consistency
 // regression" allowance, this test runs as follows:
 //   1. Load synthetic ISS state at t0 from data/iss_ref_vectors.json.
-//   2. Propagate 24 h with Dop853 + (PointMass(Earth) + SphericalHarmonic
+//   2. Propagate 24 h with Dp54 + (PointMass(Earth) + SphericalHarmonic
 //      + ThirdBody(Moon, Sun)).
 //   3. Propagate the same trajectory with GaussJackson8 (Phase 1 stand-in,
 //      same force model).
@@ -32,7 +32,7 @@
 #include "apsis/force/point_mass.h"
 #include "apsis/force/spherical_harmonic.h"
 #include "apsis/force/third_body.h"
-#include "apsis/integrate/dop853.h"
+#include "apsis/integrate/dp54.h"
 #include "apsis/integrate/gauss_jackson_8.h"
 
 namespace ai = apsis::integrate;
@@ -126,7 +126,7 @@ TEST(IssVector, SelfConsistencyAcrossIntegrators) {
   af::ThirdBody luna(&ephem, /*central=*/399, /*third=*/301, kMuMoon);
   CombinedForce force(earth_pm, earth_sh, luna);
 
-  ai::Dop853 d;
+  ai::Dp54 d;
   ai::GaussJackson8 g;
 
   const auto x_dop = propagate(d, force, x0, t0, kHorizon);
@@ -137,8 +137,8 @@ TEST(IssVector, SelfConsistencyAcrossIntegrators) {
   // because both use the same force model.
   const double dr = (x_dop.r - x_gj.r).norm();
   const double dv = (x_dop.v - x_gj.v).norm();
-  EXPECT_LT(dr, 5e3) << "Dop853 vs GJ8 24-h closure: " << dr << " m";
-  EXPECT_LT(dv, 5.0) << "Dop853 vs GJ8 24-h velocity closure: " << dv << " m/s";
+  EXPECT_LT(dr, 5e3) << "Dp54 vs GJ8 24-h closure: " << dr << " m";
+  EXPECT_LT(dv, 5.0) << "Dp54 vs GJ8 24-h velocity closure: " << dv << " m/s";
 }
 
 }  // namespace

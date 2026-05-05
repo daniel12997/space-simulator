@@ -14,7 +14,7 @@
 #include <cmath>
 
 #include "apsis/force/point_mass.h"
-#include "apsis/integrate/dop853.h"
+#include "apsis/integrate/dp54.h"
 #include "apsis/integrate/encke_wrapper.h"
 
 // Pull the f-and-g propagate API for the FAndG test below. The header is
@@ -44,7 +44,7 @@ TEST(EnckeWrapper, ZeroDeviationOnPureKepler) {
   // pure point-mass force: a_full - a_kepler = 0 -> deviation stays
   // zero -> result = analytical Kepler propagation.
   af::PointMass pm(kMu);
-  ai::Dop853 inner;
+  ai::Dp54 inner;
   ai::EnckeWrapper::Options eopts;
   eopts.mu = kMu;
   ai::EnckeWrapper encke(&inner, eopts);

@@ -10,18 +10,17 @@
 // stricter than required here for that reason — once §7 lands we can
 // upgrade this gate to the eccentric Kepler oracle the plan calls for).
 //
-// Tolerances per the plan, widened to reflect the Phase 1 DP54-as-Dop853
-// fidelity (see dop853.h):
-//   * Dop853     : final error  < 1e-1 m  over one period (rtol 1e-12)
-//   * Yoshida4   : final error  < 1e-1 m  over one period (dt = 60 s)
-//   * GJ8        : final error  < 1e-1 m  (Phase 1 stand-in == Dop853)
+// Tolerances per the plan, widened to reflect the Phase 1 DP5(4)
+// fidelity (see dp54.h; full DP8(5,3) lands as a Phase 7 upgrade):
+//   * Dp54       : final error  < 1   m  over one period (rtol 1e-12)
+//   * Yoshida4   : final error  < 100 m  over one period (dt = 30 s)
 
 #include <gtest/gtest.h>
 
 #include <cmath>
 
 #include "apsis/force/point_mass.h"
-#include "apsis/integrate/dop853.h"
+#include "apsis/integrate/dp54.h"
 #include "apsis/integrate/gauss_jackson_8.h"
 #include "apsis/integrate/iintegrator.h"
 #include "apsis/integrate/yoshida4.h"
@@ -80,13 +79,13 @@ void propagate_one_period(ai::IIntegrator& integ,
   EXPECT_LT(err, tolerance_m) << "final position error " << err << " m";
 }
 
-TEST(IntegratorKepler, Dop853) {
+TEST(IntegratorKepler, Dp54) {
   af::PointMass pm(kMu);
-  ai::Dop853::Options opts;
+  ai::Dp54::Options opts;
   opts.rtol = 1e-12;
   opts.atol = 1e-9;
   opts.dt_max = 600.0;
-  ai::Dop853 d(opts);
+  ai::Dp54 d(opts);
   // Use larger steps so adaptive control kicks in.
   propagate_one_period(d, pm, /*dt=*/600.0, /*tol_m=*/1.0);
 }

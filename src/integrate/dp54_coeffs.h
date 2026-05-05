@@ -3,18 +3,14 @@
 //
 // Phase-1 §6: Coefficient table for the Dormand-Prince 5(4) embedded RK
 // method (Hairer-Norsett-Wanner "Solving Ordinary Differential Equations I"
-// 2nd ed., Table 5.1). Per dop853.h's IMPORTANT NOTE: this is a Phase 1
-// stand-in for the full DP8(5,3) table; the seam is unchanged.
-//
-// The coefficient sums in CI are checked by hashing a packed
-// representation; the resulting SHA-256 is committed alongside this header
-// so a silent edit of any constant is caught at build time.
+// 2nd ed., Table 5.1). This is the integrator that ships behind the
+// IIntegrator seam in Phase 1; the full DP8(5,3) table lands in Phase 7.
 
 #pragma once
 
 #include <array>
 
-namespace apsis::integrate::dop853 {
+namespace apsis::integrate::dp54 {
 
 // 7 stages (the FSAL formulation: stage 7 of step n = stage 1 of step n+1).
 inline constexpr int kStages = 7;
@@ -57,4 +53,4 @@ inline constexpr std::array<double, 7> kE = {
     -1.0 / 40.0,
 };
 
-}  // namespace apsis::integrate::dop853
+}  // namespace apsis::integrate::dp54

@@ -29,7 +29,7 @@
 #include "apsis/ephemeris/spice_ephemeris.h"
 #include "apsis/force/point_mass.h"
 #include "apsis/force/third_body.h"
-#include "apsis/integrate/dop853.h"
+#include "apsis/integrate/dp54.h"
 #include "apsis/time/convert.h"
 
 namespace ai = apsis::integrate;
@@ -58,7 +58,7 @@ TEST(JplDeRoundTrip, EarthHeliocentric10Years) {
   // t0 = 2025-01-01 12:00:00 TT.
   at::Time<at::tags::TT> t0{2460677.0, 0.0};
   // Phase 1 plan calls for 10-year horizon; the Phase 1 stand-in
-  // integrator (DP54 wired as Dop853 — see dop853.h IMPORTANT NOTE)
+  // integrator (DP5(4) — see dp54.h Phase 1 status note)
   // accumulates ~0.1%/yr position error on Earth's heliocentric orbit,
   // so we use a 30-day horizon here. The full 10-year case lands when
   // the DP8(5,3) coefficient table upgrade lands in Phase 7. The
@@ -88,11 +88,11 @@ TEST(JplDeRoundTrip, EarthHeliocentric10Years) {
   af::PointMass solar_pm(kMuSun);
   (void)kMuMoon;  // referenced by full plan; deferred per the cut above
 
-  ai::Dop853::Options opts;
+  ai::Dp54::Options opts;
   opts.rtol = 1e-13;
   opts.atol = 1e-9;
-  opts.dt_max = 3600.0;  // 1 hour cap (Phase 1 DP54 stand-in: needs small steps)
-  ai::Dop853 integ(opts);
+  opts.dt_max = 3600.0;  // 1 hour cap (DP5(4): needs small steps)
+  ai::Dp54 integ(opts);
 
   auto x = x0;
   apsis::math::Mat6 phi = apsis::math::Mat6::Identity();

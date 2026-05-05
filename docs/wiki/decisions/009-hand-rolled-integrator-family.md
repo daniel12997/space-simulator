@@ -117,3 +117,45 @@ the `IForceModel::partials_dadx` from the VE contract.
 - Encke-wrapper composition ([[concepts/long-arc-state-conditioning]]) is
   a separate module that takes any `IIntegrator` and reframes it as a
   deviation propagator.
+
+## Phase 1 Implementation Note (2026-05-05)
+
+Phase 1 lands the IIntegrator seam, the Φ augmentation, the Encke
+wrapper, and the conformance tests as committed above, but ships a
+narrower adapter set than the steady-state vision:
+
+- The adaptive RK adapter that ships in Phase 1 is **`Dp54`** —
+  Dormand-Prince 5(4), Hairer Vol I Table 5.1. The full DOP853
+  (Hairer Vol I Table 5.2) is deferred to Phase 7. The seam, the
+  PI step controller, the Φ augmentation, and the conformance gate
+  are unchanged at the upgrade; only the coefficient table and the
+  per-step error weights move. The Phase 1 conformance tolerances
+  are widened accordingly (Kepler closure < 1 m / 1 period at rtol
+  1e-12 instead of the < 1e-7 m the plan originally targeted; the
+  upgrade rebuilds those by ~7 orders of magnitude).
+  Naming the class `Dp54` (rather than re-using `Dop853`) is
+  intentional: the previous `Dop853` alias over a DP5(4) coefficient
+  table was a load-bearing lie — a future maintainer would have read
+  "Dop853" and assumed Hairer Table 5.2 fidelity.
+
+- The Berry-Healy 2004 ordinate-form Gauss-Jackson 8 implementation
+  is **deferred to Phase 7**. The `GaussJackson8` adapter and its
+  conformance test were removed in Phase 1 because the seam-only
+  stand-in (a single Dp54 step under the GJ8 name) carried zero
+  distinct behaviour and the conformance test under both names was
+  the same integrator twice. Phase 7 reintroduces the type behind
+  `IIntegrator` with the second-sum starter and the ordinate-form
+  predictor-corrector, at which point GJ8 rejoins the parameterised
+  conformance gate.
+
+- Analytical partials for `SphericalHarmonic` (the Pines gradient)
+  are deferred to Phase 7. The Phase 1 SH adapter ships with a
+  central-difference `partials()` and is **excluded** from the VE-
+  contract conformance test parameterisation (the test runs on
+  `{PointMass, ThirdBody}` only). `PointMass` and `ThirdBody`
+  partials are analytical in Phase 1 as ADR-009 requires.
+
+The IIntegrator and IForceModel seams as documented above are
+unchanged at the Phase 7 upgrades; these notes describe the fidelity
+of what is wired behind the seams, not changes to the seams
+themselves.

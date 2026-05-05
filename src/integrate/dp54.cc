@@ -1,15 +1,15 @@
 // Copyright 2026 Apsis Contributors
 // SPDX-License-Identifier: Apache-2.0
 //
-// Phase-1 §6: Dop853 implementation. See dop853.h for the IMPORTANT NOTE
-// on which RK pair is wired in; the integrator-seam contract is what
-// matters for the rest of Phase 1.
+// Phase-1 §6: Dp54 implementation. See dp54.h for the Phase-1 status note
+// (DP5(4) ships now; DP8(5,3) lands as a Phase 7 upgrade behind the
+// unchanged IIntegrator seam).
 //
 // The augmented system integrated here is y = (state, vec(Phi)) of size
 // 6 + 36 = 42. Stages share force evaluations between the state and Phi
 // derivatives, exploiting that A is reused at the same (t, x).
 
-#include "apsis/integrate/dop853.h"
+#include "apsis/integrate/dp54.h"
 
 #include <algorithm>
 #include <cmath>
@@ -17,12 +17,12 @@
 #include "apsis/force/iforce_model.h"
 #include "apsis/integrate/iintegrator.h"
 
-#include "dop853_coeffs.h"
+#include "dp54_coeffs.h"
 
 namespace apsis::integrate {
 namespace {
 
-namespace dp = apsis::integrate::dop853;
+namespace dp = apsis::integrate::dp54;
 
 // Augmented derivative: given (state, Phi) at (t, x), returns (dx/dt, dPhi/dt).
 struct Deriv {
@@ -62,10 +62,10 @@ apsis::math::Vec6 vec_from_state(
 
 // Scaled-norm error per Hairer §II.4: sqrt(sum((err / (atol + rtol * |y|))^2) / N).
 //
-// Phase 1 note: per ADR-002, Φ accuracy needs decouple from natural-state
+// Phase 1 note: per ADR-002, Phi accuracy needs decouple from natural-state
 // step control. The error norm here uses ONLY the natural-state component;
-// Φ is integrated alongside the state at the same step but does not drive
-// step rejection. This keeps the Phase 1 Φ-augmented contract from
+// Phi is integrated alongside the state at the same step but does not drive
+// step rejection. This keeps the Phase 1 Phi-augmented contract from
 // pathologically shrinking the step over long horizons where the
 // dynamics Jacobian is large (e.g. Encke deviation propagation against a
 // full force model).
@@ -83,11 +83,11 @@ double scaled_norm(const apsis::math::Vec6& err_state,
 
 }  // namespace
 
-StepResult Dop853::step(apsis::time::Time<apsis::time::tags::TT> t,
-                        const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-                        const apsis::math::Mat6& phi,
-                        double dt,
-                        const apsis::force::IForceModel& force) {
+StepResult Dp54::step(apsis::time::Time<apsis::time::tags::TT> t,
+                      const apsis::frames::State<apsis::frames::tags::ICRF>& x,
+                      const apsis::math::Mat6& phi,
+                      double dt,
+                      const apsis::force::IForceModel& force) {
   // Adaptive: try `dt`, accept or reduce, return the FIRST accepted step.
   // We do not advance more than the requested `dt`.
   double h = dt;

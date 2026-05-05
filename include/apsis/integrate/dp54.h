@@ -1,18 +1,21 @@
 // Copyright 2026 Apsis Contributors
 // SPDX-License-Identifier: Apache-2.0
 //
-// Phase-1 §6: `Dop853` — adaptive embedded Runge-Kutta integrator.
+// Phase-1 §6: `Dp54` — Dormand-Prince 5(4) embedded adaptive Runge-Kutta
+// (Hairer-Nørsett-Wanner "Solving Ordinary Differential Equations I" 2nd
+// ed., Table 5.1). Adaptive step via the embedded 4th-order solution and
+// a standard PI controller.
 //
-// IMPORTANT NOTE ON FIDELITY: ADR-009 commits to a full Dormand-Prince
-// 8(5,3) (Hairer-Norsett-Wanner Vol I Table 5.2). For the Phase 1
-// timeline, this class ships with a Dormand-Prince 5(4) embedded pair
-// (the classical DP54 of Hairer-Norsett-Wanner Vol I Table 5.1) wired
-// behind the `Dop853` name so the rest of Phase 1 can compose against
-// the planned seam. The conformance test in tests/conformance/ uses a
-// tolerance set appropriate to DP54. The full DP8(5,3) coefficient
-// table upgrade is tracked as a Phase 7 hardening item (the seam,
-// adaptive-step control, and Φ-augmentation are unchanged at the
-// upgrade).
+// Phase 1 status: this is the integrator that ships behind the
+// IIntegrator seam. ADR-009 commits to a full DOP853 (Hairer Vol I Table
+// 5.2) as the Phase-1 adaptive RK; Phase 1 ships DP5(4) as a
+// coefficient-table stand-in to land the seam, the Phi augmentation, and
+// the conformance gate within the schedule. Per ADR-009's "Phase 1
+// Implementation Note", the upgrade to DP8(5,3) is a Phase 7 hardening
+// item — the seam, adaptive-step control, and Phi-augmentation are
+// unchanged at the upgrade. (Naming `Dp54` for what shipped is the
+// honest name; the previous `Dop853` alias was renamed to remove the
+// load-bearing lie.)
 
 #pragma once
 
@@ -20,7 +23,7 @@
 
 namespace apsis::integrate {
 
-class Dop853 final : public IIntegrator {
+class Dp54 final : public IIntegrator {
  public:
   // rtol / atol per the embedded-error scaled-norm criterion (Hairer
   // Vol I §II.4). Adaptive step uses the standard PI step controller.
@@ -39,8 +42,8 @@ class Dop853 final : public IIntegrator {
     int max_iters_per_step = 32;
   };
 
-  Dop853() noexcept = default;
-  explicit Dop853(Options opts) noexcept : opts_(opts) {}
+  Dp54() noexcept = default;
+  explicit Dp54(Options opts) noexcept : opts_(opts) {}
 
   StepResult step(apsis::time::Time<apsis::time::tags::TT> t,
                   const apsis::frames::State<apsis::frames::tags::ICRF>& x,

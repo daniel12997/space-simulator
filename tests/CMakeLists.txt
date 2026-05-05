@@ -41,3 +41,4 @@ endfunction()
 
 add_subdirectory(smoke)
 add_subdirectory(unit)
+add_subdirectory(conformance)

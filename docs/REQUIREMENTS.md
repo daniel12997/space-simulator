@@ -1,6 +1,6 @@
 # Apsis — Feature-Level Requirements
 
-> **Status:** Draft v0.1
+> **Status:** Draft v0.2 (revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 > **Purpose:** Feature-level requirements for the Apsis spaceflight simulator. These describe *what* the system shall do, not *how* it implements them. Lower-level technical requirements (algorithms, data structures, library choices) are captured in the architecture and subsystem documents.
 
 ## Conventions
@@ -42,15 +42,15 @@
 
 | ID | Requirement | Priority |
 |---|---|---|
-| REQ-TIME-001 | The system SHALL maintain time in TAI, TT, UTC, UT1, and TDB scales with documented conversions between all pairs. | M |
+| REQ-TIME-001 | The system SHALL maintain time in TAI, TT, UTC, UT1, and TDB scales with documented conversions between all pairs. The system MAY additionally support TCG (Geocentric Coordinate Time) and TCB (Barycentric Coordinate Time) per IAU 2000 resolutions for relativistic-strict use cases. | M (TCG/TCB MAY) |
 | REQ-TIME-002 | The system SHALL store time as a two-component representation (epoch + offset) preserving nanosecond precision over a 100-year span. | M |
 | REQ-TIME-003 | The system SHALL load and apply leap-second tables, with support for table updates without recompilation. | M |
 | REQ-TIME-004 | The system SHALL load and apply IERS Bulletin A polar motion and DUT1 data over the mission interval. | M |
-| REQ-TIME-005 | The system SHALL provide right-handed inertial frames for ICRF/J2000, GCRF, MCI, and per-body CCI for all major solar-system bodies. | M |
-| REQ-TIME-006 | The system SHALL provide right-handed body-fixed frames (ITRF for Earth, equivalents for other bodies) using IAU 2006/2000A precession-nutation. | M |
+| REQ-TIME-005 | The system SHALL provide right-handed inertial frames including ICRF (current realization ICRF3), the J2000 mean-equator-and-equinox frame (related to ICRF by the constant ~17 mas frame bias), GCRF, MCI, and per-body CCI for all major solar-system bodies. ICRF and J2000 SHALL be treated as distinct frames. | M |
+| REQ-TIME-006 | The system SHALL provide right-handed body-fixed frames (ITRF for Earth, equivalents for other bodies) using IAU 2006/2000A precession-nutation via the CIO-based pipeline (see ADR-001) implemented through the IAU SOFA library. | M |
 | REQ-TIME-007 | The system SHALL provide per-spacecraft frames including body, LVLH, RSW, and NTW. | M |
 | REQ-TIME-008 | The system SHALL transform position, velocity, and attitude between any pair of supported frames at any supported epoch. | M |
-| REQ-TIME-009 | The system SHALL maintain millimeter-level position precision in CCI frames out to 50 AU. | M |
+| REQ-TIME-009 | The system SHALL maintain millimeter-level position precision in CCI frames out to 50 AU. This SHALL be achieved through the combination of two-component time representation (REQ-TIME-002) and Encke-style perturbation propagation (REQ-INT-007). | M |
 | REQ-TIME-010 | The system SHALL transition between CCI and CCF frames at user-configured altitude or SOI boundaries without observable state discontinuity. | M |
 | REQ-TIME-011 | The system MAY provide local floating-origin frames for interstellar-scale precision. | C |
 
@@ -69,13 +69,14 @@
 | REQ-PHY-009 | The system SHALL implement solar radiation pressure with cannonball geometry and conical shadow (umbra + penumbra). | M |
 | REQ-PHY-010 | The system SHOULD support N-plate SRP modeling for attitude-dependent radiation pressure. | S |
 | REQ-PHY-011 | The system SHOULD support Earth radiation pressure (albedo + IR) using Knocke's model. | S |
-| REQ-PHY-012 | The system SHOULD implement Schwarzschild relativistic correction for the central body. | S |
+| REQ-PHY-012 | The system SHALL implement Schwarzschild relativistic correction for the central body per IERS Conventions 2010 Ch. 10. | M |
 | REQ-PHY-013 | The system MAY implement Lense-Thirring and de Sitter relativistic corrections. | C |
-| REQ-PHY-014 | The system MAY implement solid Earth tides, ocean tides, and pole tides per IERS Conventions 2010. | C |
+| REQ-PHY-014 | The system SHALL implement solid Earth tides, ocean tides, and pole tides per IERS Conventions 2010 Ch. 7-8. Default-on for conjunction-assessment scenarios; default-off for low-precision use. | S |
 | REQ-PHY-015 | The system SHALL implement empirical accelerations (constant or piecewise-constant) in user-selectable frames. | M |
-| REQ-PHY-016 | Each force model SHALL provide partial derivatives `∂a/∂r` and `∂a/∂v` for use in variational equations. | S |
+| REQ-PHY-016 | Each force model SHALL provide partial derivatives `∂a/∂r` and `∂a/∂v` for use in variational equations (consumed by orbit estimation REQ-GNC-004 and Pc covariance propagation REQ-CAT-009). | M |
 | REQ-PHY-017 | The system SHALL provide per-force runtime enable/disable flags. | M |
 | REQ-PHY-018 | The system SHALL provide per-force timing instrumentation. | M |
+| REQ-PHY-019 | The system SHALL use the **zero-tide** permanent-tide convention per IERS Conventions 2010 default. Mismatch with input gravity-coefficient files SHALL be detected and either converted automatically or flagged as an error. | M |
 
 ## 3. Integration and propagation
 
@@ -85,7 +86,7 @@
 | REQ-INT-002 | The system SHALL provide Gauss-Jackson 8th-order fixed-step integration. | M |
 | REQ-INT-003 | The system SHALL provide a symplectic integrator (Yoshida 8 or equivalent) for long-arc gravity-only propagation. | S |
 | REQ-INT-004 | The system SHALL provide analytical Keplerian propagation. | M |
-| REQ-INT-005 | The system SHALL provide SGP4 propagation for TLE-defined objects. | M |
+| REQ-INT-005 | The system SHALL provide SGP4 propagation for TLE-defined objects. The implementation SHALL use **WGS-72** fundamental constants per Spacetrack Report No. 3 (operational AFSPC convention) and SHALL convert SGP4's TEME output to the requested target frame per the Vallado et al. 2006 §VI recipe. | M |
 | REQ-INT-006 | All integrators SHALL use compensated (Kahan-Neumaier) summation for state accumulation. | M |
 | REQ-INT-007 | The system SHALL provide Encke-style perturbation propagation as an alternative formulation, with automatic reference rectification. | S |
 | REQ-INT-008 | The system SHALL provide dense output (continuous interpolation between integration nodes) for all numerical integrators. | M |
@@ -103,8 +104,8 @@
 | REQ-SC-002 | The system SHALL support a sidecar configuration file (YAML) attached to a URDF that defines effectors and sensors mounted on named links. | M |
 | REQ-SC-003 | The system SHALL validate URDF files at load time and report inconsistencies (missing inertias, unreferenced links, etc.). | M |
 | REQ-SC-004 | The system SHALL support time-varying mass properties for fueled craft, with automatic updates as propellant is consumed. | M |
-| REQ-SC-005 | The system MAY support flexible-body modal coordinates for solar arrays, antennas, and similar appendages. | C |
-| REQ-SC-006 | The system MAY support fuel slosh modeling (pendulum or spring-mass surrogate models). | C |
+| REQ-SC-005 | The system SHOULD support flexible-body modal coordinates for solar arrays, antennas, and similar appendages, using the hybrid-coordinate method per Likins (1970, JPL TR 32-1329). Required for any spacecraft whose first elastic modes overlap ACS bandwidth (typically 0.1-2 Hz). | S |
+| REQ-SC-006 | The system SHOULD support fuel slosh modeling (pendulum or spring-mass surrogate models per Abramson 1966 NASA SP-106 / Dodge 2000 SwRI update). Required for any fueled craft whose slosh modes overlap ACS bandwidth. | S |
 | REQ-SC-007 | The system SHALL allow multiple distinct spacecraft to be active simultaneously in a scenario. | M |
 
 ## 5. Multi-body dynamics
@@ -133,6 +134,7 @@
 | REQ-EFF-008 | The system SHALL provide a magnetorquer effector that produces `m × B` torque using the configured geomagnetic field. | M |
 | REQ-EFF-009 | The system SHALL provide a solar array drive effector (joint position controller with rate/accel limits). | M |
 | REQ-EFF-010 | The system SHALL allow user-defined effectors via the `Effector` interface. | M |
+| REQ-EFF-011 | The system MAY support Variable-Speed CMG (VSCMG) per Schaub, Vadali & Junkins (1998), which subsumes RW + SGCMG + VSCMG configurations under one steering law and provides singularity-robust torque tracking. If implemented, REQ-EFF-004 (RW) and REQ-EFF-006 (CMG) MAY be implemented as configurations of the VSCMG framework. | C |
 
 ## 7. Sensors
 
@@ -155,17 +157,19 @@
 |---|---|---|
 | REQ-GNC-001 | The system SHALL separate the continuous-time plant from the discrete-time GNC stack, communicating via a typed message bus. | M |
 | REQ-GNC-002 | GNC components SHALL declare their sample rates; the system SHALL schedule them via multi-rate timing with explicit zero-order hold on outputs. | M |
-| REQ-GNC-003 | The system SHALL provide a Multiplicative Extended Kalman Filter (MEKF) for attitude estimation. | M |
+| REQ-GNC-003 | The system SHALL provide a Multiplicative Extended Kalman Filter (MEKF) for attitude estimation, using MRP (Modified Rodrigues Parameters) as the 3-vector covariance state per Markley (2003) and the second-order MEKF extension as default. | M |
 | REQ-GNC-004 | The system SHALL provide an EKF for orbit estimation with at minimum position, velocity, and Cd as estimated parameters. | M |
-| REQ-GNC-005 | The system SHOULD provide a UKF as an alternative orbit estimator. | S |
-| REQ-GNC-006 | The system SHALL provide PD and LQR attitude controllers. | M |
+| REQ-GNC-005 | The system SHOULD provide a UKF as an alternative orbit estimator (per Wan & van der Merwe 2000 scaled-UT formulation with augmented state). | S |
+| REQ-GNC-006 | The system SHALL provide attitude controllers including: a PD-on-quaternion-error controller (small-angle / pointing-stability regime), a Lyapunov-stable nonlinear controller per Schaub, Vadali & Junkins (1998) (large-slew regime), and an LQR controller. | M |
 | REQ-GNC-007 | The system SHALL provide a stationkeeping controller with deadband-on-elements logic. | M |
-| REQ-GNC-008 | The system SHOULD provide an MPC attitude/orbit controller. | S |
+| REQ-GNC-008 | The system SHOULD provide an MPC attitude controller (slew planning under torque constraints). | S |
 | REQ-GNC-009 | The system SHALL provide a finite-state-machine mode logic layer with user-configurable modes and transitions. | M |
 | REQ-GNC-010 | The system SHALL allow user-defined controllers and estimators via interfaces. | M |
 | REQ-GNC-011 | The system SHALL support modeling of computational delay (controller output applied N ticks after measurement). | S |
 | REQ-GNC-012 | The system SHALL support effector failure injection at the message bus layer. | S |
 | REQ-GNC-013 | The system SHALL support hardware-in-the-loop mode with the controller running on external flight hardware over a real-time interface. | C |
+| REQ-GNC-014 | The system SHOULD provide a USQUE (UKF-based attitude estimator per Crassidis & Markley 2003) as an acquisition-mode fallback to MEKF for large initial attitude errors where MEKF fails to converge. | S |
+| REQ-GNC-015 | The system SHOULD provide a constrained-trajectory MPC for rendezvous and proximity operations per Di Cairano, Park & Kolmanovsky (2012), supporting line-of-sight cone constraints, terminal velocity matching, and obstacle/debris avoidance. | S |
 
 ## 9. Environment models
 
@@ -173,9 +177,9 @@
 |---|---|---|
 | REQ-ENV-001 | The system SHALL provide ephemerides for Sun, Moon, and major planets via SPICE SPK kernels (DE440 or later). | M |
 | REQ-ENV-002 | The system SHALL provide planetary orientation via SPICE PCK kernels. | M |
-| REQ-ENV-003 | The system SHALL implement IGRF-13 (or current generation) geomagnetic field. | M |
+| REQ-ENV-003 | The system SHALL implement IGRF-14 (or current generation) geomagnetic field. | M |
 | REQ-ENV-004 | The system SHOULD support World Magnetic Model (WMM) as an alternative. | C |
-| REQ-ENV-005 | The system SHALL provide solar and geomagnetic indices (F10.7, Ap, Kp) for atmospheric and space-weather modeling. | M |
+| REQ-ENV-005 | The system SHALL provide solar and geomagnetic indices for atmospheric and space-weather modeling. For NRLMSISE-00 (REQ-PHY-006): F10.7 (daily and 81-day average), Ap (daily and 3-hour history). For JB2008 (REQ-PHY-008): F10, S10, M10, Y10 solar UV indices plus Dst geomagnetic index. Kp also provided for general use. | M |
 | REQ-ENV-006 | The system SHALL support time-varying space weather (historical from CelesTrak, predicted for future epochs). | M |
 | REQ-ENV-007 | The system SHALL provide eclipse geometry (umbra, penumbra) for any spacecraft with respect to any occulting body. | M |
 | REQ-ENV-008 | The system SHALL provide a GPS constellation visibility model (true GPS satellite ephemerides for sensor validity). | S |
@@ -191,11 +195,13 @@
 | REQ-CAT-005 | The system SHALL perform conjunction screening between active spacecraft and the full catalog over a configurable forward interval (default 7 days). | M |
 | REQ-CAT-006 | The system SHALL apply orbit-based pre-filters (apogee/perigee, inclination) before geometric screening. | M |
 | REQ-CAT-007 | The system SHALL apply spatial hashing or equivalent broad-phase filter before refined TCA computation. | M |
-| REQ-CAT-008 | The system SHALL compute time of closest approach (TCA) and miss distance for candidate pairs to better than 1 second / 10 m precision. | M |
-| REQ-CAT-009 | The system SHALL compute probability of collision (Pc) using Foster's, Akella-Alfriend's, or Chan's method when covariance is available. | M |
+| REQ-CAT-008 | The system SHALL compute time of closest approach (TCA) and miss distance for candidate pairs to better than 10 m miss-distance precision (which implies sub-millisecond TCA timing precision at typical relative velocities). | M |
+| REQ-CAT-009 | The system SHALL compute probability of collision (Pc) using Foster's 2D analytic method (Foster & Estes 1992 NASA JSC-25898) as primary, with Chan's series formulation as a numerically convenient equivalent, when covariance is available. | M |
 | REQ-CAT-010 | The system SHALL emit conjunction events with full TCA/miss/Pc data when Pc exceeds a configurable threshold. | M |
-| REQ-CAT-011 | The system SHOULD provide an automated avoidance maneuver planner that produces minimum-Δv along-track burns to reduce Pc below threshold. | S |
+| REQ-CAT-011 | The system SHOULD provide an automated avoidance maneuver planner that produces optimal impulsive Δv per Bombardelli & Hernando-Ayuso (2015) — eigenvector of `MᵀQM` for either max-miss-distance or min-Pc objective. Along-track burns are a constrained-mode option, not the default. | S |
 | REQ-CAT-012 | The system MAY perform full N×N conjunction screening across the catalog (not just against active spacecraft). | C |
+| REQ-CAT-013 | The system SHALL maintain a per-spacecraft Hard-Body Radius (HBR) configuration. CCSDS 508 CDM ingestion (REQ-CAT-004) does not carry HBR; HBR SHALL be supplied separately and combined as `HBR = HBR_primary + HBR_secondary` for Pc computation. | M |
+| REQ-CAT-014 | The system SHALL ingest CCSDS 508.0-B-1 Conjunction Data Messages (CDMs) in both KVN and XML serializations per the Blue Book specification. Originator-provided Pc fields SHALL be retained for cross-reference but not used as authoritative; Apsis-computed Pc is authoritative. | M |
 
 ## 11. Monte Carlo
 
@@ -222,7 +228,7 @@
 | REQ-SCN-004 | The system SHALL support conditional events triggered by state functions (e.g., "when altitude < 100 km, trigger entry interface"). | M |
 | REQ-SCN-005 | The system SHALL support mission phases (cruise, pre-burn, burn, post-burn, science) with per-phase configuration. | M |
 | REQ-SCN-006 | The system SHALL run scenarios in three modes: as-fast-as-possible (batch), real-time-paced (visualization), and hardware-locked (HIL). | M |
-| REQ-SCN-007 | The system SHALL serialize scenarios to disk and reload them with bit-identical behavior. | S |
+| REQ-SCN-007 | The system SHALL serialize scenarios to disk and reload them with bit-identical behavior. | M |
 | REQ-SCN-008 | The system SHALL provide example scenarios for: LEO orbit propagation, GEO stationkeeping, lunar transfer, Mars transfer, attitude slew, conjunction avoidance. | M |
 
 ## 13. Performance and scaling
@@ -287,6 +293,10 @@
 | OOS-007 | Re-entry aerothermodynamics (full hypersonic CFD-based modeling). Drag and simple heating only. |
 | OOS-008 | Multiplayer / networked simulation. |
 | OOS-009 | Game-style user interface; the v1 product is library + Python API only. |
+| OOS-010 | Contact dynamics for capture, berthing, docking, or surface landing. The Apsis MBD module (REQ-MBD-*) covers free-flying floating-base dynamics; contact-constrained inverse-dynamics control (per Mistry et al. 2010 orthogonal-decomposition method) is deferred. |
+| OOS-011 | FDIR (Fault Detection, Isolation, Recovery) response logic. Failure *injection* is in scope (REQ-SEN-010, REQ-GNC-012); the FDIR controller implementing automated response is deferred. |
+| OOS-012 | Sub-tracking-threshold orbital debris flux modeling (NASA ORDEM 3.1). Apsis covers SSN-tracked deterministic debris (REQ-CAT-*); statistical micrometeoroid+orbital-debris (MMOD) flux for shielding sizing is deferred to a separate companion analysis. |
+| OOS-013 | Multi-panel high-fidelity drag and SRP modeling (Sentman / Doornbos accommodation coefficients, panel-by-panel summation with attitude). v1 ships cannonball drag and N-plate SRP only. |
 
 ## 18. Acceptance criteria summary
 

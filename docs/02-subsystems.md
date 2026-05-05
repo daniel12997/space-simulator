@@ -1,6 +1,8 @@
 # Apsis — Subsystem Design
 
 > Companion to `01-architecture.md`. Detailed designs for each major subsystem.
+>
+> **Status:** Draft v0.2 (revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 
 ---
 
@@ -8,15 +10,17 @@
 
 ### 1.1 Time scales
 
-The simulator maintains explicit conversions between five time scales:
+The simulator maintains explicit conversions between five primary time scales, plus two optional scales for relativistic-strict use:
 
 - **TAI** — International Atomic Time, monotonic, no leap seconds
 - **TT** — Terrestrial Time, TT = TAI + 32.184 s (offset only)
 - **UTC** — coordinated universal, has leap seconds; for human-readable I/O
 - **UT1** — Earth rotation time; UTC + DUT1 from IERS Bulletin A
 - **TDB** — Barycentric Dynamical Time; for ephemeris evaluation, differs from TT by periodic terms ≤2 ms
+- **TCG** (optional) — Geocentric Coordinate Time; relativistic GCRS coordinate time
+- **TCB** (optional) — Barycentric Coordinate Time; relativistic BCRS coordinate time, JPL DE ephemeris time argument
 
-All internal computation uses TT for spacecraft propagation and TDB for ephemeris queries. UTC and UT1 are only used at the boundaries.
+Internal computation uses TT for spacecraft propagation and TDB for ephemeris queries; UTC and UT1 are used only at boundaries. Apsis defaults to TT-rate-scaled GCRS coordinates (the engineering norm); TCG/TCB are available for strict relativistic work but not used in default-precision force models.
 
 ### 1.2 Time representation
 
@@ -28,7 +32,7 @@ Single-`f64` Julian dates lose ~12 µs of precision near J2000 and worse over de
 
 All frames are right-handed.
 
-**Inertial root: ICRF / J2000.** The barycentric inertial frame; all other inertial frames are constant rotations of this.
+**Inertial root: ICRF** (current realization ICRF3 per Charlot et al. 2020). All other inertial frames are constant rotations of this. The **J2000 mean-equator-and-equinox** frame is treated as a distinct frame, related to ICRF by the constant ~17 mas frame bias per Kaplan 2005 (USNO Circular 179) §3. Apsis applies the frame bias explicitly when converting between ICRF and J2000.
 
 **Body-Centered Inertial (CCI) per body.** Origin at body center, axes aligned with ICRF (or with body's equatorial pole and vernal point, depending on body). For Earth: GCRF. For Mars: MCI. Inertial — orbital state propagation lives here.
 
@@ -36,16 +40,16 @@ All frames are right-handed.
 
 **Heliocentric Ecliptic (HCI / ECL).** Sun-centered, ecliptic plane reference. For interplanetary cruise.
 
-**Per-spacecraft frames.** Vehicle body frame (X forward, Y right, Z down — aircraft convention). Orbital frames LVLH, RSW, NTW for GNC and analysis.
+**Per-spacecraft frames.** Vehicle body frame defined per spacecraft (typically aligned to instrument boresight or bus mechanical axes; mission-specific). Orbital frames LVLH (Local Vertical Local Horizontal: +Z to nadir, +Y opposite orbit normal, +X completing right-hand triad), RSW (Radial / Along-track / Cross-track), and NTW (in-track / Normal / cross-track Width) for GNC and analysis. Body-to-orbital-frame DCMs are quaternion-derived per the chosen attitude representation.
 
 ### 1.4 Frame transitions
 
 Transitions happen at precision-rich boundaries:
 
-- **CCI ↔ CCF** at ~atmosphere edge (typically 100 km for Earth). f64 has ~mm precision at LEO altitudes.
+- **CCI ↔ CCF** at ~atmosphere edge (typically 100 km for Earth). f64 supports ~nm absolute precision at LEO radii (ULP at 7×10⁶ m ≈ 1.5 nm); the practical mm-level uncertainty floor at LEO comes from physical-model fidelity (tides, ephemeris, force-model truncation), not f64 arithmetic.
 - **CCI ↔ HCI** at sphere of influence boundaries.
 
-The state vector is transformed and the integrator continues in the new frame. There is no "blending region" — the transition is instantaneous and the state in both frames is mathematically identical (modulo f64 LSB).
+The state vector is transformed and the integrator continues in the new frame. CCI ↔ CCF transitions are mathematically continuous in position (f64 LSB only). CCI ↔ HCI transitions at SOI are continuous in position but the primary attractor switches discontinuously; adaptive integrators may need to re-bracket step size at the boundary as the dominant gravitational source changes.
 
 ## 2. Force models
 
@@ -84,7 +88,7 @@ where `s` is the third-body position, `r` is the spacecraft position, and `f(q)`
 
 Sun, Moon, and major planets included by default for Earth-orbiting craft. SPICE provides positions.
 
-**Solid Earth tides, ocean tides, pole tides.** Optional per IERS Conventions 2010. Centimeter-level effects; off by default.
+**Solid Earth tides, ocean tides, pole tides.** Per IERS Conventions 2010 Ch. 7-8 (REQ-PHY-014, S). Centimeter-level effects on satellite position. **Default-on for conjunction-assessment scenarios** (where 10 cm matters relative to the 10 m miss-distance specification); default-off for low-precision use cases. Apsis uses the **zero-tide** permanent-tide convention per IERS Conventions Ch. 6 default (REQ-PHY-019); mismatched gravity-coefficient files are detected and either converted or flagged.
 
 ### 2.3 Atmospheric drag
 
@@ -101,7 +105,7 @@ a_drag = -½ ρ Cd (A/m) v_rel |v_rel|
 
 Solar/geomagnetic indices loaded from CelesTrak space-weather files; supports both historical data and prediction.
 
-`Cd` is configured per-spacecraft (default 2.2). High-fidelity: panel model summing drag contributions over each spacecraft surface based on attitude.
+`Cd` is configured per-spacecraft (default 2.2). v1 ships **cannonball drag only** (single Cd, single area); high-fidelity multi-panel drag with attitude-dependent accommodation coefficients (Sentman / Doornbos formulations) is OOS for v1 (OOS-013).
 
 ### 2.4 Solar radiation pressure
 
@@ -122,7 +126,7 @@ Albedo (reflected sunlight) and Earth IR. Knocke's model. ~10-20% of direct SRP 
 
 ### 2.6 Relativistic corrections
 
-Schwarzschild correction for the central body, included when relativistic flag is set. Lense-Thirring and de Sitter terms available but rarely needed.
+**Schwarzschild correction** for the central body (REQ-PHY-012, M) per IERS Conventions 2010 Ch. 10. **Default-on** for the gravitational acceleration term — small but secular, matters for multi-decade arcs and high-precision orbit determination. Lense-Thirring and de Sitter terms (REQ-PHY-013, C) are available but **default-off**; relevant only for very-precise GNSS, GRACE, Lageos-class scenarios. Shapiro delay (light-time relativistic correction) is **default-off** and only enabled for deep-space tracking observables.
 
 ### 2.7 Empirical accelerations
 
@@ -271,7 +275,7 @@ Angular momentum conservation is the key validation invariant. With no external 
 
 ### 4.4 Mass properties
 
-Spacecraft mass is time-varying when fuel is consumed. Each `FuelTank` effector tracks remaining propellant; the URDF inertia for the tank link is updated based on fill fraction. Pinocchio's `Model` is rebuilt when mass properties change (rebuilt only on significant changes — typically >1% mass change).
+Spacecraft mass is time-varying when fuel is consumed. Each `FuelTank` effector tracks remaining propellant; the URDF inertia for the tank link is updated based on fill fraction. Pinocchio's `Model` is rebuilt when mass properties change. The default rebuild threshold is 1% mass change (configurable per scenario); for missions with large fuel-fraction-changes during finite burns the threshold should be tightened (e.g., 0.1%) to avoid drifting CG/inertia errors.
 
 ### 4.5 Effectors
 
@@ -288,9 +292,9 @@ public:
 
 **Thruster.** Magnitude and direction in body frame. Throttle command 0-1. Optional valve dynamics (first-order lag). Updates spacecraft mass via `dm = -F·dt/(g₀·Isp)`.
 
-**Reaction wheel.** Wheel speed state. Commanded torque (with saturation). Friction model (viscous + Coulomb). Momentum coupled to spacecraft via Pinocchio.
+**Reaction wheel.** Wheel speed state. Commanded torque (with saturation). Friction model (viscous + Coulomb). Modeled in URDF as a one-DOF revolute joint between the wheel link and the bus link, with the wheel inertia loaded into Pinocchio about the spin axis. Momentum coupling to spacecraft attitude falls out automatically from Pinocchio's floating-base dynamics.
 
-**Control moment gyro.** Two angles per CMG (gimbal angle, spin rate). Commanded gimbal rate. Output torque is `ω_cmg × h_cmg`. Singularity geometry (gimbal lock) is a real failure mode; the simulator should expose it, not hide it.
+**Control moment gyro / VSCMG.** Apsis implements the unified **Variable-Speed CMG (VSCMG)** framework per Schaub, Vadali & Junkins (1998), which subsumes single-gimbal CMG (SGCMG, fixed wheel rate), reaction wheel (gimbal frozen), and VSCMG (both DOFs commandable) as configurations of the same equations. Per-device state: gimbal angle γ, gimbal rate γ̇, wheel spin rate Ω. For redundant clusters (N > 3), the steering law uses a **weighted minimum-norm pseudo-inverse** that smoothly transitions from CMG-mode away from singularities to RW-mode near them, providing exact torque tracking even at classical-CMG singular configurations. Singularity geometry remains observable (manipulability `√det(A_γ A_γᵀ)`) but does not cause torque-tracking failure.
 
 **Magnetorquer.** Commanded magnetic dipole. Torque is `m × B`, where `B` is from IGRF at current position in body-fixed frame transformed to body frame.
 
@@ -310,7 +314,7 @@ public:
 
 Sensors observe the *truth* state (spacecraft, environment) and produce noisy `Measurement` messages on the bus.
 
-**Star tracker.** Quaternion measurement, σ ~ arcseconds. Sun/Earth/Moon keepout — measurement marked invalid when bright body is in FOV.
+**Star tracker.** Quaternion measurement, σ ~ arcseconds. Sun/Earth/Moon keepout — measurement marked invalid when bright body is in FOV. Default keepout half-angles: 30° Sun, 20° Earth, 20° Moon (mission-overridable via YAML config).
 
 **Sun sensor.** Unit vector to Sun in body frame. Coarse (degrees) or fine (arcminutes). Invalid in eclipse.
 
@@ -341,9 +345,11 @@ Typical rates:
 
 ### 5.3 Estimators
 
-**MEKF (Multiplicative Extended Kalman Filter)** for attitude. State is quaternion + gyro bias + (optional) other parameters. Error parameterization is a 3-vector (small rotation), so the covariance is non-singular. Updates use star tracker, sun sensor, magnetometer measurements.
+**MEKF (Multiplicative Extended Kalman Filter)** for attitude. Global state is a 4-component unit quaternion. Covariance state is the 3-vector **MRP (Modified Rodrigues Parameters)** error representation per Markley (2003), which is non-singular for attitude errors up to 360°. The default Apsis MEKF is the **second-order extension** per Markley 2003 (preserves quaternion normalization to second order in the error, more robust than first-order MEKF for moderate errors). State also includes gyro bias (Farrenkopf model per Lefferts et al. 1982) and optionally other parameters. Updates use star tracker, sun sensor, magnetometer measurements.
 
-**EKF / UKF** for orbit. State is position + velocity + (optional) drag coefficient, SRP coefficient, empirical accelerations. Updates from GPS, ground tracking, optical navigation.
+For **acquisition mode** (large initial attitude errors where MEKF can fail to converge — Crassidis & Markley 2003 demonstrated this on a single-magnetometer TRMM simulation), Apsis provides a **USQUE (UnScented QUaternion Estimator)** fallback per Crassidis & Markley 2003 — a UKF-attitude variant that uses generalized-Rodrigues-parameter sigma points and converges from large initial errors at ~2× MEKF cost. Mode logic switches from USQUE to MEKF once attitude error is bounded.
+
+**EKF / UKF** for orbit. State is position + velocity + (optional) drag coefficient, SRP coefficient, empirical accelerations. EKF uses analytical state-transition matrix from variational equations (REQ-PHY-016); UKF (per Wan & van der Merwe 2000 scaled-UT, augmented-state formulation) is the alternative for highly nonlinear regimes or where Jacobian computation is awkward. Updates from GPS, ground tracking, optical navigation.
 
 Both are user-swappable. The estimator interface is:
 
@@ -358,9 +364,20 @@ public:
 
 ### 5.4 Controllers
 
-**Attitude controllers.** PD on quaternion error (most common for science modes), LQR around a reference, MPC for slew planning, sliding-mode for robustness studies.
+**Attitude controllers.**
+- **PD on quaternion error** — small-angle / pointing-stability regime (most science modes). Simple, well-understood, but degrades for large rotations.
+- **Lyapunov-stable nonlinear** (Schaub, Vadali & Junkins 1998) — globally asymptotically stable on MRP- or quaternion-based attitude error. Default for large-slew maneuvers and acquisition-mode pointing.
+- **LQR** around a reference trajectory.
+- **MPC** for slew planning under torque/momentum constraints (REQ-GNC-008, S).
+- Sliding-mode and adaptive variants — extension points for robustness studies; not in v1 default set.
 
-**Orbit controllers.** Stationkeeping (deadband around target orbit elements), formation flying (relative motion control), low-thrust trajectory tracking (Lyapunov-based or NMPC).
+**Orbit controllers.**
+- **Stationkeeping** — deadband around target orbit elements (REQ-GNC-007).
+- **Constrained-trajectory RPO MPC** (Di Cairano, Park & Kolmanovsky 2012, REQ-GNC-015 S) — supports LOS cone constraints, terminal velocity matching, debris/obstacle avoidance for proximity operations and rendezvous. Distinct from slew MPC.
+- **Formation flying** — relative motion control.
+- **Low-thrust trajectory tracking** — Lyapunov-based or NMPC.
+
+**Collision-avoidance maneuver (CAM) planner.** When a CDM-flagged conjunction has Pc above threshold, the CAM planner produces an optimal impulsive Δv per Bombardelli & Hernando-Ayuso (2015): the analytic eigenvector of `MᵀQM` (max-miss-distance objective) or `Mᵀ Q* M` (min-Pc objective). The maneuver direction is generally **not** along-track; restricting to along-track is a constrained-mode option. See §6.5.
 
 **Mode logic.** A finite state machine selects which controller is active. Modes typically include: detumble, sun-pointing, science, slew, comms, safe. Mode transitions triggered by events or commands.
 
@@ -378,6 +395,18 @@ Injected via the scenario file or interactively.
 ### 6.1 Catalog ingestion
 
 TLEs from Space-Track or CelesTrak, refreshed daily. Each TLE becomes a `CatalogObject` entity with `OrbitalState`, `TLEData`, `SGP4State`, and (if uploaded by JSpOC) `Covariance`.
+
+**TLE format** per CelesTrak / Spacetrack Report No. 3: classic 80-column 2-line format with implicit-decimal-point fields, modulo-10 checksum. Apsis logs but does not fail on bad-checksum lines (operational catalogs occasionally contain them; behavior is configurable).
+
+**SGP4 propagation** uses **WGS-72** fundamental constants per STR#3 to match operational AFSPC TLE-producing predictions (REQ-INT-005). Output frame is **TEME** (True Equator Mean Equinox); conversion to GCRS / ITRS uses the Vallado et al. 2006 §VI recipe.
+
+### 6.1.1 CCSDS CDM ingest
+
+Conjunction Data Messages per CCSDS 508.0-B-1 Blue Book are ingested in both KVN (key-value notation, default) and XML serializations. Each CDM provides:
+- TCA, miss distance, originator-computed Pc (retained for cross-reference, not authoritative).
+- Per-object state at TCA, 6×6 covariance in RTN frame, drag and SRP coefficients, maneuverability flag.
+
+CDMs do **not** carry **Hard-Body Radius (HBR)**. Apsis maintains a per-spacecraft HBR config (REQ-CAT-013) and combines as `HBR = HBR_primary + HBR_secondary` for Pc computation. Apsis-computed Pc supersedes the originator-provided value; both are emitted in the conjunction event for traceability.
 
 ### 6.2 SGP4 propagation
 
@@ -403,7 +432,15 @@ For candidate pairs (those passing pre-filters and spatial hashing):
 
 ### 6.5 Avoidance maneuver planning
 
-When `Pc` exceeds a threshold (default 10⁻⁵), the system flags the conjunction. For active spacecraft, the user (or an automated avoidance module) can plan a maneuver — typically a small along-track burn 1-3 orbits before TCA. The simulator re-evaluates the conjunction after maneuver insertion.
+When `Pc` exceeds a threshold (default 10⁻⁵), the system flags the conjunction. For active spacecraft, Apsis's automated CAM planner (REQ-CAT-011) computes the **optimal impulsive Δv** per Bombardelli & Hernando-Ayuso (2015):
+
+```
+maximize  Δvᵀ A Δv     subject to  |Δv| ≤ Δv_max
+```
+
+with `A = Mᵀ Q M` (max-miss-distance) or `A = Mᵀ Q* M` (min-Pc), where `M` is the linear b-plane-displacement-per-Δv matrix and `Q*` is the inverse b-plane covariance. The optimal direction is the eigenvector of `A` corresponding to the largest eigenvalue — generally **not** along-track. Along-track-restricted CAM is available as a constrained-mode option (when operational policy mandates a fixed maneuver direction).
+
+CAM is typically planned 1-3 orbits before TCA. The simulator re-evaluates the conjunction after maneuver insertion. For finite-thrust CAMs (where the impulsive assumption breaks down) or multi-burn sequences, Apsis falls back to numerical optimization (constrained NMPC, REQ-GNC-008).
 
 ## 7. Monte Carlo
 

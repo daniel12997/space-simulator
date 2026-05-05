@@ -54,4 +54,4 @@ NRLMSISE-00 is distributed as **C/Fortran reference code** (Picone group, freely
 ## Cross-references
 
 - [[sources/bowman-2008-jb2008]] — alternative density model.
-- The "us-standard-atmosphere-1976.pdf" in `docs/raw/specs/` is the simpler, static reference Apsis offers as a sanity-check / toy mode.
+- [[sources/us-standard-atmosphere-1976]] is the simpler, static reference Apsis offers as a sanity-check / toy mode.

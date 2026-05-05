@@ -95,7 +95,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 |---|---|---|---|---|
 | [[sources/urdf-xacro-pinocchio-docs]] | URDF / Xacro / Pinocchio documentation snapshots | spec | authoritative | 2026-05-05 |
 
-## Concepts (23)
+## Concepts (24)
 
 | Slug | Canonical name | Aliases |
 |---|---|---|
@@ -114,6 +114,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[concepts/spatial-algebra]] | Spatial Algebra | Plücker coordinates |
 | [[concepts/articulated-body-algorithm]] | Articulated Body Algorithm | ABA |
 | [[concepts/recursive-newton-euler-algorithm]] | Recursive Newton-Euler Algorithm | RNEA |
+| [[concepts/composite-rigid-body-algorithm]] | Composite-Rigid-Body Algorithm | CRBA |
 | [[concepts/floating-base-dynamics]] | Floating-Base Dynamics | free-flyer joint |
 | [[concepts/analytical-rbd-derivatives]] | Analytical RBD Derivatives | analytical dynamics gradients |
 | [[concepts/mekf]] | Multiplicative Extended Kalman Filter | MEKF |
@@ -141,6 +142,8 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 
 (none yet)
 
-## Lint reports (0)
+## Lint reports (1)
 
-(none yet)
+| Date | Scope | Findings |
+|---|---|---|
+| [[lint-reports/2026-05-05-post-ingest-lint]] | full | 0 broken / 0 orphan after fixes |

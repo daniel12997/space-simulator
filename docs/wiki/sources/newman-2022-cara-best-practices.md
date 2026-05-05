@@ -62,6 +62,8 @@ Cislunar / lunar-orbit CA is becoming relevant; existing tooling is Earth-centri
 
 - [[sources/foster-estes-1992-jsc-25898-pc]] — the underlying Pc method.
 - [[sources/bombardelli-2015-collision-avoidance]] — analytical CAM Δv design that consumes Pc.
+- [[sources/dicairano-2012-mpc-rendezvous]] — MPC-based RPO guidance that integrates with CARA's CA workflow.
+- [[sources/krisko-2019-ordem-3-1-user-guide]] — sub-tracking-threshold debris flux for design-time risk analysis.
 - CCSDS 508.0-B-1 CDM (in `docs/raw/specs/`) — the CDM format CARA produces.
 - CCSDS 502.0-B-2 OEM (in `docs/raw/specs/`) — the OEM format O/Os submit.
 - NASA/SP-20205011276 (CA² Handbook) — the authoritative reference this paper guides.

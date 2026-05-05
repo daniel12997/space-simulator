@@ -19,7 +19,7 @@ A bundled snapshot of the **multi-body-dynamics tooling stack** Apsis uses for s
 | `ros-urdf-xml-spec.html` | URDF XML schema | Spacecraft mechanical model file format |
 | `urdfdom-docs-snapshot.html` | urdfdom C++ parser | URDF → in-memory tree |
 | `ros2-xacro-tutorial.html` | Xacro macro / templating | URDF authoring with macros, parameters, conditionals |
-| `pinocchio-docs-snapshot.html` | [[concepts/pinocchio-library\|Pinocchio]] library docs | RBD algorithms (ABA, RNEA, CRBA), analytical derivatives |
+| `pinocchio-docs-snapshot.html` | [[concepts/pinocchio-library|Pinocchio]] library docs | RBD algorithms (ABA, RNEA, CRBA), analytical derivatives |
 
 Together these define the **input pipeline**: mechanical configuration written as Xacro → expanded to URDF → parsed by urdfdom into a tree → loaded into Pinocchio as a `pinocchio::Model` → dynamics computed by Pinocchio per-tick.
 

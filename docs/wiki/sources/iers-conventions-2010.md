@@ -22,11 +22,11 @@ The version in `docs/raw/specs/iers-conventions-2010/` comprises the front matte
 |---|---|---|---|
 | 0 | Introduction | `tn36_c0.pdf` | overview |
 | 1 | General definitions and numerical standards | `icc1.pdf` | constants table (REQ-PHY-001) |
-| 2 | Conventional celestial reference system and frame | `tn36_c2.pdf` | §2 — defines ICRS / [[sources/charlot-2020-icrf3\|ICRF3]] axes |
-| 3 | Conventional dynamical realization of the ICRS | `tn36_c3.pdf` | §2 — JPL DE ([[sources/folkner-2009-de421\|DE421]], [[sources/park-2021-de440-de441\|DE440/441]]) realization |
+| 2 | Conventional celestial reference system and frame | `tn36_c2.pdf` | §2 — defines ICRS / [[sources/charlot-2020-icrf3|ICRF3]] axes |
+| 3 | Conventional dynamical realization of the ICRS | `tn36_c3.pdf` | §2 — JPL DE ([[sources/folkner-2009-de421|DE421]], [[sources/park-2021-de440-de441|DE440/441]]) realization |
 | 4 | Terrestrial reference systems and frames | `icc4.pdf` | §2 — ITRS / ITRF (geodetic surface) |
 | **5** | **Transformation between ITRS and GCRS** | **`icc5.pdf`** | **§2 — the ICRS↔ITRS pipeline ([[decisions/001-use-ceo-based-icrs-to-itrs]])** |
-| 6 | Geopotential | `icc6.pdf` | §2 (gravity) — references [[sources/pavlis-2012-egm2008\|EGM2008]] |
+| 6 | Geopotential | `icc6.pdf` | §2 (gravity) — references [[sources/pavlis-2012-egm2008|EGM2008]] |
 | 7 | Displacement of reference points (tides) | `icc7.pdf` | §2 (gravity) — solid Earth + ocean + pole tides |
 | 8 | Tidal variations in the rotation of the Earth | `icc8.pdf` | §2 — sub-daily polar motion / UT1 |
 | 9 | Models for atmospheric propagation delays | `icc9.pdf` | §10 (sensors) — for VLBI / SLR / GNSS observables |

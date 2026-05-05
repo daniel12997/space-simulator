@@ -31,7 +31,7 @@ The Apsis problem statement (architecture §1) explicitly calls for **multi-body
 
 | Likins method | Apsis corollary |
 |---|---|
-| Augmented-body / nested-body | [[concepts/articulated-body-algorithm|ABA]] / [[concepts/recursive-newton-euler-algorithm|RNEA]] in [[concepts/pinocchio-library\|Pinocchio]] — modern O(n) successors |
+| Augmented-body / nested-body | [[concepts/articulated-body-algorithm|ABA]] / [[concepts/recursive-newton-euler-algorithm|RNEA]] in [[concepts/pinocchio-library|Pinocchio]] — modern O(n) successors |
 | Hybrid-coordinate | Floating-base Pinocchio rigid skeleton + per-appendage modal-amplitude integrators coupled at the appendage roots |
 | Vehicle normal-mode | LTI spacecraft model for control synthesis only |
 

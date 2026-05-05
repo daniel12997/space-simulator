@@ -16,7 +16,7 @@ The introductory paper [[sources/carpentier-2019-pinocchio]] and the analytical-
 
 - **Spatial-algebra primitives** ([[concepts/spatial-algebra]]) — SE(3), Motion, Force, Inertia types with the standard operations.
 - **Joint types** — Revolute, Prismatic, Spherical, Translation, Planar, **Free-floating (SE(3))**, Composite. Each carries its own configuration/tangent space with Lie-group `exp` / `log` integration & differentiation operators.
-- **Model loading** from URDF (RBDL convention), Lua, or the C++/Python API.
+- **Model loading** from URDF (RBDL convention), Lua, or the C++/Python API. See [[sources/urdf-xacro-pinocchio-docs]] for the URDF/Xacro authoring pipeline.
 - **Forward kinematics** to second order (placement, velocity, acceleration of every joint).
 - **Spatial Jacobians** in body-local or world frame.
 - **[[concepts/recursive-newton-euler-algorithm|RNEA]]** — inverse dynamics.

@@ -22,7 +22,7 @@ The directory contains 28 HTML documents covering individual subsystems. The mos
 |---|---|---|
 | `spk.html` | **SPK** — position-velocity ephemerides | Planetary ephemerides, spacecraft truth trajectories |
 | `ck.html` | **CK** — attitude (orientation) data | Spacecraft attitude history kernels (input/output) |
-| `pck.html` | **PCK** — planetary constants (radii, GM, orientation) | Planet/satellite parameters; cites [[sources/archinal-2018-iau-wgccre-2015\|IAU WGCCRE]] |
+| `pck.html` | **PCK** — planetary constants (radii, GM, orientation) | Planet/satellite parameters; cites [[sources/archinal-2018-iau-wgccre-2015|IAU WGCCRE]] |
 | `frames.html` | **FK** — reference-frame definitions | Custom mission frames (LVLH, body, instrument) |
 | `time.html` | Time scales in SPICE | TDB / TT / UTC / SCLK conversions |
 | `sclk.html` | **SCLK** — spacecraft clock kernels | Mapping SCLK ticks to UTC/TDB |

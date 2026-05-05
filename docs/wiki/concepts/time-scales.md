@@ -51,7 +51,7 @@ Notes:
 | **TT** | [[concepts/iau-2006-precession|Precession]], [[concepts/precession-nutation|nutation]], [[concepts/celestial-ephemeris-origin|CIO]] polynomials |
 | **TCG** | Strict relativistic GCRS dynamics (rare; most engineering uses TT-scaled coordinates) |
 | **TCB** | Strict BCRS dynamics |
-| **TDB** | JPL DE ephemeris time argument ([[sources/folkner-2009-de421\|DE421]], [[sources/park-2021-de440-de441\|DE440/441]]) |
+| **TDB** | JPL DE ephemeris time argument ([[sources/folkner-2009-de421|DE421]], [[sources/park-2021-de440-de441|DE440/441]]) |
 
 ## Critical bug classes
 

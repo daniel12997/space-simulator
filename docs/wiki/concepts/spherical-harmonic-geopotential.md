@@ -58,3 +58,4 @@ REQ-PHY-016 calls for `∂a/∂r` partial derivatives for variational equations.
 - **Pines (1973)** — *Uniform representation of the gravitational potential and its derivatives*, AIAA J 11(11):1508-1511. INDEX-only paywalled.
 - **Cunningham (1970)** — *On the computation of the spherical harmonic terms needed during the numerical integration of the orbital motion of an artificial satellite*, Celestial Mech. 2:207-216. INDEX-only paywalled.
 - **[[sources/icgem-gfz-landing-snapshot]]** — coefficient hosting service.
+- **[[sources/igrf14-2024-coefficients]]** — sister model for Earth's geomagnetic field using Schmidt-normalized spherical-harmonic expansion.

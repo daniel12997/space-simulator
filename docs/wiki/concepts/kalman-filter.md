@@ -37,7 +37,7 @@ Two operations alternate:
 | Linear KF | Linear `f` exactly | Linear `h` exactly | Linear systems (rare in spacecraft) | Reference for derivations |
 | EKF | Linearization `F = ∂f/∂x` | Linearization `H = ∂h/∂x` | Nonlinear with small errors | REQ-GNC-004 orbit estimation |
 | MEKF | EKF on a 6-D error state, multiplicative quaternion update | Multiplicative quaternion error | Spacecraft attitude with small errors | REQ-GNC-003, [[concepts/mekf]] |
-| [[concepts/unscented-kalman-filter\|UKF]] | Sigma-point propagation through full nonlinear `f` | Sigma points through `h` | Strong nonlinearity, large errors | REQ-GNC-005, [[sources/crassidis-2003-ukf-attitude]] |
+| [[concepts/unscented-kalman-filter|UKF]] | Sigma-point propagation through full nonlinear `f` | Sigma points through `h` | Strong nonlinearity, large errors | REQ-GNC-005, [[sources/crassidis-2003-ukf-attitude]] |
 | Square-root forms | Same as base, factored P storage | Same | Higher numerical stability, hardware with reduced precision | Optional improvement |
 
 ## Joseph form

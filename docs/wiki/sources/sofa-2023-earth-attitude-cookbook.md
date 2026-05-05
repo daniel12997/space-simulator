@@ -58,7 +58,7 @@ Apsis supplies `xp, yp, ΔUT1` from the IERS Bulletin A / Bulletin B finals2000A
 
 ## License + distribution
 
-SOFA C source is in `docs/raw/specs/iau-sofa-2023-software-collection-c.zip` (v18, May 2023). License is permissive (use freely with attribution; original-name + version preservation rules). Apsis links the unmodified upstream library.
+SOFA C source is in [[sources/iau-sofa-2023-software-collection-c]] (v18, May 2023). License is permissive (use freely with attribution; original-name + version preservation rules). Apsis links the unmodified upstream library.
 
 ## Cross-references
 

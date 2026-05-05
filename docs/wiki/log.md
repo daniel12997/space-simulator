@@ -195,3 +195,23 @@ Final ingest pass — all remaining items in `docs/raw/specs/` and `docs/raw/art
 - 1 article in `docs/raw/articles/`
 
 Wiki state: 47 source pages, 23 concept pages, 1 decision page (proposed).
+
+## [2026-05-05] lint | First post-ingest lint pass
+
+Full-wiki lint after the bibliography pipeline reached steady state.
+
+**Fixed during pass:**
+- 8 backslash-escaped pipes (`\|`) in wikilink-with-alias syntax — global sed-fix.
+- 6 references to undefined `composite-rigid-body-algorithm` concept — created the concept page (CRBA met the 2-citation threshold).
+- 6 orphan source pages — added inbound wikilinks from canonical sister pages.
+
+**Final state:** 72 pages (47 sources, 24 concepts, 1 decision). 0 broken wikilinks. 0 orphans.
+
+**Outstanding non-lint items deferred to human:**
+- decision 001 still in `proposed` status
+- 22 spec-edit suggestions logged across earlier batch entries (require human authorship per CLAUDE.md scope guard)
+- no component pages yet (no source code yet)
+- no synthesis pages yet (corpus is now broad enough — propose if/when human signals interest)
+- Pines 1973 / Cunningham 1970 referenced from `concepts/spherical-harmonic-geopotential` but not in corpus (paywalled)
+
+Full report at [[lint-reports/2026-05-05-post-ingest-lint]].

@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Phase-1 §4: `SpiceEphemeris` — the only place in the codebase that calls
-// CSPICE. Per ADR-008, every CSPICE call is wrapped in one process-wide
-// std::mutex held by this class. The cspice_seam.py CI lint enforces that
-// no other source file calls any `*_c(` API.
+// CSPICE. Per ADR-008, every CSPICE call is wrapped in **one process-wide**
+// std::mutex (see `cspice_global_mutex()` and the `CspiceLock` RAII guard
+// in spice_ephemeris.cc). The lock is *shared across every SpiceEphemeris
+// instance* — CSPICE keeps its kernel pool and error stack in process-
+// global state, so two instances would race if each held its own mutex.
+// The cspice_seam.py CI lint enforces that no other source file calls any
+// `*_c(` API.
 
 #pragma once
 
-#include <mutex>
 #include <string>
 #include <vector>
 
@@ -30,12 +33,6 @@ class SpiceEphemeris final : public IEphemeris {
   apsis::frames::State<apsis::frames::tags::ICRF>
   state(int body_naif_id,
         apsis::time::Time<apsis::time::tags::TDB> t) const override;
-
- private:
-  // Mutex guarding ALL CSPICE state. Mutable because `state()` is logically
-  // const — CSPICE has thread-unsafe internals but our caller-visible API
-  // is read-only.
-  mutable std::mutex spice_mutex_;
 };
 
 }  // namespace apsis::ephemeris

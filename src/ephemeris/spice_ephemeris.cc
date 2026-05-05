@@ -4,16 +4,22 @@
 // Phase-1 §4: SpiceEphemeris — the CSPICE seam (ADR-008).
 //
 // Discipline:
-//   * Every CSPICE call (`*_c(`) MUST be inside std::lock_guard<std::mutex>
-//     on `spice_mutex_`. The cspice_seam.py CI lint enforces "no CSPICE
-//     calls outside src/ephemeris/", but the lock-guard discipline is
-//     human-enforced inside this file.
+//   * Every CSPICE call (`*_c(`) MUST be inside a CspiceLock RAII guard
+//     that takes the **process-wide** mutex returned by
+//     `cspice_global_mutex()`. The lint `tools/lint/cspice_seam.py`
+//     enforces "no CSPICE calls outside src/ephemeris/"; the lock-guard
+//     discipline is human-enforced inside this file.
+//   * The mutex is process-wide because CSPICE keeps its kernel pool and
+//     error stack in static storage. Two `SpiceEphemeris` instances must
+//     not race on that state, so a per-instance mutex would be an ADR-008
+//     violation.
 //   * On construction, we promote CSPICE error handling to RETURN mode so
 //     a bad kernel path doesn't abort the process; we then check
 //     failed_c() and convert to std::runtime_error at the seam.
 
 #include "apsis/ephemeris/spice_ephemeris.h"
 
+#include <mutex>
 #include <stdexcept>
 #include <string>
 
@@ -24,6 +30,26 @@ extern "C" {
 namespace apsis::ephemeris {
 namespace {
 
+// Process-wide CSPICE mutex per ADR-008. Constructed on first use
+// (Meyers-singleton); destruction order does not matter because no
+// CSPICE call is reachable after main() returns under our usage.
+std::mutex& cspice_global_mutex() {
+  static std::mutex m;
+  return m;
+}
+
+// RAII wrapper. All CSPICE calls in this translation unit must construct a
+// `CspiceLock` on the stack before touching any `*_c(` API. Holding the
+// lock through the call AND the failed_c()/getmsg_c() check is required:
+// CSPICE's error state is global and is "consumed" by reset_c().
+class CspiceLock {
+ public:
+  CspiceLock() : guard_(cspice_global_mutex()) {}
+
+ private:
+  std::lock_guard<std::mutex> guard_;
+};
+
 // SPICE J2000-of-date frame name (which is ICRF-aligned to within the bias
 // SOFA's iauBp06 returns; for the Phase 1 force model precision, treating
 // SPICE "J2000" output as ICRF is exact at the documented kernel quality.
@@ -33,7 +59,7 @@ constexpr const char* kAbcorr     = "NONE";
 constexpr int         kObserverSSB = 0;  // NAIF: 0 = Solar-System Barycentre
 
 // Read CSPICE's pending error message, reset the error stack, and throw.
-// Caller must hold spice_mutex_.
+// Caller must hold the global CSPICE lock.
 [[noreturn]] void throw_spice_error(const std::string& context) {
   constexpr SpiceInt kBuf = 1840;
   SpiceChar msg[kBuf];
@@ -61,7 +87,7 @@ constexpr double kKmToM = 1000.0;
 }  // namespace
 
 SpiceEphemeris::SpiceEphemeris(const std::vector<std::string>& kernel_paths) {
-  std::lock_guard<std::mutex> lock(spice_mutex_);
+  CspiceLock lock;
 
   // Promote CSPICE errors to RETURN mode so we can surface them as C++
   // exceptions instead of having CSPICE call exit() on us.
@@ -77,9 +103,16 @@ SpiceEphemeris::SpiceEphemeris(const std::vector<std::string>& kernel_paths) {
 }
 
 SpiceEphemeris::~SpiceEphemeris() {
-  std::lock_guard<std::mutex> lock(spice_mutex_);
+  CspiceLock lock;
   // Best-effort kernel release; if kclear_c flags an error we swallow it
   // since we are in a destructor.
+  //
+  // NOTE: kclear_c clears the *entire* CSPICE kernel pool, which is a
+  // process-wide effect. If multiple SpiceEphemeris instances coexist,
+  // the first to be destroyed unloads kernels owned by others. This is
+  // an acknowledged Phase 1 limitation tracked as a Phase 7 hardening
+  // item (per-instance kernel handles via furnsh_c's handle-returning
+  // sibling, or refcounted kernel ownership).
   kclear_c();
   if (failed_c()) {
     reset_c();
@@ -89,7 +122,7 @@ SpiceEphemeris::~SpiceEphemeris() {
 apsis::frames::State<apsis::frames::tags::ICRF>
 SpiceEphemeris::state(int body_naif_id,
                       apsis::time::Time<apsis::time::tags::TDB> t) const {
-  std::lock_guard<std::mutex> lock(spice_mutex_);
+  CspiceLock lock;
 
   const double et = tdb_to_et_seconds(t);
 

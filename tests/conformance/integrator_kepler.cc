@@ -21,7 +21,6 @@
 
 #include "apsis/force/point_mass.h"
 #include "apsis/integrate/dp54.h"
-#include "apsis/integrate/gauss_jackson_8.h"
 #include "apsis/integrate/iintegrator.h"
 #include "apsis/integrate/yoshida4.h"
 
@@ -102,11 +101,10 @@ TEST(IntegratorKepler, Yoshida4) {
   propagate_one_period(y, pm, /*dt=*/30.0, /*tol_m=*/100.0);
 }
 
-TEST(IntegratorKepler, GaussJackson8) {
-  af::PointMass pm(kMu);
-  ai::GaussJackson8 g;
-  // Phase 1 stand-in = Dop853-style; 60 s steps capped by the integrator.
-  propagate_one_period(g, pm, /*dt=*/60.0, /*tol_m=*/10.0);
-}
+// GaussJackson8 conformance test removed in Phase 1: the Phase 1 stand-in
+// shared the Dp54 implementation, so the parameterised gate ran the same
+// integrator twice. The Berry-Healy 2004 ordinate-form GJ8 lands behind
+// the IIntegrator seam in Phase 7; conformance over {Dp54, Yoshida4, GJ8}
+// returns at that point.
 
 }  // namespace

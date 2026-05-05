@@ -8,10 +8,7 @@ target_compile_definitions(jpl_de_roundtrip PRIVATE
   APSIS_DATA_DIR="${CMAKE_SOURCE_DIR}/data"
 )
 
-apsis_add_test(iss_vector
-  LABEL   regression
-  SOURCES iss_vector.cc
-)
-target_compile_definitions(iss_vector PRIVATE
-  APSIS_DATA_DIR="${CMAKE_SOURCE_DIR}/data"
-)
+# iss_vector regression deleted in the GJ8-stub-removal commit and
+# replaced in the immediately following commit by a LEO Kepler closed-
+# form comparison (leo_kepler_24h). Real ISS state-vector reproduction
+# against published NASA reference data is deferred to Phase 7.

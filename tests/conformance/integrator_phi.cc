@@ -19,7 +19,6 @@
 
 #include "apsis/force/point_mass.h"
 #include "apsis/integrate/dp54.h"
-#include "apsis/integrate/gauss_jackson_8.h"
 #include "apsis/integrate/iintegrator.h"
 #include "apsis/integrate/yoshida4.h"
 
@@ -112,10 +111,8 @@ TEST(IntegratorPhi, Yoshida4) {
   check_phi(y, pm, /*pos_tol=*/100.0, /*vel_tol=*/1e-1);
 }
 
-TEST(IntegratorPhi, GaussJackson8) {
-  af::PointMass pm(kMu);
-  ai::GaussJackson8 g;
-  check_phi(g, pm, /*pos_tol=*/1.0, /*vel_tol=*/1e-3);
-}
+// GaussJackson8 Phi conformance removed in Phase 1 — see the matching
+// removal in integrator_kepler.cc. The Berry-Healy 2004 ordinate-form
+// implementation rejoins the parameterised gate in Phase 7.
 
 }  // namespace

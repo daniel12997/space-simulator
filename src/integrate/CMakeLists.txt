@@ -4,6 +4,5 @@ target_sources(apsis_core
   PRIVATE
     dp54.cc
     yoshida4.cc
-    gauss_jackson_8.cc
     encke_wrapper.cc
 )

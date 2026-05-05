@@ -392,14 +392,14 @@ the test surface is mature enough that 100% REQ coverage is realistic.
 ## Verification
 
 ### Automated (Phase 1 gate)
-- [ ] All Phase 0 checks still green.
-- [ ] `ctest --test-dir build -L unit` — every unit test passes (time, frames, math, force, integrate, ephemeris, data integrity).
-- [ ] `ctest --test-dir build -L conformance` — `IIntegrator` Kepler conformance, `IIntegrator` Φ conformance, and `IForceModel` VE-contract conformance all green for every adapter (Dop853 / Yoshida4 / GaussJackson8 × PointMass / SphericalHarmonic / ThirdBody).
-- [ ] `ctest --test-dir build -L regression` — `jpl_de_roundtrip` and `iss_vector` pass within declared tolerances (or widened-with-comment ISS tolerance if drag absence forces it).
-- [ ] Compile-fail tests (`scale_mixing_compile_fail.cc`, frame-mixing equivalent) fail to compile as expected (`try_compile` with `EXPECT_FAIL`).
-- [ ] `tools/lint/cspice_seam.py` reports zero CSPICE call sites outside `src/ephemeris/`.
+- [x] All Phase 0 checks still green.
+- [x] `ctest --test-dir build -L unit` — every unit test passes (time, frames, math, force, integrate, ephemeris, data integrity).
+- [x] `ctest --test-dir build -L conformance` — `IIntegrator` Kepler conformance, `IIntegrator` Φ conformance, and `IForceModel` VE-contract conformance all green for every adapter (Dop853 / Yoshida4 / GaussJackson8 × PointMass / SphericalHarmonic / ThirdBody).
+- [x] `ctest --test-dir build -L regression` — `jpl_de_roundtrip` and `iss_vector` pass within declared tolerances (or widened-with-comment ISS tolerance if drag absence forces it).
+- [x] Compile-fail tests (`scale_mixing_compile_fail.cc`, frame-mixing equivalent) fail to compile as expected (`try_compile` with `EXPECT_FAIL`).
+- [x] `tools/lint/cspice_seam.py` reports zero CSPICE call sites outside `src/ephemeris/`.
 - [ ] DOP853 / GJ8 coefficient-table SHA hashes in CI match the committed values.
-- [ ] Sanitizer build (`APSIS_ENABLE_SANITIZERS=ON`) green on all unit + conformance tests.
+- [x] Sanitizer build (`APSIS_ENABLE_SANITIZERS=ON`) green on all unit + conformance tests.
 
 ### Manual
 - [ ] Walk the `apsis::time::convert` graph in `src/time/convert.cc` and verify the only path between any two scales is via TAI (TT↔TDB excepted).

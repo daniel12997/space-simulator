@@ -12,7 +12,7 @@ namespace {
 
 // Stumpff functions C(z), S(z) — series form near z = 0, closed form
 // elsewhere. Both formulas in Battin §4.4.5.
-double stumpff_c(double z) {
+double stumpff_C(double z) {
   if (z > 1e-6) {
     const double sz = std::sqrt(z);
     return (1.0 - std::cos(sz)) / z;
@@ -25,7 +25,7 @@ double stumpff_c(double z) {
   return 0.5 - z / 24.0 + z * z / 720.0;
 }
 
-double stumpff_s(double z) {
+double stumpff_S(double z) {
   if (z > 1e-6) {
     const double sz = std::sqrt(z);
     return (sz - std::sin(sz)) / (sz * sz * sz);
@@ -64,8 +64,8 @@ propagate(const apsis::frames::State<apsis::frames::tags::ICRF>& state0,
   // Newton-Raphson iteration on Kepler's equation in universal variables.
   for (int it = 0; it < 50; ++it) {
     const double psi = chi * chi * alpha;
-    const double C = stumpff_c(psi);
-    const double S = stumpff_s(psi);
+    const double C = stumpff_C(psi);
+    const double S = stumpff_S(psi);
     const double r = chi * chi * C
                      + (r0_dot_v0 / sqrt_mu) * chi * (1.0 - psi * S)
                      + r0_norm * (1.0 - psi * C);
@@ -81,8 +81,8 @@ propagate(const apsis::frames::State<apsis::frames::tags::ICRF>& state0,
   }
 
   const double psi = chi * chi * alpha;
-  const double C = stumpff_c(psi);
-  const double S = stumpff_s(psi);
+  const double C = stumpff_C(psi);
+  const double S = stumpff_S(psi);
 
   // Lagrange f, g, fdot, gdot (Vallado eqs 2-67, 2-68).
   const double f    = 1.0 - (chi * chi / r0_norm) * C;

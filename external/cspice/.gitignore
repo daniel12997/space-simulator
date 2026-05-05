@@ -1,0 +1,7 @@
+# Upstream CSPICE source restored at configure time by cmake/fetch_external.cmake
+# from the URL + SHA-256 in PINNED_VERSION. Do not commit the extracted tree.
+# CSPICE is platform-specific; the Linux PC_Linux_GCC_64bit toolkit is the
+# canonical Phase-0 package.
+src/
+include/
+_extracted_marker

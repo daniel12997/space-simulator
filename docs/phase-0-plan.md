@@ -220,13 +220,13 @@ A second job runs the sanitizer build:
 ## Verification
 
 ### Automated
-- [ ] `cmake -S . -B build -G Ninja` configures cleanly on Linux + Windows; SOFA / CSPICE upstream extract on first configure with SHA verification passing.
-- [ ] `cmake --build build` succeeds with **zero compiler warnings** (warnings-as-errors enforced by `apsis_compile_options.cmake`).
-- [ ] `ctest --test-dir build --output-on-failure -L smoke` runs and `VersionSmoke.NonEmpty` passes.
-- [ ] `clang-format --dry-run --Werror` exits 0 across all `.cc` / `.h` files.
-- [ ] `clang-tidy` runs with zero diagnostics on `apsis_core` sources.
-- [ ] Sanitizer build (`APSIS_ENABLE_SANITIZERS=ON`) passes ctest with no ASan/UBSan reports.
-- [ ] GitHub Actions matrix green: `{ubuntu-22.04 × gcc-13, ubuntu-22.04 × clang-17, windows-2022 × msvc}`.
+- [x] `cmake -S . -B build -G Ninja` configures cleanly on Linux + Windows; SOFA / CSPICE upstream extract on first configure with SHA verification passing. (Linux gcc-13 verified locally; Windows reviewed by hand in CI YAML.)
+- [x] `cmake --build build` succeeds with **zero compiler warnings** (warnings-as-errors enforced by `apsis_compile_options.cmake`). (Linux gcc-13 verified locally.)
+- [x] `ctest --test-dir build --output-on-failure -L smoke` runs and `VersionSmoke.NonEmpty` passes.
+- [ ] `clang-format --dry-run --Werror` exits 0 across all `.cc` / `.h` files. (Skipped locally — clang-format not installed; CI step in place.)
+- [ ] `clang-tidy` runs with zero diagnostics on `apsis_core` sources. (Skipped locally — clang-tidy not installed; CI step in place.)
+- [x] Sanitizer build (`APSIS_ENABLE_SANITIZERS=ON`) passes ctest with no ASan/UBSan reports. (gcc-13 ASan+UBSan; clang not available locally.)
+- [ ] GitHub Actions matrix green: `{ubuntu-22.04 × gcc-13, ubuntu-22.04 × clang-17, windows-2022 × msvc}`. (Workflow YAML in place; CI run is deferred until pushed.)
 
 ### Manual
 - [ ] Open `LICENSE`, confirm canonical Apache-2.0 text and copyright line correct.

@@ -1,0 +1,5 @@
+# Upstream SOFA source restored at configure time by cmake/fetch_external.cmake
+# from the URL + SHA-256 in PINNED_VERSION. Do not commit the extracted tree.
+src/
+include/
+_extracted_marker

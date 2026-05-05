@@ -1,2 +1,31 @@
 docs/private/
 .work/
+
+# Build directories
+build/
+build-*/
+cmake-build-*/
+
+# CMake artefacts
+compile_commands.json
+.cache/
+CMakeUserPresets.json
+
+# Fetched / extracted upstreams (vendored sources are restored from PINNED_VERSION)
+external/_cache/
+external/sofa/src/
+external/sofa/include/
+external/sofa/_extracted_marker
+external/cspice/src/
+external/cspice/include/
+external/cspice/_extracted_marker
+
+# Fetched large reference data (Tier 2 — see ADR 011)
+data/_fetched/
+
+# IDE noise
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

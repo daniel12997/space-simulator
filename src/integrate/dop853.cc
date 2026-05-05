@@ -61,28 +61,24 @@ apsis::math::Vec6 vec_from_state(
 }
 
 // Scaled-norm error per Hairer §II.4: sqrt(sum((err / (atol + rtol * |y|))^2) / N).
+//
+// Phase 1 note: per ADR-002, Φ accuracy needs decouple from natural-state
+// step control. The error norm here uses ONLY the natural-state component;
+// Φ is integrated alongside the state at the same step but does not drive
+// step rejection. This keeps the Phase 1 Φ-augmented contract from
+// pathologically shrinking the step over long horizons where the
+// dynamics Jacobian is large (e.g. Encke deviation propagation against a
+// full force model).
 double scaled_norm(const apsis::math::Vec6& err_state,
-                   const apsis::math::Mat6& err_phi,
                    const apsis::math::Vec6& y_now,
-                   const apsis::math::Mat6& phi_now,
                    double atol, double rtol) {
   double sum = 0.0;
-  int n = 0;
   for (int i = 0; i < 6; ++i) {
     const double sc = atol + rtol * std::abs(y_now[i]);
     const double e = err_state[i] / sc;
     sum += e * e;
-    ++n;
   }
-  for (int i = 0; i < 6; ++i) {
-    for (int j = 0; j < 6; ++j) {
-      const double sc = atol + rtol * std::abs(phi_now(i, j));
-      const double e = err_phi(i, j) / sc;
-      sum += e * e;
-      ++n;
-    }
-  }
-  return std::sqrt(sum / static_cast<double>(n));
+  return std::sqrt(sum / 6.0);
 }
 
 }  // namespace
@@ -131,7 +127,7 @@ StepResult Dop853::step(apsis::time::Time<apsis::time::tags::TT> t,
       err_p += h * dp::kE[static_cast<std::size_t>(s)] * kp[static_cast<std::size_t>(s)];
     }
 
-    const double E = scaled_norm(err_x, err_p, y_new, p_new, opts_.atol, opts_.rtol);
+    const double E = scaled_norm(err_x, y_new, opts_.atol, opts_.rtol);
 
     if (E <= 1.0 || h <= opts_.dt_min) {
       // Accepted.

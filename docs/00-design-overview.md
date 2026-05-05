@@ -136,6 +136,8 @@ For a contributor implementing one subsystem: CLAUDE.md → this file → releva
 
 ## How to extend this doc
 
-New ADR → add to "Design decisions". Major deepening landed → update deepenings table + remaining candidates. Phase boundary reached → update phased plan. Doc-version bump → update v0.x marker. Risks resolved or new ones surfaced → update Risks.
+**Budget: ~200 rendered lines at 100-char wrap.** This is a hard ceiling, not a target. When adding content, condense or remove existing material to stay under budget. Verify with `awk '{c+=int((length+99)/100)+(!length)} END{print c}' docs/00-design-overview.md` (~209 baseline as of 2026-05-05). If content can't be expressed within budget, it doesn't belong here — it belongs in REQUIREMENTS / architecture / subsystems / wiki concept pages, with a brief pointer from this doc.
+
+Triggers for editing: new ADR → add to "Design decisions". Major deepening landed → update deepenings table + remaining candidates. Phase boundary reached → update phased plan. Doc-version bump → update v0.x marker. Risks resolved or surfaced → update Risks.
 
 This is the alignment artifact, not a spec. Specs are REQUIREMENTS / architecture / subsystems. Wiki concept and decision pages are the substantive design content. This doc orients; it does not authorise.

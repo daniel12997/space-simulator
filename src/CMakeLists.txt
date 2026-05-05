@@ -35,3 +35,4 @@ add_library(apsis::core ALIAS apsis_core)
 
 # Subdirectories add their sources via target_sources(apsis_core ...).
 add_subdirectory(time)
+add_subdirectory(frames)

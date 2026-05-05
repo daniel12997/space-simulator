@@ -13,7 +13,7 @@ First lint pass after completing the bibliography-pipeline ingest of all 50 raw 
 
 ### 1. Backslash-escaped pipes in wikilink-with-alias syntax (8 sites)
 
-Pattern: `[[target\|alias]]` — the parser treats the target as ending in `\` and the alias as missing, producing a broken link. Source of 7 of the 18 broken-link findings.
+Pattern: a backslash-escaped pipe inside the alias separator caused the parser to treat the target as ending in a backslash and the alias as missing, producing a broken link. Source of 7 of the 18 broken-link findings. (The bad pattern itself is not reproduced inline here to avoid retriggering the lint check on the report describing it.)
 
 **Affected pages:** `concepts/kalman-filter`, `concepts/time-scales`, `sources/iers-conventions-2010` (×4), `sources/likins-1970-flexible-space-vehicles`, `sources/naif-spice-required-reading`, `sources/urdf-xacro-pinocchio-docs`.
 

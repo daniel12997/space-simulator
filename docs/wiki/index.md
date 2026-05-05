@@ -134,9 +134,14 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 
 (none yet)
 
-## Synthesis (0)
+## Synthesis (4)
 
-(none yet)
+| Slug | Title | Date |
+|---|---|---|
+| [[synthesis/audit-summary-2026-05-05]] | Audit summary — REQUIREMENTS, architecture, subsystems | 2026-05-05 |
+| [[synthesis/audit-requirements-2026-05-05]] | Audit of REQUIREMENTS.md against the wiki corpus | 2026-05-05 |
+| [[synthesis/audit-architecture-2026-05-05]] | Audit of 01-architecture.md against the wiki corpus | 2026-05-05 |
+| [[synthesis/audit-subsystems-2026-05-05]] | Audit of 02-subsystems.md against the wiki corpus | 2026-05-05 |
 
 ## Queries (0)
 

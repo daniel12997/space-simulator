@@ -215,3 +215,20 @@ Full-wiki lint after the bibliography pipeline reached steady state.
 - Pines 1973 / Cunningham 1970 referenced from `concepts/spherical-harmonic-geopotential` but not in corpus (paywalled)
 
 Full report at [[lint-reports/2026-05-05-post-ingest-lint]].
+
+## [2026-05-05] synthesis | Three-document audit (REQUIREMENTS / architecture / subsystems)
+
+Systematic audit of the three authoritative design docs against the wiki corpus, requested by the user. Produced four synthesis pages:
+
+- `synthesis/audit-requirements-2026-05-05` — 1 HIGH, 9 MEDIUM, 19 LOW (29 findings).
+- `synthesis/audit-architecture-2026-05-05` — 0 HIGH, 2 MEDIUM, 9 LOW (11 findings).
+- `synthesis/audit-subsystems-2026-05-05` — 0 HIGH, 6 MEDIUM, 16 LOW (22 findings).
+- `synthesis/audit-summary-2026-05-05` — cross-document summary, finding clusters, and recommended order of operations.
+
+**Single HIGH finding (F2.1):** REQ-PHY-016 (variational-equations partials) is S-priority but blocks M-priority orbit estimation (REQ-GNC-004) and Pc computation (REQ-CAT-009). Recommend promote to M.
+
+**MEDIUM clusters:** frame precision (ICRF/J2000 conflation across all three docs); tides + Pc precision priority mismatch; SGP4 WGS-72 constants spec gap; flex/slosh priority vs "flight-dynamics-grade" framing; MEKF acquisition-mode fallback gap; CAM analytic-optimal vs along-track restriction; CMG/VSCMG terminology confusion.
+
+**LOW cluster:** mostly text fixes — IGRF-13 → IGRF-14, citations of ADR-001 from REQ/arch/subsystems, TCG/TCB time-scale gap, Pinocchio analytical-derivatives credit, body-frame convention choice, CDM HBR config gap.
+
+**No edits made to the three docs themselves** — per CLAUDE.md scope guard, those are deliberate human-or-jointly-authored. Audit reports cite [[concepts/]] and [[sources/]] supporting each finding so the human reviewer has direct backing material.

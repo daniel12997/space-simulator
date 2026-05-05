@@ -28,7 +28,17 @@ set_target_properties(apsis_sofa PROPERTIES
 if(MSVC)
   target_compile_options(apsis_sofa PRIVATE /w)
 else()
-  target_compile_options(apsis_sofa PRIVATE -w)
+  # See cspice/CMakeLists.txt for rationale: clang-15+ promotes K&R-era C
+  # diagnostics to errors by default; -w doesn't help. Demote back to warnings
+  # (silenced by -w). SOFA is modern enough to not currently trip these, but
+  # apply the same defensive flags so future SOFA releases or alt toolchains
+  # don't surprise the build.
+  target_compile_options(apsis_sofa PRIVATE
+    -w
+    -Wno-error=implicit-int
+    -Wno-error=implicit-function-declaration
+    -Wno-error=int-conversion
+    -Wno-error=incompatible-function-pointer-types)
 endif()
 
 add_library(apsis::sofa ALIAS apsis_sofa)

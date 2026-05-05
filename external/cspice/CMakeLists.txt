@@ -32,7 +32,17 @@ if(MSVC)
   # not add /WX here. The default _CRT_SECURE_NO_WARNINGS keeps things quiet.
   target_compile_definitions(apsis_cspice PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
-  target_compile_options(apsis_cspice PRIVATE -w)
+  # -w suppresses warnings, but clang-15+ promotes several K&R-era diagnostics
+  # to errors by default; CSPICE's f2c-translated source has implicit-int
+  # function declarations (e.g. src/dfe.c) that fail clang's stricter default.
+  # Demote those back to warnings (which -w then silences). gcc accepts them
+  # silently under -w; the -Wno-error=* forms are no-ops there.
+  target_compile_options(apsis_cspice PRIVATE
+    -w
+    -Wno-error=implicit-int
+    -Wno-error=implicit-function-declaration
+    -Wno-error=int-conversion
+    -Wno-error=incompatible-function-pointer-types)
 endif()
 
 # CSPICE expects NON_UNIX_STDIO unset on POSIX; on Windows the upstream

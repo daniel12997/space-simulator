@@ -350,6 +350,45 @@ test cites the omitted forces. This is the preferred fallback over
 deferring the test entirely; the test still proves the pipeline runs
 end-to-end with the correct force-model interfaces wired.
 
+### 11. Class D followup: gcov coverage gate
+
+Per [[wiki/decisions/013-class-d-software-classification]] and
+`docs/process/software-test-plan.md` §3, Class D mandates code-coverage
+measurement. Threshold: ≥ 80% statement coverage on first-party code
+(`src/`, `include/apsis/`); vendored upstreams excluded.
+
+**Files**:
+- `cmake/apsis_compile_options.cmake` — extend with an `APSIS_ENABLE_COVERAGE` option that adds `--coverage` (= `-fprofile-arcs -ftest-coverage`) to first-party targets only (vendored SOFA / CSPICE retain `-w` and no coverage instrumentation).
+- `cmake/coverage.cmake` (new) — `apsis_add_coverage_target()` defines a `coverage` Make / Ninja target that runs `lcov --capture`, filters out `_deps/`, `external/`, `tests/`, and `/usr/`, generates `build/coverage/lcov.info` and a textual summary, and asserts ≥ 80% statement coverage on first-party files (CI-fail otherwise).
+- `.github/workflows/ci.yml` — extend the gcc-13 job: install `lcov`; configure with `-DAPSIS_ENABLE_COVERAGE=ON`; build; ctest; `cmake --build build --target coverage`; upload `lcov.info` as a CI artefact; fail the job on threshold miss.
+
+The coverage gate runs only on the gcc-13 job (one Linux toolchain
+per matrix is sufficient for Class D coverage measurement). The
+clang-17 and sanitizer jobs do not measure coverage.
+
+**Threshold rationale**: 80% is the NPR 7150.2D Class D minimum (per
+`docs/process/software-test-plan.md`). The first build is expected to
+exceed it because Phase 1 is mostly tested code by construction —
+every adapter is exercised by its conformance test. The gate exists
+to catch *regression* in coverage, not to bootstrap it.
+
+### 12. Class D followup: REQ traceability lint
+
+Per `docs/process/software-test-plan.md` §7, every `REQ-*` ID in
+`docs/REQUIREMENTS.md` must trace to at least one covering test.
+
+**Files**:
+- `tools/lint/req_traceability.py` (new) — scans `docs/REQUIREMENTS.md` for `REQ-*` IDs, scans `tests/**/*.cc` for `// requirements: REQ-*, REQ-*` header comments, builds the bidirectional map, and reports (a) REQ IDs without a covering test, (b) test files missing the `// requirements:` header. Exits non-zero on either category. Output is a markdown-formatted matrix to stdout.
+- `.github/workflows/ci.yml` — add a `req-traceability` step on the gcc-13 job (Linux only) running the script.
+- Phase 1 test files (`tests/unit/**/*.cc`, `tests/conformance/**/*.cc`, `tests/regression/**/*.cc`) — add `// requirements: REQ-*` header comments where the test exercises a REQ. Tests that exercise no specific REQ (e.g. compile-fail tests, internal sanity checks) declare `// requirements: none` to acknowledge the lint scan.
+
+**Bootstrap policy**: the script's gate is **soft on first run** —
+report missing-coverage REQ IDs as warnings, not errors, until the
+project explicitly turns the gate hard via a `STRICT_REQ_TRACEABILITY=1`
+env var. Phase 1 lands with the script in soft mode (warns but
+doesn't fail CI); the gate flips hard at a later phase boundary when
+the test surface is mature enough that 100% REQ coverage is realistic.
+
 ## Verification
 
 ### Automated (Phase 1 gate)

@@ -102,3 +102,43 @@ Quick-ingest pass through the time/frames and force-models clusters (per user ma
 2. JB2008 (REQ-PHY-008) requires four solar indices (F10, S10, M10, Y10) plus Dst — broader space-weather ingestion than NRLMSISE-00 (just F10.7 + Ap). Worth confirming REQ-ENV-005/006 cover the additional indices.
 3. Brouwer 1959's series diverge at the **critical inclination** (i ≈ 63.43°). SGP4 implementations use Lyddane's reformulation everywhere; Apsis's mean-element propagator should do the same — worth a note in subsystems §3 if not already there.
 4. DE441 covers ±13,200 years from J2000; DE440 ±100 years. Apsis should default to DE440 (smaller, fits in memory) and load DE441 only for long-arc / historical cases.
+
+## [2026-05-04] ingest batch | SGP4 + MBD/flex/slosh + attitude est/control + CA/RPO clusters (14 sources)
+
+Quick-ingest pass through the remaining four paper clusters (per "keep going until all raw files are done"):
+
+**SGP4 cluster (2):**
+- `vallado-2006-revisiting-spacetrack-3` — modern reference SGP4 implementation (REQ-INT-005, REQ-CAT-002).
+- `vallado-2008-sgp4-orbit-determination` — companion DC fitter for producing TLEs from external ephemerides.
+
+**MBD / flex / slosh cluster (5):**
+- `likins-1970-flexible-space-vehicles` — JPL TR 32-1329, foundational hybrid-coordinate method for rigid + flexible spacecraft.
+- `mistry-2010-floating-base-inverse-dynamics` — analytically-correct floating-base inverse dynamics via QR/orthogonal decomposition (capture/berthing/landing).
+- `abramson-1966-nasa-sp-106-slosh` — NASA SP-106, foundational propellant slosh monograph.
+- `dodge-2000-swri-slosh-update` — SwRI 2000 update of SP-106 with low-g and spinning-tank chapters.
+
+**Attitude estimation / control cluster (4):**
+- `markley-2003-attitude-error-representations` — taxonomy of attitude error representations + second-order MEKF.
+- `julier-uhlmann-1997-ukf` — original UKF paper.
+- `wan-vandermerwe-2000-ukf` — modern UKF (scaled UT, augmented state, parameter estimation).
+- `schaub-1998-vscmg` — VSCMG feedback control law unifying RW/CMG/VSCMG actuators.
+
+**CA / RPO cluster (3):**
+- `foster-estes-1992-jsc-25898-pc` — NASA JSC-25898, the Foster 2D analytic Pc method (REQ-CAT-005 canonical algorithm).
+- `bombardelli-2015-collision-avoidance` — analytic optimal impulsive CAM via b-plane eigenvalue formulation (REQ-CAT-008).
+- `newman-2022-cara-best-practices` — NASA CARA operational practices grounded in the CA² Handbook.
+- `dicairano-2012-mpc-rendezvous` — MPC for spacecraft rendezvous and proximity ops (REQ-GNC-006).
+
+**Two new concept pages:**
+- `sgp4` — finally broken out as its own page with the Brouwer-Lyddane / TEME / family relationships.
+- `generalized-rodrigues-parameters` — promoted from the deferred list now that Markley 2003 + Crassidis 2003 + Schaub 1998 all cite it.
+
+**Items surfaced for human review (no silent spec edits):**
+1. Subsystems §5.3 should specify MRP for the 3-vector covariance state and second-order MEKF as default per Markley 2003; current text just says "3-vector small rotation".
+2. REQ-GNC-003 mandates MEKF without a fallback; subsystems §5.3 should consider USQUE as contingency / acquisition-mode variant given MEKF's documented large-error convergence failures.
+3. Subsystems §5.4 actuator suite — VSCMG framework subsumes RW, SGCMG, DGCMG; consider implementing the most general case per Schaub 1998 with the others as configurations.
+4. Subsystems §6 should distinguish impulsive CAM (Bombardelli analytic) from constrained-trajectory RPO MPC (Di Cairano) — different algorithms for different mission phases.
+5. Subsystems §4.4 propellant management — Apsis should explicitly state whether it covers PMD-equipped tanks or only free-surface tanks (Dodge 2000 Ch. 11 is the PMD reference).
+6. JB2008 (REQ-PHY-008) needs four solar indices (F10, S10, M10, Y10) plus Dst; broader space-weather ingestion than NRLMSISE-00 (just F10.7 + Ap). Confirm REQ-ENV-005/006 cover these.
+
+All 32 papers now ingested. Specs cluster (18 items) is next.

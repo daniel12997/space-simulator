@@ -128,7 +128,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 
 | Number | Title | Status | Decided |
 |---|---|---|---|
-| [[decisions/001-use-ceo-based-icrs-to-itrs]] | Use CEO-based pipeline (X, Y, s, ERA) for ICRS↔ITRS transformations | proposed | — |
+| [[decisions/001-use-ceo-based-icrs-to-itrs]] | Use CEO-based pipeline (X, Y, s, ERA) for ICRS↔ITRS transformations | accepted | 2026-05-05 |
 
 ## Components (0)
 

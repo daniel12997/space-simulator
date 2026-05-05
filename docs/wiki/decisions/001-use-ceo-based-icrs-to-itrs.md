@@ -1,18 +1,20 @@
 ---
 type: decision
 title: "Use CEO-based pipeline (X, Y, s, ERA) for ICRS↔ITRS transformations"
-status: proposed
-decided: null
+status: accepted
+decided: 2026-05-05
 supersedes: []
 superseded_by: null
-sources: [capitaine-2003-iau2000-precession-p03]
+sources: [capitaine-2003-iau2000-precession-p03, sofa-2023-earth-attitude-cookbook, iers-conventions-2010, wallace-capitaine-2006-iau2006-procedures]
 components: []
 requirements: [REQ-TIME-006, REQ-TIME-008]
 ---
 
 ## Status
 
-**Proposed.** Awaiting human sign-off. Surfaced during ingest of [[sources/capitaine-2003-iau2000-precession-p03]] which observed that Apsis's architecture and subsystems documents specify "IAU 2006/2000A precession-nutation" without choosing between the two equivalent transformation pipelines that the IAU framework offers.
+**Accepted** 2026-05-05. Now cited from REQUIREMENTS.md REQ-TIME-006, 01-architecture.md §3 Foundation > Frames, and 02-subsystems.md §1.3 (all v0.2). Implementation routes through SOFA's `iauC2t06a` and the underlying `iauXys06a` / `iauEra00` / `iauPom00` primitives.
+
+Originally surfaced during ingest of [[sources/capitaine-2003-iau2000-precession-p03]] which observed that Apsis's architecture and subsystems documents specify "IAU 2006/2000A precession-nutation" without choosing between the two equivalent transformation pipelines that the IAU framework offers.
 
 ## Context
 

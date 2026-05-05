@@ -232,3 +232,22 @@ Systematic audit of the three authoritative design docs against the wiki corpus,
 **LOW cluster:** mostly text fixes — IGRF-13 → IGRF-14, citations of ADR-001 from REQ/arch/subsystems, TCG/TCB time-scale gap, Pinocchio analytical-derivatives credit, body-frame convention choice, CDM HBR config gap.
 
 **No edits made to the three docs themselves** — per CLAUDE.md scope guard, those are deliberate human-or-jointly-authored. Audit reports cite [[concepts/]] and [[sources/]] supporting each finding so the human reviewer has direct backing material.
+
+## [2026-05-05] spec-edit | Three authoritative docs revised to v0.2 + ADR-001 accepted
+
+User reviewed audit summary and authorized "make the fixes". Applied all 62 audit findings across the three authoritative design docs. Three commits (one per doc) plus the ADR acceptance:
+
+**docs/REQUIREMENTS.md (v0.1 → v0.2):**
+- HIGH F2.1 resolved: REQ-PHY-016 S → M.
+- 9 MEDIUM findings resolved (frame conflation, JB2008 indices, tides priority+convention, SGP4 WGS-72, flex/slosh promotion, MEKF fallback, CAM optimization, REQ-PHY-012 Schwarzschild S → M).
+- 19 LOW findings resolved (text/citation fixes, IGRF version, TCG/TCB option, new requirements for VSCMG / RPO MPC / CDM / HBR / nonlinear controllers / OOS items).
+
+**docs/01-architecture.md (v0.1 → v0.2):**
+- 2 MEDIUM and 9 LOW findings resolved (frame distinction, Pinocchio analytical-derivatives credit, IGRF-14, WGS-72 pin, JB2008 + CCSDS CDM dependency rows, Phase 3 deliverable expansion).
+
+**docs/02-subsystems.md (v0.1 → v0.2):**
+- 6 MEDIUM and 16 LOW findings resolved (frame distinction, tides defaults, VSCMG framework, MEKF MRP/2nd-order/USQUE-fallback, CAM analytic-optimal, CDM ingest section, RPO MPC controller, body-frame convention, mass-rebuild config, etc.).
+
+**ADR-001:** status `proposed` → `accepted` (2026-05-05). Now cited as load-bearing from all three v0.2 docs.
+
+Audit reports retained as historical record; they accurately describe the state at v0.1. Future audits should be quick deltas against v0.2.

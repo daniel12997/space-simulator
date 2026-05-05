@@ -1,6 +1,8 @@
 // Copyright 2026 Apsis Contributors
 // SPDX-License-Identifier: Apache-2.0
 //
+// requirements: REQ-TIME-013
+//
 // Phase-1 §2: NEGATIVE compile test. CMake's try_compile invokes this file
 // with EXPECT_FAIL semantics: the build is expected to FAIL because TAI and
 // UTC `Time<>` instantiations have no mixed-scale operators. If this ever

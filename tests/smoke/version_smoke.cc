@@ -1,6 +1,8 @@
 // Copyright 2026 Apsis Contributors
 // SPDX-License-Identifier: Apache-2.0
 //
+// requirements: none
+//
 // Phase-0 smoke test: confirms apsis::core links and apsis::version() returns
 // a non-empty build-stamp. Replaced/extended in Phase 1.
 

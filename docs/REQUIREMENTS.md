@@ -1,6 +1,6 @@
 # Apsis — Feature-Level Requirements
 
-> **Status:** Draft v0.3 (v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.4 (v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 > **Purpose:** Feature-level requirements for the Apsis spaceflight simulator. These describe *what* the system shall do, not *how* it implements them. Lower-level technical requirements (algorithms, data structures, library choices) are captured in the architecture and subsystem documents.
 
 ## Conventions
@@ -43,16 +43,17 @@
 | ID | Requirement | Priority |
 |---|---|---|
 | REQ-TIME-001 | The system SHALL maintain time in TAI, TT, UTC, UT1, and TDB scales with documented conversions between all pairs. The system MAY additionally support TCG (Geocentric Coordinate Time) and TCB (Barycentric Coordinate Time) per IAU 2000 resolutions for relativistic-strict use cases. | M (TCG/TCB MAY) |
-| REQ-TIME-002 | The system SHALL store time as a two-component representation (epoch + offset) preserving nanosecond precision over a 100-year span. | M |
+| REQ-TIME-002 | The system SHALL store time as a two-component representation `(epoch_jd, offset_seconds)` preserving nanosecond precision for `|offset| ≤ 10⁷ s` (~4 months). When `|offset|` exceeds the rectification threshold, the time SHALL auto-rectify (`epoch_jd ← epoch_jd + offset_seconds/86400`; `offset_seconds ← 0`) preserving the represented instant exactly. See [[wiki/concepts/long-arc-state-conditioning]] for the full rationale and how this composes with REQ-INT-006 (compensated summation) and REQ-INT-007 (Encke). | M |
 | REQ-TIME-003 | The system SHALL load and apply leap-second tables, with support for table updates without recompilation. | M |
 | REQ-TIME-004 | The system SHALL load and apply IERS Bulletin A polar motion and DUT1 data over the mission interval. | M |
 | REQ-TIME-005 | The system SHALL provide right-handed inertial frames including ICRF (current realization ICRF3), the J2000 mean-equator-and-equinox frame (related to ICRF by the constant ~17 mas frame bias), GCRF, MCI, and per-body CCI for all major solar-system bodies. ICRF and J2000 SHALL be treated as distinct frames. | M |
 | REQ-TIME-006 | The system SHALL provide right-handed body-fixed frames (ITRF for Earth, equivalents for other bodies) using IAU 2006/2000A precession-nutation via the CIO-based pipeline (see ADR-001) implemented through the IAU SOFA library. | M |
 | REQ-TIME-007 | The system SHALL provide per-spacecraft frames including body, LVLH, RSW, and NTW. | M |
 | REQ-TIME-008 | The system SHALL transform position, velocity, and attitude between any pair of supported frames at any supported epoch. | M |
-| REQ-TIME-009 | The system SHALL maintain millimeter-level position precision in CCI frames out to 50 AU. This SHALL be achieved through the combination of two-component time representation (REQ-TIME-002) and Encke-style perturbation propagation (REQ-INT-007). | M |
+| REQ-TIME-009 | The system SHALL maintain millimeter-level position precision in CCI frames out to 50 AU. This SHALL be achieved through the combined application of the three pillars of [[wiki/concepts/long-arc-state-conditioning|long-arc state conditioning]]: two-component time representation (REQ-TIME-002), compensated summation in integrator state accumulation (REQ-INT-006), and Encke-style perturbation propagation (REQ-INT-007). | M |
 | REQ-TIME-010 | The system SHALL transition between CCI and CCF frames at user-configured altitude or SOI boundaries without observable state discontinuity. | M |
 | REQ-TIME-011 | The system MAY provide local floating-origin frames for interstellar-scale precision. | C |
+| REQ-TIME-013 | The `Time` type SHALL be tagged with its time scale (TAI / TT / UTC / UT1 / TDB; optionally TCG / TCB) at the type level. Conversions between scales SHALL be explicit and route through the IAU SOFA library. Mixing scales without explicit conversion SHALL be a compile-time error. See [[wiki/decisions/003-tagged-time-scale-types|ADR-003]] for the rationale (vs untagged) and serialization / Python-binding implications. | M |
 
 ## 2. Physics and force models
 
@@ -88,8 +89,8 @@
 | REQ-INT-003 | The system SHALL provide a symplectic integrator (Yoshida 8 or equivalent) for long-arc gravity-only propagation. | S |
 | REQ-INT-004 | The system SHALL provide analytical Keplerian propagation. | M |
 | REQ-INT-005 | The system SHALL provide SGP4 propagation for TLE-defined objects. The implementation SHALL use **WGS-72** fundamental constants per Spacetrack Report No. 3 (operational AFSPC convention) and SHALL convert SGP4's TEME output to the requested target frame per the Vallado et al. 2006 §VI recipe. | M |
-| REQ-INT-006 | All integrators SHALL use compensated (Kahan-Neumaier) summation for state accumulation. | M |
-| REQ-INT-007 | The system SHALL provide Encke-style perturbation propagation as an alternative formulation, with automatic reference rectification. | S |
+| REQ-INT-006 | All integrators SHALL use compensated (Kahan-Neumaier) summation for state accumulation. The system SHALL provide both per-scalar (`CompensatedSum<T>`) and vectorised (`CompensatedAccumulator<V>`) primitives; the latter is used by the Variational Equations integrator (REQ-INT-014) for Φ matrix accumulation by default. See [[wiki/concepts/long-arc-state-conditioning]] §"Compensated summation". | M |
+| REQ-INT-007 | The system SHALL provide Encke-style perturbation propagation as a **wrapper** over any base integrator (DOPRI 8(7), GJ8, Yoshida 8, etc.), not as a standalone integrator class. The wrapper SHALL maintain an analytical Keplerian reference orbit, integrate the deviation `δr` via Battin's form, and auto-rectify when `|δr| / |r_reference| > 0.01` (default 1% threshold; configurable). Engagement SHALL be per-spacecraft via scenario configuration (default off). The wrapper's dense output SHALL expose absolute coordinates so downstream consumers (e.g. the Variational Equations integrator) need not be Encke-aware. See [[wiki/concepts/long-arc-state-conditioning]] §"Encke perturbation propagation". | S |
 | REQ-INT-008 | The system SHALL provide dense output (continuous interpolation between integration nodes) for all numerical integrators. | M |
 | REQ-INT-009 | The system SHALL detect and localize events to a user-specified tolerance using root-finding on the dense output. | M |
 | REQ-INT-010 | The system SHALL support the following event types as built-ins: periapsis, apoapsis, eclipse entry/exit, SOI crossing, altitude triggers, ground station AOS/LOS, and time triggers. | M |

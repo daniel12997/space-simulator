@@ -1,6 +1,6 @@
 # Apsis — System Architecture Overview
 
-> **Status:** Draft v0.3 (v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.4 (v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 > **Scope:** High-fidelity spaceflight simulator for satellite engineering, GNC development, Monte Carlo verification, and full-catalog conjunction analysis.
 
 ---
@@ -18,7 +18,7 @@ The design explicitly rejects two common shortcuts. It does not use a generic ga
 
 ## 2. Design principles
 
-**Conditioning over precision.** The simulator runs entirely in `f64`. Numerical robustness comes from frame partitioning, Encke-style perturbation formulations, compensated summation, and structure-preserving integrators — not from wider word sizes. This is the same discipline that lets professional astrodynamics codes (MONTE, GMAT, Orekit) hold satellites stable over decades in `f64`.
+**Conditioning over precision.** The simulator runs entirely in `f64`. Numerical robustness comes from the three pillars of [[wiki/concepts/long-arc-state-conditioning|long-arc state conditioning]] — two-component time, Encke-style perturbation propagation, and compensated summation — plus frame partitioning at precision-rich boundaries and structure-preserving integrators. Not from wider word sizes. This is the same discipline that lets professional astrodynamics codes (MONTE, GMAT, Orekit) hold satellites stable over decades in `f64`.
 
 **Hierarchy of inertial frames.** All dynamics live in inertial frames where Newton's laws apply directly. Body-fixed frames are used only at boundaries (surface coordinates, magnetic fields, atmosphere-relative velocity). Frame transitions happen at precision-rich boundaries (atmosphere edges, SOI crossings) rather than mid-orbit.
 
@@ -70,7 +70,7 @@ The design explicitly rejects two common shortcuts. It does not use a generic ga
 
 ### Foundation
 
-**Time system.** TAI/TT/UTC/UT1/TDB with leap-second tables and IERS Bulletin A polar motion / DUT1 data, plus optional TCG/TCB for relativistic-strict use cases. Two-component time representation (`epoch_jd + offset_seconds`, both `f64`) for nanosecond precision over multi-decade arcs. SOFA-backed.
+**Time system.** TAI/TT/UTC/UT1/TDB with leap-second tables and IERS Bulletin A polar motion / DUT1 data, plus optional TCG/TCB for relativistic-strict use cases. Two-component time representation (`epoch_jd + offset_seconds`, both `f64`) for nanosecond precision over multi-decade arcs. The `Time` type is **tagged with its scale at the type level** — scale-mixing is a compile-time error per [[wiki/decisions/003-tagged-time-scale-types|ADR-003]]. SOFA-backed.
 
 **Ephemerides.** SPICE kernels (SPK for positions, PCK for body orientations, FK for frame definitions, LSK for leap seconds, CK for spacecraft attitude history). `SpkEzr`-style queries return position and velocity of any body in any frame at any TDB epoch.
 
@@ -93,7 +93,7 @@ The design explicitly rejects two common shortcuts. It does not use a generic ga
 
 **State conversions.** Cartesian (canonical), classical orbital elements, modified equinoctial elements, Brouwer-Lyddane mean elements, TLE-compatible. Quaternions (canonical) ↔ DCM ↔ Euler ↔ MRPs for attitude.
 
-**Encke-style propagation.** Optional formulation that integrates deviations from a reference Keplerian orbit. The reference is propagated analytically; only the perturbation correction is integrated numerically. This drastically reduces cancellation error on long arcs.
+**Encke-style propagation.** Optional **wrapper** around any base integrator (DOPRI 8(7), GJ8, Yoshida 8, etc.) that integrates deviations from a Keplerian reference orbit. The reference is propagated analytically; only the perturbation correction `δr̈` is integrated numerically by the wrapped base integrator. Auto-rectification when deviation exceeds a threshold (default 1% of reference radius). The wrapper exposes absolute-coordinate dense output, so downstream consumers (Variational Equations integrator, etc.) need not be Encke-aware. See [[wiki/concepts/long-arc-state-conditioning]] for the rationale; one of three pillars of long-arc precision.
 
 ### ECS world
 
@@ -209,7 +209,7 @@ The novel engineering — and the project's value-add — is in:
 - The **orchestration layer** (event-driven time stepping with multi-rate GNC)
 - The **floating-base coupling** between Pinocchio and the orbital propagator
 - The **GNC plant/controller architecture** (message bus, sample-and-hold, failure injection)
-- **Encke-style perturbation propagation** built on top of analytical references
+- The **Long-arc state conditioning subsystem** ([[wiki/concepts/long-arc-state-conditioning]]) — three pillars: two-component time (tagged at type level per [[wiki/decisions/003-tagged-time-scale-types|ADR-003]]), Encke wrapper over base integrators, compensated (Kahan-Neumaier) summation primitives. Together they let `f64` hold satellites stable over decades.
 - The **Variational Equations subsystem** ([[wiki/concepts/variational-equations]]) — per-force partials contract, framework assembly of A, Φ propagation between measurements; bridges force models to orbit estimation and Pc covariance propagation
 - The **Monte Carlo harness** (snapshot/restore, deterministic seeding, parallel execution, aggregation)
 - The **catalog/conjunction pipeline** (SoA SGP4, spatial indexing, refinement)

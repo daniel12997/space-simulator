@@ -2,7 +2,7 @@
 
 > Companion to `01-architecture.md`. Detailed designs for each major subsystem.
 >
-> **Status:** Draft v0.3 (v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
+> **Status:** Draft v0.4 (v0.4: Long-arc state conditioning deepening per [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types]]; v0.3: Variational Equations deepening per [[wiki/concepts/variational-equations]] and [[wiki/decisions/002-variational-equations-between-measurements]]; v0.2: revised against wiki audit 2026-05-05; see [[wiki/synthesis/audit-summary-2026-05-05]])
 
 ---
 
@@ -22,11 +22,29 @@ The simulator maintains explicit conversions between five primary time scales, p
 
 Internal computation uses TT for spacecraft propagation and TDB for ephemeris queries; UTC and UT1 are used only at boundaries. Apsis defaults to TT-rate-scaled GCRS coordinates (the engineering norm); TCG/TCB are available for strict relativistic work but not used in default-precision force models.
 
+The `Time` type is **tagged with its scale at the type level** (`TaiTime`, `TtTime`, `UtcTime`, `Ut1Time`, `TdbTime`, optionally `TcgTime`/`TcbTime`); mixing scales without explicit conversion is a compile-time error. See [[wiki/decisions/003-tagged-time-scale-types|ADR-003]] for rationale and [[wiki/concepts/long-arc-state-conditioning]] for how this composes with two-component representation and the other long-arc precision pillars.
+
 ### 1.2 Time representation
 
-Time is stored as `(epoch_jd: f64, offset_seconds: f64)`. The epoch is a reference Julian Date (typically J2000 = 2451545.0 TT). The offset is seconds since the epoch. This preserves nanosecond precision for offsets up to ±10^7 seconds (roughly four months) before requiring epoch rectification.
+Time is stored as `(epoch_jd: f64, offset_seconds: f64)`. The epoch is a reference Julian Date (typically J2000 = 2451545.0 in the relevant scale). The offset is seconds since the epoch. This preserves nanosecond precision for offsets up to ±10⁷ seconds (roughly four months) before requiring rectification.
 
-Single-`f64` Julian dates lose ~12 µs of precision near J2000 and worse over decades. Two-component time is non-negotiable for multi-decade missions.
+Single-`f64` Julian dates lose ~50 µs of precision near J2000 and worse over decades. Two-component time is non-negotiable for multi-decade missions.
+
+**Auto-rectification.** Arithmetic operations on `Time` (`Time + Duration`, `Time - Time`, etc.) check the rectification threshold after the operation and rectify lazily if exceeded — `epoch_jd ← epoch_jd + offset_seconds/86400` and `offset_seconds ← 0`. The represented instant is preserved exactly (within `f64` ULP of the JD-day arithmetic). The user does not have to remember to rectify; the abstraction does its own bookkeeping.
+
+**Tagged at the type level.** `Time` is templated on its time scale:
+
+```cpp
+template<TimeScale S>
+struct Time { f64 epoch_jd; f64 offset_seconds; };
+using TaiTime = Time<TimeScale::TAI>;
+using TtTime  = Time<TimeScale::TT>;
+// ... etc.
+```
+
+Conversions between scales are explicit free functions routing through SOFA (`tt_from_tai`, `tdb_from_tt`, etc.). Mixing scales without conversion is a compile-time error. See [[wiki/decisions/003-tagged-time-scale-types|ADR-003]] for rationale (and the Python-binding implications, since pybind11 collapses templates).
+
+This is **one of the three pillars of long-arc state conditioning** — see [[wiki/concepts/long-arc-state-conditioning]] for how it composes with REQ-INT-006 (compensated summation) and REQ-INT-007 (Encke) to achieve REQ-TIME-009 (mm-level precision out to 50 AU).
 
 ### 1.3 Frame hierarchy
 
@@ -198,20 +216,31 @@ public:
 
 ### 3.3 Compensated summation
 
-All integrators use Kahan-Neumaier summation for state accumulation:
+All integrators use Kahan-Neumaier compensated summation for state accumulation. Two primitives:
 
 ```cpp
 template<typename T>
-class CompensatedSum {
+class CompensatedSum {                          // for individual scalars
     T sum;
     T compensation;
 public:
-    void add(T value);  // Neumaier-corrected
+    void add(T value);                          // Neumaier-corrected
     T value() const;
+};
+
+template<typename V>                            // V = Eigen::Matrix<scalar, N, M>
+class CompensatedAccumulator {                  // for vectors and matrices
+public:
+    void add(const V& delta);                   // per-coefficient Neumaier via Eigen Array ops
+    V value() const;
 };
 ```
 
+Both are integrator-internal — nothing exposed at the public `Integrator::step()` interface. Each integrator picks the right tool per accumulator: time accumulators (and `Time::offset_seconds` itself) use `CompensatedSum<f64>`; state-vector and Φ matrix accumulators use `CompensatedAccumulator<V>`. The Variational Equations integrator (§3.6) uses `CompensatedAccumulator<MatrixXd>` for Φ accumulation by default — Pc roll-forward windows of 7 days at typical RK4 step sizes accumulate ~10⁵ matrix updates, where compensation pays back.
+
 Recovers ~1 ULP per step, essentially free, transforms long-arc behavior.
+
+This is **one of the three pillars of long-arc state conditioning** — see [[wiki/concepts/long-arc-state-conditioning]].
 
 ### 3.4 Encke-style propagation
 
@@ -222,9 +251,29 @@ r_actual(t) = r_kepler(t) + δr(t)
 δr̈ = a_perturb(r_actual, t) - μ/|r_kepler|³ · (r_actual - r_kepler)  [Battin's form]
 ```
 
-The reference is propagated analytically. Only `δr` is numerically integrated. State magnitudes are kilometers, not 10^7 meters. Cancellation is structurally avoided.
+The reference is propagated analytically. Only `δr` is numerically integrated. State magnitudes are kilometres, not 10⁷ metres. Cancellation is structurally avoided.
 
-When `|δr|` exceeds a threshold (typically 1% of orbit radius), the reference is **rectified** — set to the current actual state, `δr` reset to zero. Rectification is free; it just resets the analytical reference.
+**Wrapper, not a separate integrator.** Encke is implemented as a wrapper over any base integrator (`EnckePropagator(std::unique_ptr<Integrator> base, double rectify_threshold = 0.01)`). The wrapper holds the analytical Keplerian reference; the wrapped base integrator (DOPRI 8(7), GJ8, Yoshida 8) integrates `δr` via Battin's form. One Encke implementation, N base integrators. The wrapper exposes absolute-coordinate dense output via `interpolate()`, so downstream consumers — the Variational Equations integrator (§3.6) included — never need to know Encke is in play.
+
+```cpp
+class EnckePropagator : public Integrator {
+public:
+    EnckePropagator(std::unique_ptr<Integrator> base, double rectify_threshold = 0.01);
+    StepResult step(State& s, double dt_max, const ForceModel& f, EventDetector& ev) override;
+    State interpolate(double t_query) const override;  // returns absolute state
+    void rectify_reference() override;                  // explicit + auto on threshold
+private:
+    std::unique_ptr<Integrator> base_;
+    KeplerianReference ref_;
+    double rectify_threshold_;
+};
+```
+
+When `|δr| / |r_reference|` exceeds the threshold (default 0.01 — the textbook 1%), the wrapper auto-rectifies — sets the reference orbit to the current absolute state, resets `δr` and `δv` to zero. Rectification is essentially free.
+
+**Engagement.** Per-spacecraft scenario-file choice (default off). Long-arc cruise, GEO stationkeeping, and Pc covariance roll-forward over 7-day windows are the typical use cases; short-arc / high-perturbation orbits don't benefit and skip the wrapper.
+
+This is **one of the three pillars of long-arc state conditioning** — see [[wiki/concepts/long-arc-state-conditioning]] and [[wiki/decisions/003-tagged-time-scale-types|ADR-003]] for the broader precision argument.
 
 ### 3.5 Event detection
 

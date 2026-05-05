@@ -271,3 +271,20 @@ Applied the `improve-codebase-architecture` skill — explore + present-candidat
 - 02-subsystems.md v0.2 → v0.3: §2.1 ForceModel C++ skeleton expanded; new §3.6 Variational Equations integrator; §5.3 EKF and §6.4 Pc roll-forward cross-reference §3.6.
 
 This deepening resolves the audit's HIGH finding F2.1 by promoting variational-equations partials from a one-line aside in REQ-PHY-016 to a first-class named module with its own concept page, ADR, requirement IDs (REQ-PHY-016, REQ-PHY-020, REQ-INT-014), conformance discipline, and explicit consumers (REQ-GNC-004, REQ-CAT-009).
+
+## [2026-05-05] deepening | Long-arc state conditioning module
+
+Second deepening from the architecture-review candidate list (Two-Component Time + Encke). Grilled through 6 design questions; expanded scope from the original 2-piece framing to a 3-pillar module:
+
+- **Pillar 1 — Two-component time** (representation conditioning): tagged at type level (`Time<TimeScale::TT>`, etc.) per ADR-003; auto-rectification on threshold.
+- **Pillar 2 — Encke perturbation propagation** (formulation conditioning): wrapper around any base integrator (`EnckePropagator(std::unique_ptr<Integrator> base, ...)`); per-spacecraft engagement; default 1% rectification threshold; absolute-coordinate dense output so downstream VE integrator is Encke-unaware.
+- **Pillar 3 — Compensated summation** (accumulation conditioning): both `CompensatedSum<T>` (per-scalar) and `CompensatedAccumulator<V>` (vectorised); VE integrator's Φ accumulation default-on for the latter.
+
+**Deliverables:**
+- New concept page: [[concepts/long-arc-state-conditioning]] (~280 lines, three-pillar architecture + composition argument + test surfaces).
+- New ADR: [[decisions/003-tagged-time-scale-types]] (tagged Time type at type level; rejection of untagged / runtime-tagged / type-erased alternatives).
+- REQUIREMENTS.md v0.3 → v0.4: rewording REQ-TIME-002 / REQ-TIME-009 / REQ-INT-006 / REQ-INT-007; new REQ-TIME-013 (tagged Time).
+- 01-architecture.md v0.3 → v0.4: §2 design principle cross-reference; §3 Foundation > Time system gains tagged-type note; §3 Dynamics > Encke clarified as wrapper; §6 build-list adds long-arc-state-conditioning bullet, replacing standalone Encke bullet.
+- 02-subsystems.md v0.3 → v0.4: §1.1 cross-reference; §1.2 expanded with auto-rectification + tagged-type sections; §3.3 expanded with vectorised aggregator; §3.4 expanded with wrapper-pattern detail.
+
+This deepening operationalises the architecture's "Conditioning over precision" design principle (§2): three previously-scattered fragments (REQ-TIME-002 + REQ-INT-006 + REQ-INT-007) plus a new compile-time-safety guarantee (REQ-TIME-013) become one coherent named subsystem with one concept page, one ADR, and explicit composition rules. REQ-TIME-009 (mm precision out to 50 AU) now has a single citable mechanism rather than three independent enabling requirements.

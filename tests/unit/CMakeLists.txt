@@ -6,3 +6,4 @@
 # of an empty directory would error.
 
 add_subdirectory(math)
+add_subdirectory(time)

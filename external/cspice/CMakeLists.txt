@@ -50,14 +50,20 @@ else()
   # -w suppresses warnings, but clang-15+ promotes several K&R-era diagnostics
   # to errors by default; CSPICE's f2c-translated source has implicit-int
   # function declarations (e.g. src/dfe.c) that fail clang's stricter default.
-  # Demote those back to warnings (which -w then silences). gcc accepts them
-  # silently under -w; the -Wno-error=* forms are no-ops there.
+  # Demote those back to warnings (which -w then silences). These three are
+  # accepted by both gcc and clang.
   target_compile_options(apsis_cspice PRIVATE
     -w
     -Wno-error=implicit-int
     -Wno-error=implicit-function-declaration
-    -Wno-error=int-conversion
-    -Wno-error=incompatible-function-pointer-types)
+    -Wno-error=int-conversion)
+  # -Wincompatible-function-pointer-types is clang-only — gcc errors on the
+  # name itself ('no option -Wincompatible-function-pointer-types'). Apply
+  # only to clang.
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_compile_options(apsis_cspice PRIVATE
+      -Wno-error=incompatible-function-pointer-types)
+  endif()
 endif()
 
 # CSPICE expects NON_UNIX_STDIO unset on POSIX; on Windows the upstream

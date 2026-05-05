@@ -32,13 +32,17 @@ else()
   # diagnostics to errors by default; -w doesn't help. Demote back to warnings
   # (silenced by -w). SOFA is modern enough to not currently trip these, but
   # apply the same defensive flags so future SOFA releases or alt toolchains
-  # don't surprise the build.
+  # don't surprise the build. The -Wno-error=incompatible-function-pointer-types
+  # form is clang-only (gcc errors on the name); gate accordingly.
   target_compile_options(apsis_sofa PRIVATE
     -w
     -Wno-error=implicit-int
     -Wno-error=implicit-function-declaration
-    -Wno-error=int-conversion
-    -Wno-error=incompatible-function-pointer-types)
+    -Wno-error=int-conversion)
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_compile_options(apsis_sofa PRIVATE
+      -Wno-error=incompatible-function-pointer-types)
+  endif()
 endif()
 
 add_library(apsis::sofa ALIAS apsis_sofa)

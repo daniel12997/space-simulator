@@ -371,6 +371,7 @@ end-to-end with the correct force-model interfaces wired.
 
 ## Out of scope for Phase 1 (deferred)
 
+- **Windows / MSVC support.** Phase 0 dropped `windows-2022` from the CI matrix. NAIF distributes a separate CSPICE tarball for Windows (`PC_Windows_VisualC_64bit/packages/cspice.zip`); the Linux source we vendor has multiple small MSVC incompatibilities (the `complex` type in f2c.h getting shadowed by `<complex.h>`'s macro, `inquire.c`'s `isatty` redefining UCRT's, ...). The proper fix is OS-conditional fetch in `cmake/fetch_external.cmake` plus a parallel `external/cspice/PINNED_VERSION.windows`. Estimated 50–100 LOC of CMake + a `.zip` extraction path. Track as a Phase 1 followup; reinstate `windows-2022` in the matrix when it lands. The design overview's "CI passes on Linux + Windows" is a v1.0 release gate, not a per-phase one.
 - **Atmospheric drag, SRP** — Phase 7 hardening. Phase 1 ISS regression accepts the resulting ~km-scale 24h drift if it is the dominant residual.
 - **Higher-degree gravity (>deg 20)** — Phase 7. EGM2008 to deg 20 is sufficient for ISS regression at the chosen tolerance.
 - **Live EOP refresh tooling** — Phase 7. Phase 1 ships with a frozen EOP slice covering regression-test epochs.

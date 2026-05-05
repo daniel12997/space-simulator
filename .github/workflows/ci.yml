@@ -11,6 +11,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Windows / MSVC support is tracked as a Phase 1 followup. NAIF distributes
+  # a separate CSPICE tarball for Windows; the Linux source has multiple small
+  # MSVC incompatibilities (complex-math header conflicts, isatty redefinition
+  # in inquire.c, ...). The proper fix is OS-conditional fetch in
+  # cmake/fetch_external.cmake, not piecemeal patching of upstream source.
   build-test:
     name: ${{ matrix.os }} / ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}
@@ -26,17 +31,12 @@ jobs:
             toolchain: clang-17
             cc: clang-17
             cxx: clang++-17
-          - os: windows-2022
-            toolchain: msvc
-            cc: ''
-            cxx: ''
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Linux toolchain
-        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build ncompress
@@ -45,15 +45,6 @@ jobs:
           else
             sudo apt-get install -y clang-17 clang-tools-17 clang-format-17 clang-tidy-17 lld-17
           fi
-
-      - name: Setup MSVC + Ninja
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-      - name: Install Ninja (Windows)
-        if: runner.os == 'Windows'
-        uses: seanmiddleditch/gha-setup-ninja@v6
 
       - name: Cache external/_cache (SOFA, CSPICE tarballs)
         uses: actions/cache@v4
@@ -81,7 +72,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       - name: clang-format check
-        if: runner.os == 'Linux' && matrix.toolchain == 'clang-17'
+        if: matrix.toolchain == 'clang-17'
         run: |
           files=$(git ls-files '*.cc' '*.h' | grep -Ev '^(external|build)/' || true)
           if [ -n "$files" ]; then
@@ -89,7 +80,7 @@ jobs:
           fi
 
       - name: clang-tidy check (first-party only)
-        if: runner.os == 'Linux' && matrix.toolchain == 'gcc-13'
+        if: matrix.toolchain == 'gcc-13'
         run: |
           sudo apt-get install -y clang-tidy-17
           files=$(git ls-files 'src/*.cc' 'include/apsis/*.h')
@@ -98,7 +89,6 @@ jobs:
           fi
 
       - name: CSPICE seam lint
-        if: runner.os == 'Linux'
         run: python3 tools/lint/cspice_seam.py --root .
 
   sanitizers:

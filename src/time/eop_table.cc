@@ -42,12 +42,12 @@ constexpr double kMjdOffsetJd = 2400000.5;
 // Strip leading/trailing whitespace from a string view; return the trimmed
 // substring. Used by the CSV parser to be liberal about column padding.
 std::string trim(const std::string& s) {
-  const auto first = s.find_first_not_of(" \t\r\n");
-  if (first == std::string::npos) {
+  const auto kFirst = s.find_first_not_of(" \t\r\n");
+  if (kFirst == std::string::npos) {
     return {};
   }
-  const auto last = s.find_last_not_of(" \t\r\n");
-  return s.substr(first, last - first + 1);
+  const auto kLast = s.find_last_not_of(" \t\r\n");
+  return s.substr(kFirst, kLast - kFirst + 1);
 }
 
 // Split a CSV row into trimmed string fields. The bundled Phase 1 EOP CSV
@@ -112,12 +112,12 @@ EopTable EopTable::load_from_csv(const std::filesystem::path& path) {
   std::size_t line_no = 0;
   while (std::getline(in, line)) {
     ++line_no;
-    const std::string trimmed = trim(line);
-    if (trimmed.empty() || trimmed.front() == '#') {
+    const std::string kTrimmed = trim(line);
+    if (kTrimmed.empty() || kTrimmed.front() == '#') {
       continue;  // comment / blank
     }
-    const auto fields = split_csv_row(trimmed);
-    rows.push_back(parse_row(fields, line_no, path));
+    const auto kFields = split_csv_row(kTrimmed);
+    rows.push_back(parse_row(kFields, line_no, path));
   }
   if (rows.size() < 2) {
     throw std::runtime_error("EopTable::load_from_csv: " + path.string() +
@@ -135,14 +135,14 @@ EopValues EopTable::query(Time<tags::TT> t) const {
   // precision SOFA returns, jd1+jd2-kMjdOffsetJd lands on the right MJD to
   // ~1 ULP of the day — orders of magnitude tighter than the linear-
   // interpolation residual the table itself contributes.
-  const auto utc = convert<tags::UTC>(t);
-  const double mjd = (utc.jd1() - kMjdOffsetJd) + utc.jd2();
+  const auto kUtc = convert<tags::UTC>(t);
+  const double kMjd = (kUtc.jd1() - kMjdOffsetJd) + kUtc.jd2();
 
   // Out-of-range clamp: see header comment for rationale.
-  if (mjd <= rows_.front().mjd_utc) {
+  if (kMjd <= rows_.front().mjd_utc) {
     return {rows_.front().dut1, rows_.front().polar_xp, rows_.front().polar_yp};
   }
-  if (mjd >= rows_.back().mjd_utc) {
+  if (kMjd >= rows_.back().mjd_utc) {
     return {rows_.back().dut1, rows_.back().polar_xp, rows_.back().polar_yp};
   }
 
@@ -151,22 +151,25 @@ EopValues EopTable::query(Time<tags::TT> t) const {
   // returns the first row with mjd_utc >= mjd; we want strict-greater so
   // the bracket pair is (it - 1, it) for an equality hit too (which gives
   // alpha = 0 and returns the exact row's values).
-  const auto it = std::lower_bound(rows_.begin(), rows_.end(), mjd,
-                                   [](const EopRow& r, double m) { return r.mjd_utc < m; });
-  // After the upper-clamp above, `it` is in (rows_.begin(), rows_.end()).
-  const auto& hi = *it;
-  const auto& lo = *(it - 1);
-  const double span = hi.mjd_utc - lo.mjd_utc;
+  const auto kIt = std::lower_bound(rows_.begin(), rows_.end(), kMjd,
+                                    [](const EopRow& r, double m) { return r.mjd_utc < m; });
+  // After the upper-clamp above, `kIt` is in (rows_.begin(), rows_.end()).
+  // hi_row / lo_row are references, not constants — clang-tidy
+  // distinguishes `const T*` / `const T&` (variables) from `const T`
+  // (constants); the former still match VariableCase.
+  const auto& hi_row = *kIt;
+  const auto& lo_row = *(kIt - 1);
+  const double kSpan = hi_row.mjd_utc - lo_row.mjd_utc;
   // Defensive: the ctor invariant guarantees span > 0, but a checked
   // division costs nothing and surfaces accidental mis-construction.
-  if (!(span > 0.0)) {
+  if (!(kSpan > 0.0)) {
     throw std::logic_error("EopTable::query: zero-span bracket (table invariant violated)");
   }
-  const double alpha = (mjd - lo.mjd_utc) / span;
+  const double kAlpha = (kMjd - lo_row.mjd_utc) / kSpan;
   return {
-      lo.dut1 + alpha * (hi.dut1 - lo.dut1),
-      lo.polar_xp + alpha * (hi.polar_xp - lo.polar_xp),
-      lo.polar_yp + alpha * (hi.polar_yp - lo.polar_yp),
+      lo_row.dut1 + kAlpha * (hi_row.dut1 - lo_row.dut1),
+      lo_row.polar_xp + kAlpha * (hi_row.polar_xp - lo_row.polar_xp),
+      lo_row.polar_yp + kAlpha * (hi_row.polar_yp - lo_row.polar_yp),
   };
 }
 

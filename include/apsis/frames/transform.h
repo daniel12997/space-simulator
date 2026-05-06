@@ -61,8 +61,9 @@ State<tags::TEME> transform<tags::TEME, tags::ITRS>(const State<tags::ITRS>&,
 
 // Same-frame identity overloads (header-inline for hot generic paths).
 template <>
-inline State<tags::ICRF> transform<tags::ICRF, tags::ICRF>(const State<tags::ICRF>& x,
-                                                           apsis::time::Time<apsis::time::tags::TT>) {
+inline State<tags::ICRF>
+transform<tags::ICRF, tags::ICRF>(const State<tags::ICRF>& x,
+                                  apsis::time::Time<apsis::time::tags::TT>) {
   return x;
 }
 template <>
@@ -72,18 +73,21 @@ transform<tags::J2000, tags::J2000>(const State<tags::J2000>& x,
   return x;
 }
 template <>
-inline State<tags::ITRS> transform<tags::ITRS, tags::ITRS>(const State<tags::ITRS>& x,
-                                                           apsis::time::Time<apsis::time::tags::TT>) {
+inline State<tags::ITRS>
+transform<tags::ITRS, tags::ITRS>(const State<tags::ITRS>& x,
+                                  apsis::time::Time<apsis::time::tags::TT>) {
   return x;
 }
 template <>
-inline State<tags::GCRS> transform<tags::GCRS, tags::GCRS>(const State<tags::GCRS>& x,
-                                                           apsis::time::Time<apsis::time::tags::TT>) {
+inline State<tags::GCRS>
+transform<tags::GCRS, tags::GCRS>(const State<tags::GCRS>& x,
+                                  apsis::time::Time<apsis::time::tags::TT>) {
   return x;
 }
 template <>
-inline State<tags::TEME> transform<tags::TEME, tags::TEME>(const State<tags::TEME>& x,
-                                                           apsis::time::Time<apsis::time::tags::TT>) {
+inline State<tags::TEME>
+transform<tags::TEME, tags::TEME>(const State<tags::TEME>& x,
+                                  apsis::time::Time<apsis::time::tags::TT>) {
   return x;
 }
 

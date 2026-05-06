@@ -31,7 +31,7 @@ namespace {
 // same SOFA symbol because the C ABI is identical for passing a contiguous
 // 9-double row-major matrix.
 extern "C" void sofa_bp06_flat(double date1, double date2, double* rb, double* rp,
-                             double* rbp) asm("iauBp06");
+                               double* rbp) asm("iauBp06");
 
 apsis::math::Mat3 build_bias_matrix() {
   // iauBp06 returns rb (bias), rp (precession), rbp (combined). At J2000

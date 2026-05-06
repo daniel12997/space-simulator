@@ -55,7 +55,10 @@ class SphericalHarmonic final : public IForceModel {
     std::vector<double> S_norm;
 
     [[nodiscard]] static std::size_t idx(int n, int m) noexcept {
-      return static_cast<std::size_t>(n * (n + 1) / 2 + m);
+      // Widen before multiplication to avoid spurious clang-tidy
+      // bugprone-misplaced-widening-cast (and any genuine overflow risk
+      // if degree ever exceeds ~46k).
+      return static_cast<std::size_t>(n) * (n + 1) / 2 + static_cast<std::size_t>(m);
     }
     [[nodiscard]] int triangular_size() const noexcept { return (degree + 1) * (degree + 2) / 2; }
   };

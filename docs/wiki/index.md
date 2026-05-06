@@ -2,7 +2,7 @@
 
 The catalog of every page in this wiki. Read this first when querying. Updated on every ingest, document, query-fileback, and lint operation.
 
-## Sources (47)
+## Sources (48)
 
 ### Time / frames / ephemerides
 | Slug | Title | Type | Reliability | Ingested |
@@ -22,6 +22,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | [[sources/lemoine-2014-grgm900c]] | GRGM900C — degree 900 lunar gravity model from GRAIL | paper | peer-reviewed | 2026-05-04 |
 | [[sources/picone-2002-nrlmsise-00]] | NRLMSISE-00 empirical model of the atmosphere | paper | peer-reviewed | 2026-05-04 |
 | [[sources/bowman-2008-jb2008]] | A new empirical thermospheric density model JB2008 | paper | peer-reviewed | 2026-05-04 |
+| [[sources/orekit-holmes-featherstone-impl]] | Orekit — HolmesFeatherstoneAttractionModel.java | spec | secondary-reputable | 2026-05-05 |
 
 ### Mean-element theory and SGP4
 | Slug | Title | Type | Reliability | Ingested |

@@ -186,3 +186,67 @@ The IIntegrator and IForceModel seams as documented above are
 unchanged at the Phase 7 upgrades; these notes describe the fidelity
 of what is wired behind the seams, not changes to the seams
 themselves.
+
+## Phase 1A Implementation Note — Batch C closures (2026-05-05)
+
+Phase 1A Batch C closes the two `SphericalHarmonic` Phase-1 deferrals
+that the Phase 1 note above documented as Phase 7 follow-ups:
+
+- **C1 — ICRF→body-fixed rotation (issue #11)**. The Phase-1 SH adapter
+  treated body-fixed and ICRF as aligned (a Phase-7-deferred shortcut
+  documented in the file header). It now takes a `const EopTable&` at
+  construction, queries the rotation matrix via the new
+  `apsis::frames::icrf_to_itrs_rotation(tt, eop)` helper (a public
+  factoring of the per-pair builder used by `transform<ITRS, ICRF>`),
+  rotates the input ICRF position to body-fixed for the Cunningham V/W
+  evaluation, and rotates the resulting acceleration back via the same
+  matrix's transpose. The position-Jacobian is conjugated through the
+  same matrix: `J_icrf = R^T J_bf R`. A new tesseral C_{2,2}-only unit
+  test (`SphericalHarmonic.C22RotationObservable`) verifies the rotation
+  is observable: at a fixed ICRF position, the acceleration vector
+  differs by ≥ 1e-5 m/s² between two TT epochs separated by 6 sidereal
+  hours, because the C_{2,2} body-fixed bulge has rotated underneath.
+  The Phase 1 implementation would have produced the same vector at
+  both epochs.
+
+- **C2 — analytical SH gradient (issue #7)**. The Phase-1 SH adapter
+  shipped with `kAnalyticalPartials = false` and a finite-difference
+  `partials_dadx()`, excluded from the VE-contract conformance gate
+  because both sides would have been FD-of-the-same-gradient (a
+  tautology). The Cunningham gradient (Hessian of the geopotential via
+  the same V/W functions extended by one row) is now in place: the V/W
+  table is computed up to row N+2 (one further row than the
+  acceleration assembly needs), and the Jacobian assembly applies the
+  V/W partial-derivative identities (Montenbruck & Gill 2000 §3.2.5,
+  eq 3.33) to each per-(n, m) acceleration term by linearity. The
+  flag flipped to `kAnalyticalPartials = true` and SphericalHarmonic
+  re-joined the conformance gate (`tests/conformance/force_model_ve_contract.cc`).
+  Empirical residual on the J2-only conformance grid is ~1e-10
+  (deg=8, full-order-tesseral synthetic case is ~2.4e-10), four to
+  five orders below the 1e-6 PointMass-sibling tolerance applied; the
+  residual is dominated by the FD oracle's truncation `(h²/6) |∂³a/∂r³|`
+  rather than the analytical V/W recursion, which at deg ≤ 20 retains
+  13–14 sig figs.
+
+  **Algorithm choice**: Cunningham V/W (M-G §3.2.5) over Holmes-
+  Featherstone or Pines. The plan permitted "whichever cleanly extends
+  the existing Cunningham V/W skeleton"; the Cunningham gradient *is*
+  the existing skeleton with one extra row of V/W and an isomorphic
+  per-(n, m) sum, so the LOC and conceptual delta were minimal.
+  Holmes-Featherstone uses a different basis (`P̄_{nm}/u^m`) that would
+  have required a from-scratch port of Orekit's
+  `HolmesFeatherstoneAttractionModel.java`; that file is cited in the
+  source comment as the open-source sibling that was studied during
+  implementation, with a wiki source page at
+  [[sources/orekit-holmes-featherstone-impl]] for the audit-trail
+  attribution. Both formulations are mathematically equivalent and
+  produce identical accelerations and Jacobians to round-off at
+  Apsis's working ceiling (deg 70 LEO / deg 165 lunar — well within
+  Cunningham's stable range, which only loses precision around
+  deg ≥ 1500 where Holmes-Featherstone becomes mandatory).
+
+The Phase 1 note above is left in place verbatim for the historical
+record; this Phase 1A note supersedes its Phase 7-deferral entries
+for `SphericalHarmonic`. The remaining Phase 7 items (full DOP853 +
+GJ8) are tracked separately under Batch D of the Phase 1A hardening
+plan.

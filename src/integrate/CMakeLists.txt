@@ -3,6 +3,7 @@
 target_sources(apsis_core
   PRIVATE
     dp54.cc
+    dop853.cc
     yoshida4.cc
     encke_wrapper.cc
 )

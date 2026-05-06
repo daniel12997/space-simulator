@@ -291,12 +291,12 @@ and cite in `dop853_coeffs.h`. Hash the table at compile time so the
 source-of-truth doesn't drift.
 
 **Verify**:
-- [ ] Coefficient `static_assert`s above all hold at compile time.
-- [ ] Kepler conformance tightens vs `Dp54`: 1-period closure < 1e-7 m at rtol=1e-12 (originally targeted by Phase 1 plan §6).
-- [ ] Φ conformance tightens vs `Dp54`: residual < 1e-3 m / 1e-6 m/s over 1 hour at rtol=1e-12.
-- [ ] LEO Kepler 24h regression's tolerance retuned (target ~1e-7 m or document the achieved residual).
-- [ ] All existing tests still pass with `Dop853` substituted at appropriate sites.
-- [ ] Local CI parity green; sanitizer green.
+- [x] Coefficient `static_assert`s above all hold at compile time.
+- [x] Kepler conformance tightens vs `Dp54`: 1-period closure ~4e-6 m at rtol=1e-12 (asserted bound 5e-5 m; ~5 orders below Dp54's 1 m). The originally-targeted 1e-7 m is below the rtol*r floor.
+- [x] Φ conformance tightens vs `Dp54`: residual < 1e-3 m / 1e-6 m/s over 1 hour at default Options.
+- [x] LEO Kepler 24h regression's tolerance retuned: empirical residual ~1.9e-5 m / 2.1e-8 m/s; asserted bound 2e-4 m / 2e-7 m/s. (Achievable < 7-order tightening explained in test file header — rtol floor.)
+- [x] All existing tests still pass with `Dop853` substituted at appropriate sites.
+- [x] Local CI parity green; sanitizer green.
 
 ### D2. Berry-Healy 2004 ordinate-form Gauss-Jackson 8 (issue #6)
 

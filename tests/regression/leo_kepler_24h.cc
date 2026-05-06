@@ -19,18 +19,19 @@
 //      third-body. This makes the trajectory exactly Keplerian, so the
 //      f-and-g universal-variable propagator (`apsis::math::fandg`) is the
 //      analytical oracle and the residual is pure integrator truncation.
-//   4. Propagate forward 24 h with `Dp54` at rtol=1e-12 / atol=1e-9.
+//   4. Propagate forward 24 h with `Dop853` at rtol=1e-12 / atol=1e-9.
 //   5. Compare to the f-and-g closed-form at the same final epoch.
 //
-// Tolerance: 0.1 m position, 1e-4 m/s velocity. Picked experimentally
-// against the local build — the Dp54 24-h residual at rtol=1e-12 /
-// atol=1e-9 / dt_max=60 s runs ~0.015 m position / ~1.7e-5 m/s velocity
-// (one full LEO orbit accumulates step-controller error of ~6e-4 m;
-// 24 h is ~16 orbits of those). The asserted bounds give roughly one
-// order of margin so a noisy CI host doesn't flake the gate. The full
-// DOP853 upgrade in Phase 7 (Hairer Vol I Table 5.2) is expected to
-// drop the residual by ~7 orders, at which point the tolerance can
-// tighten to ~1 nm / ~1 nm/s.
+// Tolerance: 2e-4 m position, 2e-7 m/s velocity. Picked experimentally
+// against the local Phase 1A §D1 build — the Dop853 (Hairer Vol I Table
+// 5.2) 24-h residual at rtol=1e-12 / atol=1e-9 / dt_max=60 s runs
+// ~1.9e-5 m / ~2.1e-8 m/s on the development host (about 3 orders below
+// Dp54's prior ~1.5e-2 m residual). The asserted bounds give ~10x margin
+// so a noisy CI host doesn't flake the gate. The Phase 1 plan §10
+// "anticipated ~7 orders" was over-optimistic: the dominant residual is
+// step-control noise at rtol=1e-12 (rtol * r * sqrt(N_orbits) = ~3e-5 m),
+// not the method's truncation. Tightening rtol below 1e-12 hits double-
+// precision floor in the universal-anomaly oracle.
 //
 // What this test does NOT cover (deferred to Phase 7):
 //   - Spherical-harmonic gravity (the SH adapter ships with FD partials in
@@ -46,7 +47,7 @@
 #include "apsis/force/point_mass.h"
 #include "apsis/frames/state.h"
 #include "apsis/frames/transform.h"
-#include "apsis/integrate/dp54.h"
+#include "apsis/integrate/dop853.h"
 
 // f-and-g universal-variable propagator. Internal-only header under
 // src/math/; the test target adds src/ to its include path so this
@@ -74,14 +75,14 @@ afr::State<afr::tags::J2000> initial_state_j2000() {
   return s;
 }
 
-afr::State<afr::tags::ICRF> propagate_dp54(const af::IForceModel& force,
-                                           afr::State<afr::tags::ICRF> x, at::Time<at::tags::TT> t,
-                                           double horizon_sec) {
-  ai::Dp54::Options opts;
+afr::State<afr::tags::ICRF> propagate_dop853(const af::IForceModel& force,
+                                             afr::State<afr::tags::ICRF> x,
+                                             at::Time<at::tags::TT> t, double horizon_sec) {
+  ai::Dop853::Options opts;
   opts.rtol = 1e-12;
   opts.atol = 1e-9;
   opts.dt_max = 60.0;  // cap step at 60 s for fine resolution
-  ai::Dp54 integ(opts);
+  ai::Dop853 integ(opts);
 
   apsis::math::Mat6 phi = apsis::math::Mat6::Identity();
   double t_acc = 0.0;
@@ -96,7 +97,7 @@ afr::State<afr::tags::ICRF> propagate_dp54(const af::IForceModel& force,
   return x;
 }
 
-TEST(LeoKepler24h, Dp54MatchesFAndGOracle) {
+TEST(LeoKepler24h, Dop853MatchesFAndGOracle) {
   // 1. Build J2000 initial state and 2. transform to ICRF via the seam.
   // The frame-bias transform is a constant rotation (~17 mas magnitude);
   // this exercises the same code path the future ISS-from-NASA-data test
@@ -108,23 +109,24 @@ TEST(LeoKepler24h, Dp54MatchesFAndGOracle) {
   // 3. Force model: pure central-body Kepler.
   af::PointMass earth_pm(kMuEarth);
 
-  // 4. Propagate 24 h with Dp54 (numerical).
+  // 4. Propagate 24 h with Dop853 (numerical).
   constexpr double kHorizon = 24.0 * 3600.0;
-  const auto x_num = propagate_dp54(earth_pm, x0_icrf, t0, kHorizon);
+  const auto x_num = propagate_dop853(earth_pm, x0_icrf, t0, kHorizon);
 
   // 5. Analytical oracle: f-and-g universal-variable Kepler propagation
   //    from the same initial state over the same horizon.
   const auto x_oracle = apsis::math::fandg::propagate(x0_icrf, kHorizon, kMuEarth);
 
-  // Tolerances: numerical Dp54 vs f-and-g closed-form on a pure Kepler
+  // Tolerances: numerical Dop853 vs f-and-g closed-form on a pure Kepler
   // orbit over 24 h. Empirical residual at rtol=1e-12 / atol=1e-9 with
-  // dt_max=60 s is ~1.5e-2 m / ~1.7e-5 m/s on the development host; the
-  // bounds below give ~1 order of margin. (Phase 7 DOP853 upgrade is
-  // expected to drop these by ~7 orders.)
+  // dt_max=60 s is ~1.9e-5 m / ~2.1e-8 m/s on the development host (about
+  // 3 orders below Dp54's residual on the same problem; see the file
+  // header for why this is less than the §10-anticipated ~7 orders).
+  // The bounds below give ~10x margin.
   const double dr = (x_num.r - x_oracle.r).norm();
   const double dv = (x_num.v - x_oracle.v).norm();
-  EXPECT_LT(dr, 0.1) << "Dp54 vs f-and-g 24-h closure: " << dr << " m";
-  EXPECT_LT(dv, 1e-4) << "Dp54 vs f-and-g 24-h velocity closure: " << dv << " m/s";
+  EXPECT_LT(dr, 2e-4) << "Dop853 vs f-and-g 24-h closure: " << dr << " m";
+  EXPECT_LT(dv, 2e-7) << "Dop853 vs f-and-g 24-h velocity closure: " << dv << " m/s";
 }
 
 }  // namespace

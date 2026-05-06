@@ -10,16 +10,26 @@
 // stricter than required here for that reason — once §7 lands we can
 // upgrade this gate to the eccentric Kepler oracle the plan calls for).
 //
-// Tolerances per the plan, widened to reflect the Phase 1 DP5(4)
-// fidelity (see dp54.h; full DP8(5,3) lands as a Phase 7 upgrade):
-//   * Dp54       : final error  < 1   m  over one period (rtol 1e-12)
-//   * Yoshida4   : final error  < 100 m  over one period (dt = 30 s)
+// Tolerances per the plan:
+//   * Dp54         : final error  < 1     m  over one period (rtol 1e-12)
+//   * Dop853       : final error  < 5e-5  m  over one period (rtol 1e-12) —
+//                    Hairer Vol I Table 5.2; lands in Phase 1A §D1.
+//                    Empirical residual ~4e-6 m on the development host;
+//                    bound is ~10x margin. ~5 orders below Dp54 — slightly
+//                    less than the §D1-anticipated 7 orders because at
+//                    rtol=1e-12 / orbit radius ~7e6 m the achievable per-step
+//                    error is bounded by rtol * r ~ 7e-6 m, not by the
+//                    method's order of accuracy.
+//   * GaussJackson8: final error  < 1e-5  m  over one period (dt 60 s) —
+//                    Berry-Healy 2004; lands in Phase 1A §D2.
+//   * Yoshida4     : final error  < 100   m  over one period (dt = 30 s)
 
 #include <gtest/gtest.h>
 
 #include <cmath>
 
 #include "apsis/force/point_mass.h"
+#include "apsis/integrate/dop853.h"
 #include "apsis/integrate/dp54.h"
 #include "apsis/integrate/iintegrator.h"
 #include "apsis/integrate/yoshida4.h"
@@ -85,6 +95,21 @@ TEST(IntegratorKepler, Dp54) {
   ai::Dp54 d(opts);
   // Use larger steps so adaptive control kicks in.
   propagate_one_period(d, pm, /*dt=*/600.0, /*tol_m=*/1.0);
+}
+
+TEST(IntegratorKepler, Dop853) {
+  af::PointMass pm(kMu);
+  ai::Dop853::Options opts;
+  opts.rtol = 1e-12;
+  opts.atol = 1e-9;
+  opts.dt_max = 600.0;
+  ai::Dop853 d(opts);
+  // The full DOP853 (Hairer Vol I Table 5.2) closes Kepler over one period
+  // to ~4e-6 m on the development host at rtol=1e-12 / atol=1e-9 (about
+  // rtol * orbit-radius — the floor at this rtol). The 5e-5 m bound below
+  // gives ~10x margin against CI host noise. ~5 orders below Dp54's 1 m
+  // bound on the same problem.
+  propagate_one_period(d, pm, /*dt=*/600.0, /*tol_m=*/5e-5);
 }
 
 TEST(IntegratorKepler, Yoshida4) {

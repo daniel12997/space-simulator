@@ -14,6 +14,12 @@
 // facold^beta`. Default `beta = 0.0` reduces to a plain I-controller; values
 // up to 0.04 are recommended in §IV.2 for stiffer problems.
 //
+// The PI controller's `facold` (the previous accepted step's normalised
+// error) is persisted on the `Dop853` instance across `step()` calls — it
+// would otherwise reset on every entry and the integral term would lose
+// memory. On the very first call we seed it with Hairer's dop853.f initial
+// value of 1e-4.
+//
 // This adapter sits behind the `IIntegrator` seam alongside `Dp54`,
 // `Yoshida4`, and (Phase 1A §D2) `GaussJackson8`. The Phi augmentation
 // ride-along is unchanged from Dp54: dPhi/dt = A(t) * Phi is integrated at
@@ -57,8 +63,16 @@ class Dop853 final : public IIntegrator {
 
   [[nodiscard]] const Options& options() const noexcept { return opts_; }
 
+  // Visible for testing the PI step controller. The Lund-stabilised PI
+  // factor (Hairer Vol I §II.5) requires `facold` — the normalised error
+  // estimate from the previous accepted step — to persist across step()
+  // calls. Initialised to 1e-4 (Hairer's dop853.f convention for the very
+  // first step). Read on rejected attempts; written on accepted steps.
+  [[nodiscard]] double facold_for_test() const noexcept { return facold_; }
+
  private:
   Options opts_;
+  double facold_ = 1e-4;
 };
 
 }  // namespace apsis::integrate

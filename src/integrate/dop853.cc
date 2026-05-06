@@ -111,9 +111,13 @@ StepResult Dop853::step(apsis::time::Time<apsis::time::tags::TT> t,
   const apsis::frames::State<apsis::frames::tags::ICRF>& x_in = x;
   const apsis::math::Mat6& phi_in = phi;
 
-  // Lund stabilisation memory — fresh per top-level `step` call (the IIntegrator
-  // contract is one-step-with-internal-retries, not an ongoing integration).
-  double facold = 1e-4;
+  // Lund stabilisation memory — `facold_` is the previous accepted step's
+  // normalised error (instance member, persists across step() calls). Hairer
+  // §II.5 / dop853.f seeds the very first step with 1e-4 (the constructor
+  // initialiser handles that) and then carries the accepted-step `err` value
+  // forward thereafter, so the PI controller's "I" term has memory across
+  // both internal retries within one step() call AND across successive
+  // step() calls in a longer integration.
   const double kExpo1 = (1.0 / 8.0) - opts_.beta * 0.2;
 
   for (int attempt = 0; attempt < opts_.max_iters_per_step; ++attempt) {
@@ -153,9 +157,11 @@ StepResult Dop853::step(apsis::time::Time<apsis::time::tags::TT> t,
     const double kErr = blended_error(kx, kY0, y_new, h, opts_.atol, opts_.rtol);
 
     if (kErr <= 1.0 || h <= opts_.dt_min) {
-      // Accept.
-      facold = std::max(kErr, 1e-4);
-      (void)facold;  // memory only used across attempts within one step.
+      // Accept. Persist the accepted-step error as `facold_` for the next
+      // step's PI factor. Hairer's `MAX(ERR, 1.0E-4)` clamp prevents a
+      // spuriously tiny accepted error from causing an explosive grow on
+      // the next step.
+      facold_ = std::max(kErr, 1e-4);
       StepResult res;
       res.x = state_from_vec(y_new);
       res.phi = p_new;
@@ -167,7 +173,7 @@ StepResult Dop853::step(apsis::time::Time<apsis::time::tags::TT> t,
     //   fac11 = err^expo1 ; fac = fac11 / facold^beta
     //   h_new = h / max(facc2, min(facc1, fac/safety))
     const double kFac11 = std::pow(kErr, kExpo1);
-    const double kFac = kFac11 / std::pow(facold, opts_.beta);
+    const double kFac = kFac11 / std::pow(facold_, opts_.beta);
     const double kFacc1 = 1.0 / opts_.max_grow;
     const double kFacc2 = 1.0 / opts_.min_shrink;
     const double kFactor = std::max(kFacc2, std::min(kFacc1, kFac / opts_.safety));

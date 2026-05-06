@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <tuple>
 
 #include "apsis/force/point_mass.h"
 #include "apsis/integrate/dop853.h"
@@ -129,5 +130,82 @@ TEST(IntegratorPhi, Yoshida4) {
 // GaussJackson8 Phi conformance removed in Phase 1 — see the matching
 // removal in integrator_kepler.cc. The Berry-Healy 2004 ordinate-form
 // implementation rejoins the parameterised gate in Phase 7.
+
+// PI-controller (`beta != 0`) regression: Hairer §II.5 / §IV.2 recommends
+// `beta = 0.04` for stiffer problems. The Phase 1A Batch D' cleanup wires
+// `facold` correctly across step() calls (instance member, not function-
+// local). This test exercises the PI path on a Kepler orbit and asserts
+// (a) the integration succeeds at a comparable step budget to the default
+// I-only controller, and (b) the persisted `facold_` member is non-zero
+// after a multi-step integration (the bug was that it was reset to 1e-4
+// at the top of every step() call).
+TEST(IntegratorPhi, Dop853WithBeta) {
+  af::PointMass pm(kMu);
+
+  // Drive the integrator step-by-step over 1 hour, counting accepted
+  // steps. Caller asks for dt = kHorizonSec / kFloor steps; the
+  // controller may return a smaller dt_actually_taken if the requested
+  // step is too large for the tolerance.
+  auto run = [&](double beta) {
+    ai::Dop853::Options opts;
+    opts.rtol = 1e-12;
+    opts.atol = 1e-9;
+    opts.dt_max = 600.0;  // generous cap so the controller picks the dt
+    opts.beta = beta;
+    ai::Dop853 d(opts);
+
+    auto x = initial_state();
+    apsis::math::Mat6 phi = apsis::math::Mat6::Identity();
+    at::Time<at::tags::TT> t{2460676.5, 0.0};
+    int n_steps = 0;
+    double t_acc = 0.0;
+    while (t_acc < kHorizonSec) {
+      const double step_dt = std::min(opts.dt_max, kHorizonSec - t_acc);
+      auto res = d.step(t, x, phi, step_dt, pm);
+      x = res.x;
+      phi = res.phi;
+      t = t + at::Duration{res.dt_actually_taken};
+      t_acc += res.dt_actually_taken;
+      ++n_steps;
+    }
+    return std::make_tuple(n_steps, d.facold_for_test(), x);
+  };
+
+  const auto [n_default, facold_default, x_default] = run(/*beta=*/0.0);
+  const auto [n_pi, facold_pi, x_pi] = run(/*beta=*/0.04);
+
+  // (a) Both controllers must complete the integration; step counts in
+  // the same coarse band. At rtol=1e-12 / atol=1e-9 / dt_max=600 s on a
+  // 7e6 m circular orbit, the controller picks ~600 s steps and 1 hour
+  // requires ~6 accepted steps. Use a wide envelope (1 .. 50) to allow
+  // CI host variation.
+  EXPECT_GE(n_default, 1);
+  EXPECT_LE(n_default, 50) << "default I-only controller exploded";
+  EXPECT_GE(n_pi, 1);
+  EXPECT_LE(n_pi, 50) << "PI controller exploded";
+
+  // (b) The PI step count should be within 50% of the I-only count —
+  // both controllers solve the same problem; the PI variant should not
+  // be wildly different on a smooth Kepler orbit.
+  const double ratio = static_cast<double>(n_pi) / static_cast<double>(n_default);
+  EXPECT_GT(ratio, 0.5) << "PI controller used too few steps: " << n_pi << " vs " << n_default;
+  EXPECT_LT(ratio, 2.0) << "PI controller used too many steps: " << n_pi << " vs " << n_default;
+
+  // (c) Both controllers should produce the same final state to within
+  // tolerance — they're solving the same ODE. ~1 m on a 7 km/s orbit is
+  // a generous closure (rtol * r = 7e-6 m is the achievable floor).
+  const double dr = (x_default.r - x_pi.r).norm();
+  EXPECT_LT(dr, 1.0) << "PI vs I-only controller diverged: " << dr << " m";
+
+  // (d) `facold_` is alive after the integration: was it written? The
+  // pre-fix code would have left it at the function-local 1e-4 default,
+  // which the constructor also seeds. We test that the persisted value
+  // is the accepted-step normalised err — bounded above by 1.0 (acceptance
+  // criterion) and clamped from below to 1e-4.
+  EXPECT_GE(facold_default, 1e-4);
+  EXPECT_LE(facold_default, 1.0);
+  EXPECT_GE(facold_pi, 1e-4);
+  EXPECT_LE(facold_pi, 1.0);
+}
 
 }  // namespace

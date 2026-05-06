@@ -112,8 +112,11 @@ the `IForceModel::partials_dadx` from the VE contract.
   via central-difference perturbation of initial conditions to the same
   tolerance. This is the *only* mechanism by which a new integrator
   adapter is admitted to the seam.
-- Coefficient tables are committed as `constexpr std::array` in headers
-  and hashed in CI to prevent silent corruption.
+- Coefficient tables are committed as `constexpr std::array` in headers.
+  (An earlier draft of this ADR specified hashing them in CI to prevent
+  silent corruption; that mechanism has not been wired and the claim is
+  withdrawn here. Phase 7 may add it once the full DOP853 / GJ8 tables
+  land.)
 - Encke-wrapper composition ([[concepts/long-arc-state-conditioning]]) is
   a separate module that takes any `IIntegrator` and reframes it as a
   deviation propagator.
@@ -163,16 +166,21 @@ narrower adapter set than the steady-state vision:
   service of fix-set landing this note: it now returns the
   conventional Vallado §8.7.2 / Montenbruck-Gill §3.3.2 form
   `mu_3 * ((r_3 - r) / |r_3 - r|^3 - r_3 / |r_3|^3)` rather than the
-  Battin / f(q) stable substitution that was previously wired (the
-  prior form had a sign in the f-term that disagreed with the
-  conventional expression by about 2x in the LEO-vs-Sun regime; both
-  forms passed the order-of-magnitude unit test, but only the
-  conventional form lines up with the published analytical Jacobian).
-  REQ-PHY-005's "must be numerically stable at small spacecraft-
-  central-body distances" is unaffected at LEO (the cancellation
-  costs ~5 of ~16 sig figs, well above the 1e-6 conformance tolerance);
-  the Battin substitution returns as a Phase 7 hardening item if
-  conjunction-screening close approaches require it.
+  Battin / f(q) stable substitution that was previously wired. The
+  switch was made for clarity and to keep the analytical Jacobian
+  directly verifiable against the literature derivation; an earlier
+  draft of this note characterised the prior Battin form as having a
+  numerical sign discrepancy in the LEO-vs-Sun regime, but that claim
+  was not substantiated against an independent oracle and has been
+  withdrawn — both expressions describe the same vector field
+  algebraically, and absent a smoking-gun unit test the substitution
+  is best framed as a clarity/maintainability change rather than a
+  bug fix. REQ-PHY-005's "must be numerically stable at small
+  spacecraft-central-body distances" is unaffected at LEO (the
+  conventional-form cancellation costs ~5 of ~16 sig figs, well above
+  the 1e-6 conformance tolerance); the Battin substitution returns as
+  a Phase 7 hardening item (tracked separately) if conjunction-
+  screening close approaches require it.
 
 The IIntegrator and IForceModel seams as documented above are
 unchanged at the Phase 7 upgrades; these notes describe the fidelity

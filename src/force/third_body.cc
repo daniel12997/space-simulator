@@ -55,11 +55,9 @@ ThirdBody::partials(apsis::time::Time<apsis::time::tags::TT> t,
   //
   //   a(r) = mu_3 * [ (r_3 - r) / |r_3 - r|^3  -  r_3 / |r_3|^3 ]
   //
-  // The acceleration() override above evaluates the same quantity via
-  // Battin's f(q) form for numerical stability when |r| << |r_3|; the
-  // closed-form Jacobian below is identical mathematically (both forms
-  // describe the same vector field). Differentiating wrt the spacecraft
-  // position r:
+  // The acceleration() override above evaluates the conventional Vallado
+  // §8.7.2 form directly; the closed-form Jacobian below is its analytic
+  // gradient. Differentiating wrt the spacecraft position r:
   //
   //   da/dr = mu_3 * [ 3 * (r_3 - r)(r_3 - r)^T / |r_3 - r|^5  -  I / |r_3 - r|^3 ]
   //

@@ -207,25 +207,30 @@ static_assert((kBhh1 + kBhh2 + kBhh3) > 1.0 - 1e-13 && (kBhh1 + kBhh2 + kBhh3) <
 static_assert(sum_b_dot_abscissae() > 0.5 - 1e-13 && sum_b_dot_abscissae() < 0.5 + 1e-13,
               "DOP853: sum(b * c) != 1/2 — 2nd-order condition violated.");
 
-// Compile-time hash of the coefficient table. Any silent edit to the
-// constants above changes this hash; the value below is the FNV-1a 64-bit
-// hash of the canonical 30-digit constants as transcribed from Hairer's
-// dop853.f. If the hash drifts, the order-condition `static_assert`s above
-// catch most transcription mistakes; this hash is a defence-in-depth.
+// Compile-time fingerprint of the coefficient table — a defence-in-depth
+// tripwire that catches silent edits to the constants above (the four
+// order-condition `static_assert`s catch most transcription mistakes; this
+// fingerprint catches the rest).
 //
-// Computed by interpreting each of the canonical scalar constants as IEEE-754
-// double-precision bytes in order: kC[0..11], kA flat[0..143], kB[0..11],
-// kBhh1, kBhh2, kBhh3, kEr[0..11].
+// Implementation: FNV-1a 64-bit hash over a magnitude-encoded representation
+// of each double. Each scalar `x` is mapped to a 64-bit fingerprint via
+// `int64(|x| * 2^53)` (with the high bit flipped via bitwise-not for
+// negatives, so sign-changing edits reliably alter the hash); the eight
+// bytes of that fingerprint are then folded into the running FNV-1a state.
+// `bit_cast` over the IEEE-754 representation would be slightly cleaner but
+// is not constexpr-clean in C++17 — the magnitude encoding is sufficient
+// for a typo-detection tripwire on this 156-double table where any
+// single-digit flip changes the magnitude beyond the encoding's quantum
+// (~1 ULP at 2^53). NOT a cryptographic hash; do not use for anything
+// security-bearing.
+//
+// Iteration order (must be stable for the pinned literal to remain valid):
+// kC[0..11], kA flat row-major [0..131], kB[0..11], kBhh1, kBhh2, kBhh3,
+// kEr[0..11]. The pinned literal at the end of this header is recomputed
+// by `tools/dev/recompute_dop853_hash.sh` whenever the table is
+// intentionally edited.
 constexpr std::uint64_t fnv1a_double(double x, std::uint64_t h) noexcept {
-  // Bit-cast double to uint64 via memcpy is constexpr-clean in C++20 only;
-  // for C++17 we use a union with an `unsigned char[8]` bridge through a
-  // tagged `__builtin_bit_cast`-equivalent approach. constexpr support for
-  // this pattern depends on compiler — gcc-13 / clang-17 accept it.
   std::uint64_t bits = 0;
-  // Manual bit-cast via memcpy is NOT constexpr in C++17; fall back to a
-  // simple checksum based on the textual decimal representation we actually
-  // wrote. This is sufficient as a "did the table change" tripwire.
-  // Use the integer cast of (x * 2^53) for a deterministic 64-bit fingerprint.
   if (x < 0.0) {
     bits = static_cast<std::uint64_t>(static_cast<long long>(-x * 9.007199254740992e15));
     bits = ~bits;
@@ -268,9 +273,15 @@ constexpr std::uint64_t coeff_hash() noexcept {
 }
 
 inline constexpr std::uint64_t kCoefficientHash = coeff_hash();
-// Tripwire: if any constant above silently drifts, this value changes and
-// the diff is conspicuous. Reviewer should confirm the new value is
-// deliberate (i.e. cross-checked against Hairer's dop853.f again).
-static_assert(kCoefficientHash != 0, "DOP853 coefficient hash collapsed to zero — table is empty?");
+
+// Pinned baseline. If a coefficient above is edited (intentionally or by
+// accident), this static_assert fires. To rebaseline after an *intentional*
+// table change, run `tools/dev/recompute_dop853_hash.sh`, paste the emitted
+// literal here, and document the edit's source citation in this file's
+// header. An unintentional change is the bug you want to catch — leave the
+// assert firing and revert the coefficient edit.
+static_assert(kCoefficientHash == 0xB3EDD5CF93EBB0EEULL,
+              "DOP853 coefficient table changed — verify intentionally and update the baseline. "
+              "Run tools/dev/recompute_dop853_hash.sh to obtain the new literal.");
 
 }  // namespace apsis::integrate::dop853

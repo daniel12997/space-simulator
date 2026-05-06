@@ -341,6 +341,24 @@ class — NOSA license, study-permitted).
 - [ ] All existing tests + D1 tests still pass.
 - [ ] Local CI parity green; sanitizer green.
 
+**Status (2026-05-06): DEFERRED**. Per the implement procedure's T4 STOP-and-
+report trigger ("coefficient table source can't be obtained" — variant of:
+in-corpus PDF text-extraction is unreliable for the 90 ordinate-form
+entries, and on-disk derive-from-first-principles via Berry-Healy's Eq 26 /
+31 / 43 / 48 / 59 / 67 ran into an unresolved alternate-formulation shift
+disagreement vs the printed Tables 5/6 anchor entries). Both bridges
+flagged in plan §"Codegen / fallback notes" — direct transcription and
+generator-derived computation — failed within the cycle's available
+context budget. Punting D2 to the orchestrator for one of: (a) extend
+cycle for hand-checked transcription pass against a higher-resolution
+PDF render; (b) source the Berry UMD generator output directly; (c)
+defer D2 to a follow-on Batch D' or Phase 7. D1 (DOP853) lands in this
+batch as planned and is independently useful — Berry-Healy 2004 §"Step
+size matters more than the order of the method" notes that for typical
+LEO orbits at moderate step sizes the order-of-method is secondary to
+step size, so the step-adaptive DOP853 covers the catalog-propagation
+use case D2 was originally targeting until D2 lands properly.
+
 ---
 
 ## Verification (per batch)

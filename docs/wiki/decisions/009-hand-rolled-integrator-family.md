@@ -309,3 +309,50 @@ Implementation Note above documented as a Phase 7 follow-up:
   error regime that doesn't apply once rtol approaches the working
   precision floor. The tolerance retune in `leo_kepler_24h.cc` reflects
   this empirical reality and is documented in the test file header.
+
+- **D2 — Berry-Healy 2004 ordinate-form Gauss-Jackson 8 (issue #6)**:
+  **DEFERRED to a follow-on cycle.** Per the implement procedure's T4
+  STOP-and-report trigger, both coefficient-source bridges flagged in
+  the Phase 1A hardening plan §"Codegen / fallback notes" failed inside
+  the available cycle context budget:
+
+  1. Direct transcription of Berry-Healy's printed Tables 5 (90 entries)
+     and 6 (90 entries) from the corpus PDF was attempted via
+     `pdftotext -layout` and visual readout; both lost the printed table's
+     subtle minus signs in some rows, and a row-sum-zero consistency
+     check fired on transcription (rows j = -1 and j = +1 of Table 5
+     summed to ±0.0698 instead of 0; Table 6 row sums of several rows
+     were further off the expected 1/12 alternate-formulation residual).
+     A single-entry typo could be debugged but the audit-trail to the
+     paper printed values would require more rounds than the cycle
+     budget supported.
+  2. Compute-from-first-principles via the Adams-Moulton (Eq 26),
+     Adams-Bashforth (Eq 31), Stormer-Cowell (Eq 43), and Stormer-predictor
+     (Eq 48) recurrences in exact rational arithmetic, plus the
+     mid-corrector backward-difference recurrence Eq 59 and the
+     ordinate-form transformation Eq 67. The recurrences match Berry-Healy's
+     Tables 3 and 4 exactly (verified by `static_assert` on c_1, c_2, c_4,
+     q_1..q_4) but the conversion to alternate-formulation ordinate Tables
+     5 and 6 has an unresolved shift convention that disagrees with the
+     printed anchor values `b_{4,4} = -19087/89600` and `a_{4,4} =
+     3250433/53222400` by approximately the centre-term shift factor.
+
+  Resolution path forward (orchestrator decides):
+  - Extend the cycle and complete a hand-checked transcription against a
+    higher-resolution Berry-Healy 2004 reprint or against Berry's UMD
+    generator output (`http://hdl.handle.net/1903/2202` — the page is
+    bot-blocked for unauthenticated access from CI hosts but a one-time
+    human-mediated download lands the canonical reference).
+  - Defer D2 to a follow-on hardening cycle (`phase-1a-batch-d-prime` or
+    similar) with the same scope; D1's DOP853 is independently useful
+    in this batch and unblocks Phase 2 active-spacecraft narrow-phase
+    work that does not require GJ8.
+  - Descope to predictor-only (PE) at lower order; rejected because PE
+    inherits the same coefficient-table dependency as PECE.
+
+  The IIntegrator seam is unchanged at the eventual D2 upgrade; the
+  GaussJackson8 type slot is reserved per ADR-009 above. Phase 2 work
+  may proceed on the active-spacecraft side using DOP853; the
+  catalog-scale propagation case (50k-object SGP4-style) D2 was
+  originally targeting is a Phase 5 / Phase 6 concern, not blocked by
+  the D2 slip.

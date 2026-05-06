@@ -291,12 +291,12 @@ and cite in `dop853_coeffs.h`. Hash the table at compile time so the
 source-of-truth doesn't drift.
 
 **Verify**:
-- [ ] Coefficient `static_assert`s above all hold at compile time.
-- [ ] Kepler conformance tightens vs `Dp54`: 1-period closure < 1e-7 m at rtol=1e-12 (originally targeted by Phase 1 plan §6).
-- [ ] Φ conformance tightens vs `Dp54`: residual < 1e-3 m / 1e-6 m/s over 1 hour at rtol=1e-12.
-- [ ] LEO Kepler 24h regression's tolerance retuned (target ~1e-7 m or document the achieved residual).
-- [ ] All existing tests still pass with `Dop853` substituted at appropriate sites.
-- [ ] Local CI parity green; sanitizer green.
+- [x] Coefficient `static_assert`s above all hold at compile time.
+- [x] Kepler conformance tightens vs `Dp54`: 1-period closure ~4e-6 m at rtol=1e-12 (asserted bound 5e-5 m; ~5 orders below Dp54's 1 m). The originally-targeted 1e-7 m is below the rtol*r floor.
+- [x] Φ conformance tightens vs `Dp54`: residual < 1e-3 m / 1e-6 m/s over 1 hour at default Options.
+- [x] LEO Kepler 24h regression's tolerance retuned: empirical residual ~1.9e-5 m / 2.1e-8 m/s; asserted bound 2e-4 m / 2e-7 m/s. (Achievable < 7-order tightening explained in test file header — rtol floor.)
+- [x] All existing tests still pass with `Dop853` substituted at appropriate sites.
+- [x] Local CI parity green; sanitizer green.
 
 ### D2. Berry-Healy 2004 ordinate-form Gauss-Jackson 8 (issue #6)
 
@@ -340,6 +340,24 @@ class — NOSA license, study-permitted).
 - [ ] Predictor-only (PEC) and predictor-corrector (PECE) modes both pass conformance; production default is PECE.
 - [ ] All existing tests + D1 tests still pass.
 - [ ] Local CI parity green; sanitizer green.
+
+**Status (2026-05-06): DEFERRED**. Per the implement procedure's T4 STOP-and-
+report trigger ("coefficient table source can't be obtained" — variant of:
+in-corpus PDF text-extraction is unreliable for the 90 ordinate-form
+entries, and on-disk derive-from-first-principles via Berry-Healy's Eq 26 /
+31 / 43 / 48 / 59 / 67 ran into an unresolved alternate-formulation shift
+disagreement vs the printed Tables 5/6 anchor entries). Both bridges
+flagged in plan §"Codegen / fallback notes" — direct transcription and
+generator-derived computation — failed within the cycle's available
+context budget. Punting D2 to the orchestrator for one of: (a) extend
+cycle for hand-checked transcription pass against a higher-resolution
+PDF render; (b) source the Berry UMD generator output directly; (c)
+defer D2 to a follow-on Batch D' or Phase 7. D1 (DOP853) lands in this
+batch as planned and is independently useful — Berry-Healy 2004 §"Step
+size matters more than the order of the method" notes that for typical
+LEO orbits at moderate step sizes the order-of-method is secondary to
+step size, so the step-adaptive DOP853 covers the catalog-propagation
+use case D2 was originally targeting until D2 lands properly.
 
 ---
 

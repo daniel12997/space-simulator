@@ -18,6 +18,7 @@
 #include <cmath>
 
 #include "apsis/force/point_mass.h"
+#include "apsis/integrate/dop853.h"
 #include "apsis/integrate/dp54.h"
 #include "apsis/integrate/iintegrator.h"
 #include "apsis/integrate/yoshida4.h"
@@ -101,6 +102,17 @@ TEST(IntegratorPhi, Dp54) {
   af::PointMass pm(kMu);
   ai::Dp54 d;
   check_phi(d, pm, /*pos_tol=*/1.0, /*vel_tol=*/1e-3);
+}
+
+TEST(IntegratorPhi, Dop853) {
+  af::PointMass pm(kMu);
+  // Use default Options (rtol 1e-13 / atol 1e-9). Phi is co-integrated at
+  // the same step as the natural state — see dop853.cc. Over 1 hour the
+  // 1e-3 m / 1e-6 m/s residual is dominated by the central-difference
+  // perturbation order (h^2 truncation in the FD oracle) rather than the
+  // DOP853 step error, which is well below 1 nm.
+  ai::Dop853 d;
+  check_phi(d, pm, /*pos_tol=*/1e-3, /*vel_tol=*/1e-6);
 }
 
 TEST(IntegratorPhi, Yoshida4) {

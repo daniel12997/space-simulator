@@ -250,3 +250,109 @@ record; this Phase 1A note supersedes its Phase 7-deferral entries
 for `SphericalHarmonic`. The remaining Phase 7 items (full DOP853 +
 GJ8) are tracked separately under Batch D of the Phase 1A hardening
 plan.
+
+## Phase 1A Implementation Note — Batch D1 closure (2026-05-06)
+
+Phase 1A Batch D1 closes the Phase-1 DOP853 deferral that the original
+Implementation Note above documented as a Phase 7 follow-up:
+
+- **D1 — true DOP853 (issue #5)**. The Phase-1 adaptive-RK adapter shipped
+  as `Dp54` (Hairer Vol I Table 5.1) with the `Dop853` name retired to
+  remove the load-bearing-lie; the full DP8(5,3) coefficient table (Hairer
+  Vol I Table 5.2) and blended-error PI step controller (§II.5) are now
+  in place behind a sibling `Dop853` adapter. The adapter sits behind the
+  same `IIntegrator` seam as `Dp54`, `Yoshida4`, and (D2) `GaussJackson8`;
+  `Dp54` is retained as a smaller-stencil reference for cross-checking.
+
+  **Coefficient source**: transcribed directly from Hairer's official
+  Fortran source `dop853.f`
+  (<http://www.unige.ch/~hairer/prog/nonstiff/dop853.f>; public domain via
+  INRIA / Universite de Geneve), which is the canonical machine-readable
+  form of Table 5.2 to ~30 decimal digits. The transcription is in
+  `src/integrate/dop853_coeffs.h` with file-level attribution. Compile-time
+  `static_assert`s verify (a) row sums of A equal c, (b) sum(b) == 1,
+  (c) sum(bhh) == 1, (d) sum(b * c) == 1/2 — the four cheap order
+  conditions that catch typos. A defence-in-depth FNV-1a hash of the full
+  table is also computed at compile time so a silent drift to the constants
+  produces a conspicuous diff.
+
+  **Step controller**: blended-error PI per Hairer §II.5. Uses both the
+  5th-order embedded estimate (via `er` weights) and the 3rd-order embedded
+  estimate (via `bhh1, bhh2, bhh3` applied to stages 1, 9, 12); the blended
+  norm is `|h| * sqrt(sum_err / (N * (sum_err + 0.01 * sum_err2)))`, then
+  Lund-stabilised step factor `(err)^(1/8 - 0.2*beta) / facold^beta` per
+  dop853.f line ~677. Default `beta = 0.0` reduces to a plain I-controller
+  matching Hairer's recommended default.
+
+  **Empirical residuals (development host)**:
+  - Kepler 1-period at rtol=1e-12 / atol=1e-9 / dt_max=600 s: **~4e-6 m**
+    (asserted bound 5e-5 m; ~10x margin). The 1-period closure is bounded
+    by `rtol * orbit_radius` ~ 1e-12 * 7e6 = 7e-6 m at this rtol, so the
+    method is at the floor; tightening rtol below 1e-12 hits double-
+    precision noise. ~5 orders below Dp54's 1 m bound on the same problem.
+  - Phi 1-hour at default Options: **~1e-3 m / 1e-6 m/s**, dominated by
+    the central-difference perturbation order (h^2 truncation in the FD
+    oracle), not the DOP853 step error (which is well below 1 nm).
+  - LEO Kepler 24-h regression at rtol=1e-12 / atol=1e-9 / dt_max=60 s:
+    **~1.9e-5 m / ~2.1e-8 m/s** (asserted bound 2e-4 m / 2e-7 m/s; ~10x
+    margin). About 3 orders below Dp54's prior ~1.5e-2 m residual on the
+    same problem.
+
+  **Plan-anticipated vs achieved**: the Phase 1 plan §10 anticipated
+  "~7 orders of magnitude" tightening for the DOP853 upgrade. The achieved
+  tightening is ~3 orders on the LEO 24-h regression and ~5 orders on the
+  1-period Kepler conformance. The shortfall is explained by the rtol
+  floor noted above: at rtol=1e-12 with a 7000 km orbit radius, per-step
+  error is bounded by `rtol * r` regardless of the method's order, so
+  DOP853's per-step truncation is no longer the dominant residual term.
+  The §10 anticipation implicitly assumed an idealised constant-relative-
+  error regime that doesn't apply once rtol approaches the working
+  precision floor. The tolerance retune in `leo_kepler_24h.cc` reflects
+  this empirical reality and is documented in the test file header.
+
+- **D2 — Berry-Healy 2004 ordinate-form Gauss-Jackson 8 (issue #6)**:
+  **DEFERRED to a follow-on cycle.** Per the implement procedure's T4
+  STOP-and-report trigger, both coefficient-source bridges flagged in
+  the Phase 1A hardening plan §"Codegen / fallback notes" failed inside
+  the available cycle context budget:
+
+  1. Direct transcription of Berry-Healy's printed Tables 5 (90 entries)
+     and 6 (90 entries) from the corpus PDF was attempted via
+     `pdftotext -layout` and visual readout; both lost the printed table's
+     subtle minus signs in some rows, and a row-sum-zero consistency
+     check fired on transcription (rows j = -1 and j = +1 of Table 5
+     summed to ±0.0698 instead of 0; Table 6 row sums of several rows
+     were further off the expected 1/12 alternate-formulation residual).
+     A single-entry typo could be debugged but the audit-trail to the
+     paper printed values would require more rounds than the cycle
+     budget supported.
+  2. Compute-from-first-principles via the Adams-Moulton (Eq 26),
+     Adams-Bashforth (Eq 31), Stormer-Cowell (Eq 43), and Stormer-predictor
+     (Eq 48) recurrences in exact rational arithmetic, plus the
+     mid-corrector backward-difference recurrence Eq 59 and the
+     ordinate-form transformation Eq 67. The recurrences match Berry-Healy's
+     Tables 3 and 4 exactly (verified by `static_assert` on c_1, c_2, c_4,
+     q_1..q_4) but the conversion to alternate-formulation ordinate Tables
+     5 and 6 has an unresolved shift convention that disagrees with the
+     printed anchor values `b_{4,4} = -19087/89600` and `a_{4,4} =
+     3250433/53222400` by approximately the centre-term shift factor.
+
+  Resolution path forward (orchestrator decides):
+  - Extend the cycle and complete a hand-checked transcription against a
+    higher-resolution Berry-Healy 2004 reprint or against Berry's UMD
+    generator output (`http://hdl.handle.net/1903/2202` — the page is
+    bot-blocked for unauthenticated access from CI hosts but a one-time
+    human-mediated download lands the canonical reference).
+  - Defer D2 to a follow-on hardening cycle (`phase-1a-batch-d-prime` or
+    similar) with the same scope; D1's DOP853 is independently useful
+    in this batch and unblocks Phase 2 active-spacecraft narrow-phase
+    work that does not require GJ8.
+  - Descope to predictor-only (PE) at lower order; rejected because PE
+    inherits the same coefficient-table dependency as PECE.
+
+  The IIntegrator seam is unchanged at the eventual D2 upgrade; the
+  GaussJackson8 type slot is reserved per ADR-009 above. Phase 2 work
+  may proceed on the active-spacecraft side using DOP853; the
+  catalog-scale propagation case (50k-object SGP4-style) D2 was
+  originally targeting is a Phase 5 / Phase 6 concern, not blocked by
+  the D2 slip.

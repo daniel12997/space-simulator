@@ -1,7 +1,7 @@
 // Copyright 2026 Apsis Contributors
 // SPDX-License-Identifier: Apache-2.0
 //
-// requirements: REQ-PHY-007
+// requirements: REQ-FRM-013
 //
 // The actual compile-fail gate ran at CMake configure time via try_compile()
 // in tests/unit/frames/CMakeLists.txt. This gtest is a beacon so that ctest

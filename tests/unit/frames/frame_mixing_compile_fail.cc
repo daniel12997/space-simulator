@@ -1,7 +1,7 @@
 // Copyright 2026 Apsis Contributors
 // SPDX-License-Identifier: Apache-2.0
 //
-// requirements: REQ-PHY-007
+// requirements: REQ-FRM-013
 //
 // Phase-1A §A2: NEGATIVE compile test. CMake's try_compile invokes this
 // file with EXPECT_FAIL semantics: the build is expected to FAIL because

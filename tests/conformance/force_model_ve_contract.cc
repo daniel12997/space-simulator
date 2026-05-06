@@ -14,7 +14,7 @@
 //
 // Adapters **excluded** from this gate (per ADR-009 Phase 1 Implementation
 // Note):
-//   * SphericalHarmonic — `partials()` is itself a finite-difference
+//   * SphericalHarmonic — `partials_dadx()` is itself a finite-difference
 //                         evaluation in Phase 1, pending the Phase 7
 //                         Pines analytical-gradient upgrade. Comparing
 //                         FD-against-FD would be a tautology; the

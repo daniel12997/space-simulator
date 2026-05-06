@@ -92,7 +92,7 @@ where `state_in_itrs : State<tags::ITRS>` — and assert the snippet does
 
 **Verify**:
 - [x] `ctest -R FrameMixingGuard` reports PASSED (compile-fail-as-expected).
-- [x] Removing the type mismatch in the snippet produces a CTest FAILURE
+- [x] Removing the type mismatch in the snippet produces a configure-time CMake FATAL_ERROR
       (i.e. the test catches the absence-of-mismatch, proving it isn't
       vacuously passing). Confirm during implementation; do not commit
       the inversion test, just verify it fires.

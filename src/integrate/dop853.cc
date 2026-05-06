@@ -78,8 +78,8 @@ double blended_error(const std::array<apsis::math::Vec6, dp::kStages>& kx,
     double er_dot_k = 0.0;
     double b_dot_k = 0.0;
     for (std::size_t s = 0; s < dp::kStages; ++s) {
-      er_dot_k += dp::kEr[s] * kx[s][i];
-      b_dot_k += dp::kB[s] * kx[s][i];
+      er_dot_k += dp::kEr.at(s) * kx.at(s)[i];
+      b_dot_k += dp::kB.at(s) * kx.at(s)[i];
     }
     const double kErrI = er_dot_k / kSk;
     sum_err += kErrI * kErrI;
@@ -88,7 +88,8 @@ double blended_error(const std::array<apsis::math::Vec6, dp::kStages>& kx,
     // Hairer's `k4 = b.k` then ERR2 := k4 - bhh1*k1 - bhh2*k9 - bhh3*k12
     // (`k3last` in the Fortran reuses slot K3 after the 12th-stage call).
     const double kErr2I =
-        (b_dot_k - dp::kBhh1 * kx[0][i] - dp::kBhh2 * kx[8][i] - dp::kBhh3 * kx[11][i]) / kSk;
+        (b_dot_k - dp::kBhh1 * kx.at(0)[i] - dp::kBhh2 * kx.at(8)[i] - dp::kBhh3 * kx.at(11)[i]) /
+        kSk;
     sum_err2 += kErr2I * kErr2I;
   }
 
@@ -120,30 +121,31 @@ StepResult Dop853::step(apsis::time::Time<apsis::time::tags::TT> t,
     std::array<apsis::math::Mat6, dp::kStages> kp;
 
     // 12-stage Butcher block.
+    constexpr std::size_t kInnerLen = std::tuple_size_v<std::decay_t<decltype(dp::kA[0])>>;
     for (std::size_t s = 0; s < dp::kStages; ++s) {
       apsis::math::Vec6 y_stage = vec_from_state(x_in);
       apsis::math::Mat6 p_stage = phi_in;
-      for (std::size_t j = 0; j < s && j < dp::kA[s].size(); ++j) {
-        const double kAij = dp::kA[s][j];
+      for (std::size_t j = 0; j < s && j < kInnerLen; ++j) {
+        const double kAij = dp::kA.at(s).at(j);
         if (kAij != 0.0) {
-          y_stage += h * kAij * kx[j];
-          p_stage += h * kAij * kp[j];
+          y_stage += h * kAij * kx.at(j);
+          p_stage += h * kAij * kp.at(j);
         }
       }
-      const auto kTStage = t + apsis::time::Duration{h * dp::kC[s]};
+      const auto kTStage = t + apsis::time::Duration{h * dp::kC.at(s)};
       const auto kDeriv = evaluate(kTStage, state_from_vec(y_stage), p_stage, force);
-      kx[s] = kDeriv.dx;
-      kp[s] = kDeriv.dphi;
+      kx.at(s) = kDeriv.dx;
+      kp.at(s) = kDeriv.dphi;
     }
 
     // 8th-order solution from b.k.
     apsis::math::Vec6 y_new = vec_from_state(x_in);
     apsis::math::Mat6 p_new = phi_in;
     for (std::size_t s = 0; s < dp::kStages; ++s) {
-      const double kBs = dp::kB[s];
+      const double kBs = dp::kB.at(s);
       if (kBs != 0.0) {
-        y_new += h * kBs * kx[s];
-        p_new += h * kBs * kp[s];
+        y_new += h * kBs * kx.at(s);
+        p_new += h * kBs * kp.at(s);
       }
     }
 

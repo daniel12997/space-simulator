@@ -41,9 +41,9 @@ class Dop853 final : public IIntegrator {
     double dt_max = 3600.0;
     // Safety + grow/shrink + Lund-stabilisation exponent.
     double safety = 0.9;
-    double max_grow = 3.0;       // Hairer 1/FAC1.
+    double max_grow = 3.0;          // Hairer 1/FAC1.
     double min_shrink = 1.0 / 6.0;  // Hairer 1/FAC2.
-    double beta = 0.0;           // Lund-stabilisation exponent.
+    double beta = 0.0;              // Lund-stabilisation exponent.
     int max_iters_per_step = 32;
   };
 

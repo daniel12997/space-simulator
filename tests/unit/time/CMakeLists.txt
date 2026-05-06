@@ -3,6 +3,16 @@ apsis_add_test(time_test
   SOURCES time_test.cc
 )
 
+# Phase 1A §B1: EopTable. Needs APSIS_DATA_DIR to load the bundled
+# `data/iers_eop_phase1.csv` slice for the load+query round-trip test.
+apsis_add_test(eop_table_test
+  LABEL   unit
+  SOURCES eop_table_test.cc
+)
+target_compile_definitions(eop_table_test PRIVATE
+  APSIS_DATA_DIR="${CMAKE_SOURCE_DIR}/data"
+)
+
 # Compile-fail test for cross-scale arithmetic. Implemented via try_compile
 # with `EXPECT_FAIL` semantics: we configure a tiny project that uses two
 # Time<> instantiations of different scales in an arithmetic context and

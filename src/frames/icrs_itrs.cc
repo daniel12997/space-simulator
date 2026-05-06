@@ -20,9 +20,13 @@
 // at the regression tolerances declared in the Phase 1 plan. We therefore
 // model dR/dt = R * [omega_e]_z (cross product), which is the standard
 // approximation in flight-dynamics-grade pipelines for short arcs.
+//
+// Phase-1A §B1: (xp, yp, dut1) come from a `const EopTable&` parameter
+// rather than the Phase-1 process-wide EOP globals (now deleted).
+// Same-instant query: a single `EopTable::query(tt)` call returns the
+// triple, so xp/yp/dut1 are guaranteed self-consistent.
 
 #include <array>
-#include <atomic>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -30,6 +34,7 @@
 #include "apsis/frames/transform.h"
 #include "apsis/math/types.h"
 #include "apsis/time/convert.h"
+#include "apsis/time/eop_table.h"
 
 extern "C" {
 #include "sofa.h"
@@ -43,9 +48,6 @@ namespace {
 // (the LOD-derived correction is sub-microradian per second, contributing
 // micrometre-per-second velocity noise — well below the 5 cm/s ISS budget).
 constexpr double kOmegaEarth = 7.2921151467064e-5;  // rad/s
-
-std::atomic<double> g_polar_motion_xp{0.0};
-std::atomic<double> g_polar_motion_yp{0.0};
 
 // SOFA's iauC2ixys / iauPom00 take `double[3][3]` row-major output matrices.
 // To avoid C-style array declarations at the C++ call site, we re-declare
@@ -67,10 +69,15 @@ apsis::math::Mat3 sofa_to_eigen(const std::array<double, 9>& m) {
   return e;
 }
 
-// Compose the full ICRF -> ITRS rotation matrix at TT epoch t.
-// Pulled into a helper so both forward and inverse transforms share the
-// SOFA bookkeeping.
-apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt) {
+// Compose the full ICRF -> ITRS rotation matrix at TT epoch t. Pulled into
+// a helper so both forward and inverse transforms share the SOFA
+// bookkeeping. EOP triple (xp, yp, dut1) is queried from `eop` at `tt` so
+// the three scalars are guaranteed coherent (single table lookup).
+apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt,
+                                     const apsis::time::EopTable& eop) {
+  // Single EOP query: xp, yp, dut1 all from the same epoch.
+  const apsis::time::EopValues kEop = eop.query(tt);
+
   // CIP X, Y and CEO position s at TT (full IAU 2006/2000A, periodic terms
   // included). iauXys06a is the canonical one-call entry point.
   double cip_x{};
@@ -83,8 +90,12 @@ apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt
   sofa_c2ixys_flat(cip_x, cip_y, ceo_s, q_c.data());
   const apsis::math::Mat3 kQ = sofa_to_eigen(q_c);
 
-  // Earth rotation angle from UT1.
-  const auto kUt1 = apsis::time::convert<apsis::time::tags::UT1>(tt);
+  // Earth rotation angle from UT1. UT1 = TT (via TAI -> UTC) + dut1 -> UT1.
+  // We route through the EOP-aware `convert<UT1>(tt, eop)` so the dut1
+  // used for ERA matches the dut1 implicit in the table query above —
+  // they're identical because the table is keyed on TT and `convert` calls
+  // `eop.query(tt)` at the same epoch.
+  const auto kUt1 = apsis::time::convert<apsis::time::tags::UT1>(tt, eop);
   const double kEra = iauEra00(kUt1.jd1(), kUt1.jd2());
 
   apsis::math::Mat3 r_era = apsis::math::Mat3::Identity();
@@ -98,11 +109,10 @@ apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt
   r_era(1, 1) = kCos;
 
   // Polar motion W = iauPom00(xp, yp, sp). sp (TIO locator) is small enough
-  // to ignore at v1 tolerances per ADR-001 §"polar motion x_p, y_p".
-  const double kXp = g_polar_motion_xp.load(std::memory_order_relaxed);
-  const double kYp = g_polar_motion_yp.load(std::memory_order_relaxed);
+  // to ignore at v1 tolerances per ADR-001 §"polar motion x_p, y_p". xp,yp
+  // are stored in radians in EopTable (converted from arcsec on load).
   std::array<double, 9> w_c{};
-  sofa_pom00_flat(kXp, kYp, /*sp=*/0.0, w_c.data());
+  sofa_pom00_flat(kEop.polar_xp, kEop.polar_yp, /*sp=*/0.0, w_c.data());
   const apsis::math::Mat3 kW = sofa_to_eigen(w_c);
 
   // Q is celestial->CIRS already; ICRF->ITRS = W * R_era * Q.
@@ -111,23 +121,11 @@ apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt
 
 }  // namespace
 
-void set_default_polar_motion(double xp_rad, double yp_rad) noexcept {
-  g_polar_motion_xp.store(xp_rad, std::memory_order_relaxed);
-  g_polar_motion_yp.store(yp_rad, std::memory_order_relaxed);
-}
-
-double default_polar_motion_xp() noexcept {
-  return g_polar_motion_xp.load(std::memory_order_relaxed);
-}
-
-double default_polar_motion_yp() noexcept {
-  return g_polar_motion_yp.load(std::memory_order_relaxed);
-}
-
 template <>
 State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(const State<tags::ICRF>& x,
-                                                    apsis::time::Time<apsis::time::tags::TT> tt) {
-  const apsis::math::Mat3 kR = build_icrf_to_itrs(tt);
+                                                    apsis::time::Time<apsis::time::tags::TT> tt,
+                                                    const apsis::time::EopTable& eop) {
+  const apsis::math::Mat3 kR = build_icrf_to_itrs(tt, eop);
   // Velocity: r_itrs_dot = R * r_icrf_dot - omega x r_itrs.
   // Equivalently, in fixed frame: r_itrs_dot = R * (r_icrf_dot - omega_icrf x r_icrf).
   // We compute it via the second form: omega_icrf is omega along the rotation
@@ -144,8 +142,9 @@ State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(const State<tags::ICRF>& x,
 
 template <>
 State<tags::ICRF> transform<tags::ICRF, tags::ITRS>(const State<tags::ITRS>& x,
-                                                    apsis::time::Time<apsis::time::tags::TT> tt) {
-  const apsis::math::Mat3 kRt = build_icrf_to_itrs(tt).transpose();
+                                                    apsis::time::Time<apsis::time::tags::TT> tt,
+                                                    const apsis::time::EopTable& eop) {
+  const apsis::math::Mat3 kRt = build_icrf_to_itrs(tt, eop).transpose();
   State<tags::ICRF> y;
   y.r = kRt * x.r;
   const apsis::math::Vec3 kOmegaZ(0.0, 0.0, kOmegaEarth);

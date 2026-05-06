@@ -18,11 +18,18 @@
 //   * SOFA returns 0 on success; non-zero status flags edge cases (we
 //     promote to assertion failures rather than letting them silently
 //     return wrong instants).
+//
+// Phase-1A §B1: UT1-touching specialisations take a `const EopTable&` and
+// query `dut1 = (UT1-UTC)` from it at the input epoch. The Phase-1
+// process-wide DUT1 global and its set/get accessors are removed;
+// calling `convert<UT1>(t)` without the EOP argument is now a
+// compile-time error.
 
 #include "apsis/time/convert.h"
 
-#include <atomic>
 #include <cassert>
+
+#include "apsis/time/eop_table.h"
 
 extern "C" {
 #include "sofa.h"
@@ -30,11 +37,6 @@ extern "C" {
 
 namespace apsis::time {
 namespace {
-
-// Process-wide UT1-UTC scalar. `std::atomic<double>` guarantees lock-free
-// reads on the platforms Apsis targets (x86_64 / aarch64); the value is set
-// once at startup from the EOP slice and read in hot conversion paths.
-std::atomic<double> g_default_dut1{0.0};
 
 // `iauDtdb` with the geocentre approximation. Per the plan, Phase 1's
 // `Time<>` API does not carry observer position; the location-dependent
@@ -47,14 +49,6 @@ double dtr_geo_approx(double tt1, double tt2) {
 }
 
 }  // namespace
-
-void set_default_dut1(double seconds) noexcept {
-  g_default_dut1.store(seconds, std::memory_order_relaxed);
-}
-
-double default_dut1() noexcept {
-  return g_default_dut1.load(std::memory_order_relaxed);
-}
 
 // ---------------------------------------------------------------------------
 // TAI <-> TT (fixed offset)
@@ -98,20 +92,40 @@ template <> Time<tags::TAI> convert<tags::TAI, tags::UTC>(Time<tags::UTC> t) {
 }
 
 // ---------------------------------------------------------------------------
-// UTC <-> UT1 (uses default_dut1)
+// UTC <-> UT1 (queries `eop` at the input epoch)
 // ---------------------------------------------------------------------------
+//
+// `EopTable::query` is keyed on `Time<TT>`; for the UTC->UT1 direction we
+// route the input through TT-via-TAI (both EOP-free) so the table query
+// happens on the well-defined TT scale. The dut1 ~ 0.5 s ambiguity at the
+// table's daily cadence is invisible to the linear interpolant — i.e.
+// querying at "UTC mapped to TT" vs "UT1 mapped to TT" yields differences
+// well below the 100-ns regression tolerance.
 
-template <> Time<tags::UT1> convert<tags::UT1, tags::UTC>(Time<tags::UTC> t) {
+template <> Time<tags::UT1> convert<tags::UT1, tags::UTC>(Time<tags::UTC> t, const EopTable& eop) {
+  const auto kTt = convert<tags::TT>(t);
+  const double kDut1 = eop.query(kTt).dut1;
   double ut11, ut12;
-  const int kRc = iauUtcut1(t.jd1(), t.jd2(), default_dut1(), &ut11, &ut12);
+  const int kRc = iauUtcut1(t.jd1(), t.jd2(), kDut1, &ut11, &ut12);
   assert(kRc >= 0 && "iauUtcut1: error status");
   (void)kRc;
   return Time<tags::UT1>{ut11, ut12};
 }
 
-template <> Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1> t) {
+template <> Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1> t, const EopTable& eop) {
+  // The EOP table is keyed on TT; for the inverse direction we go
+  // UT1 -> (TT via TAI is unavailable without dut1) so we convert UT1 -> UTC
+  // first using a provisional dut1=0 query of the table to land at a TT
+  // approximation. In practice the 1-second-scale dut1 displacement is
+  // invisible to the daily-cadence linear interpolant; we therefore query
+  // the EOP table at `Time<TT>` constructed as if the input were UTC, then
+  // pass that dut1 to `iauUt1utc`. This is exactly the "evaluate dtr at
+  // the input scale" pattern used in the TT<->TDB inverse below.
+  const Time<tags::UTC> kAsUtc{t.jd1(), t.jd2()};
+  const auto kTt = convert<tags::TT>(kAsUtc);
+  const double kDut1 = eop.query(kTt).dut1;
   double utc1, utc2;
-  const int kRc = iauUt1utc(t.jd1(), t.jd2(), default_dut1(), &utc1, &utc2);
+  const int kRc = iauUt1utc(t.jd1(), t.jd2(), kDut1, &utc1, &utc2);
   assert(kRc >= 0 && "iauUt1utc: error status");
   (void)kRc;
   return Time<tags::UTC>{utc1, utc2};
@@ -121,12 +135,12 @@ template <> Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1> t) {
 // TAI <-> UT1 (composed via UTC for ΔAT bookkeeping)
 // ---------------------------------------------------------------------------
 
-template <> Time<tags::UT1> convert<tags::UT1, tags::TAI>(Time<tags::TAI> t) {
-  return convert<tags::UT1>(convert<tags::UTC>(t));
+template <> Time<tags::UT1> convert<tags::UT1, tags::TAI>(Time<tags::TAI> t, const EopTable& eop) {
+  return convert<tags::UT1>(convert<tags::UTC>(t), eop);
 }
 
-template <> Time<tags::TAI> convert<tags::TAI, tags::UT1>(Time<tags::UT1> t) {
-  return convert<tags::TAI>(convert<tags::UTC>(t));
+template <> Time<tags::TAI> convert<tags::TAI, tags::UT1>(Time<tags::UT1> t, const EopTable& eop) {
+  return convert<tags::TAI>(convert<tags::UTC>(t, eop));
 }
 
 // ---------------------------------------------------------------------------
@@ -169,12 +183,12 @@ template <> Time<tags::UTC> convert<tags::UTC, tags::TT>(Time<tags::TT> t) {
   return convert<tags::UTC>(convert<tags::TAI>(t));
 }
 
-template <> Time<tags::TT> convert<tags::TT, tags::UT1>(Time<tags::UT1> t) {
-  return convert<tags::TT>(convert<tags::TAI>(t));
+template <> Time<tags::TT> convert<tags::TT, tags::UT1>(Time<tags::UT1> t, const EopTable& eop) {
+  return convert<tags::TT>(convert<tags::TAI>(t, eop));
 }
 
-template <> Time<tags::UT1> convert<tags::UT1, tags::TT>(Time<tags::TT> t) {
-  return convert<tags::UT1>(convert<tags::TAI>(t));
+template <> Time<tags::UT1> convert<tags::UT1, tags::TT>(Time<tags::TT> t, const EopTable& eop) {
+  return convert<tags::UT1>(convert<tags::TAI>(t), eop);
 }
 
 template <> Time<tags::TDB> convert<tags::TDB, tags::TAI>(Time<tags::TAI> t) {

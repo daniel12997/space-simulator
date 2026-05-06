@@ -12,10 +12,12 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <vector>
 
 #include "apsis/frames/state.h"
 #include "apsis/frames/transform.h"
 #include "apsis/time/convert.h"
+#include "apsis/time/eop_table.h"
 #include "apsis/time/scale_tags.h"
 #include "apsis/time/time.h"
 
@@ -76,22 +78,26 @@ TEST(FramesRoundTrip, IcrfJ2000) {
 }
 
 TEST(FramesRoundTrip, IcrfItrs) {
-  af::set_default_polar_motion(2e-7, 1e-7);  // realistic LOD-scale values
-  at::set_default_dut1(0.04);
+  // Realistic-ish flat EOP: dut1 = 40 ms, polar motion ~LOD scale.
+  // The bracket span (51000..62000 MJD) covers the 2025-01-01 + 1y
+  // sweep window the test scans; query returns the constant values.
+  std::vector<at::EopRow> rows{
+      {/*mjd_utc=*/51000.0, /*dut1=*/0.04, /*xp=*/2e-7, /*yp=*/1e-7},
+      {/*mjd_utc=*/62000.0, /*dut1=*/0.04, /*xp=*/2e-7, /*yp=*/1e-7},
+  };
+  const at::EopTable eop(std::move(rows));
   auto x0 = canonical_state();
   EpochSweep sweep;
   for (int i = 0; i < EpochSweep::kCount; ++i) {
     auto t = sweep.at(i);
-    auto itrs = af::transform<af::tags::ITRS>(x0, t);
-    auto x1 = af::transform<af::tags::ICRF>(itrs, t);
+    auto itrs = af::transform<af::tags::ITRS>(x0, t, eop);
+    auto x1 = af::transform<af::tags::ICRF>(itrs, t, eop);
     // ITRS<->ICRF involves more SOFA arithmetic and the ERA sin/cos; the
     // achievable round-trip is ~ULP * |r| ≈ 1e-9 m (for |r| ~ 7e6 m).
     // 1 nm position / 1 pm/s velocity is comfortable.
     EXPECT_LT((x1.r - x0.r).norm(), 1e-6) << "epoch " << i;
     EXPECT_LT((x1.v - x0.v).norm(), 1e-9) << "epoch " << i;
   }
-  af::set_default_polar_motion(0.0, 0.0);
-  at::set_default_dut1(0.0);
 }
 
 }  // namespace

@@ -10,8 +10,12 @@
 //   ICRF <-> ITRS    (CIO pipeline; iauC2t06a / iauPom00 + ERA + polar motion)
 //   TEME <-> ITRS    (stubbed in Phase 1; throws — full implementation Phase 2)
 //
-// Polar motion (xp, yp) is taken from the EOP scalar set
-// (`set_default_polar_motion`); UT1-UTC from `apsis::time::default_dut1`.
+// Phase-1A §B1: ICRF<->ITRS specialisations take a `const EopTable&` and
+// query (xp, yp, dut1) from it at the input epoch. The Phase-1
+// process-wide polar-motion globals and their set/get accessors are
+// removed; calling `transform<ITRS, ICRF>(state, t)` without the EOP
+// argument is now a compile-time error. The non-EOP pairs (GCRS, J2000,
+// TEME, identity) keep the original two-argument signature.
 
 #pragma once
 
@@ -20,10 +24,23 @@
 #include "apsis/time/scale_tags.h"
 #include "apsis/time/time.h"
 
+namespace apsis::time {
+class EopTable;  // fwd-decl; full definition in apsis/time/eop_table.h
+}  // namespace apsis::time
+
 namespace apsis::frames {
 
+// Primary template (EOP-free). Specialisations: GCRS<->ICRF, J2000<->ICRF,
+// TEME<->ITRS, and the same-frame identity overloads below.
 template <class To, class From>
 State<To> transform(const State<From>& x, apsis::time::Time<apsis::time::tags::TT> t);
+
+// Primary template (EOP variant). Specialisations: ITRS<->ICRF.
+// Per Phase 1A §B1, the EOP table is threaded through here rather than
+// pulled from a global.
+template <class To, class From>
+State<To> transform(const State<From>& x, apsis::time::Time<apsis::time::tags::TT> t,
+                    const apsis::time::EopTable& eop);
 
 // ICRF <-> GCRS: identity in v1 (SOFA's CIO pipeline absorbs the
 // centre-of-mass offset; for the Phase 1 force models this is exact).
@@ -43,15 +60,18 @@ template <>
 State<tags::ICRF> transform<tags::ICRF, tags::J2000>(const State<tags::J2000>&,
                                                      apsis::time::Time<apsis::time::tags::TT>);
 
-// ICRF <-> ITRS: full CIO pipeline.
+// ICRF <-> ITRS: full CIO pipeline (EOP variant).
 template <>
 State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(const State<tags::ICRF>&,
-                                                    apsis::time::Time<apsis::time::tags::TT>);
+                                                    apsis::time::Time<apsis::time::tags::TT>,
+                                                    const apsis::time::EopTable&);
 template <>
 State<tags::ICRF> transform<tags::ICRF, tags::ITRS>(const State<tags::ITRS>&,
-                                                    apsis::time::Time<apsis::time::tags::TT>);
+                                                    apsis::time::Time<apsis::time::tags::TT>,
+                                                    const apsis::time::EopTable&);
 
-// TEME <-> ITRS: stubbed in Phase 1 (used by SGP4 in Phase 2).
+// TEME <-> ITRS: stubbed in Phase 1 (used by SGP4 in Phase 2). EOP-free
+// (the stub throws unconditionally).
 template <>
 State<tags::ITRS> transform<tags::ITRS, tags::TEME>(const State<tags::TEME>&,
                                                     apsis::time::Time<apsis::time::tags::TT>);
@@ -60,6 +80,7 @@ State<tags::TEME> transform<tags::TEME, tags::ITRS>(const State<tags::ITRS>&,
                                                     apsis::time::Time<apsis::time::tags::TT>);
 
 // Same-frame identity overloads (header-inline for hot generic paths).
+// EOP-free: identity transforms don't need the table.
 template <>
 inline State<tags::ICRF>
 transform<tags::ICRF, tags::ICRF>(const State<tags::ICRF>& x,
@@ -90,11 +111,5 @@ transform<tags::TEME, tags::TEME>(const State<tags::TEME>& x,
                                   apsis::time::Time<apsis::time::tags::TT>) {
   return x;
 }
-
-// Polar motion injection. Loaded once from the EOP slice; tests may override.
-// (xp, yp) in radians.
-void set_default_polar_motion(double xp_rad, double yp_rad) noexcept;
-[[nodiscard]] double default_polar_motion_xp() noexcept;
-[[nodiscard]] double default_polar_motion_yp() noexcept;
 
 }  // namespace apsis::frames

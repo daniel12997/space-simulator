@@ -18,6 +18,18 @@
 // direct call — they get a link error rather than a silent SOFA chain
 // glued together by the compiler. This is the project's "no silent
 // fallback" rule applied to time.
+//
+// Phase 1A §B1: pairs that touch UT1 take an additional `const EopTable&`
+// parameter, replacing the Phase-1 process-wide DUT1 global.
+// The EOP-using and EOP-free pairs live on two separate primary templates:
+//
+//     template <To, From> Time<To> convert(Time<From>);                       // EOP-free
+//     template <To, From> Time<To> convert(Time<From>, const EopTable&);     // EOP-using
+//
+// Specialisations are dispatched to the right primary by signature, so a
+// caller who writes `convert<UT1>(utc)` without the EOP table gets a
+// compile-time "no matching function" rather than a silent fall-back to
+// global EOP state. (Globals are gone.)
 
 #pragma once
 
@@ -26,9 +38,15 @@
 
 namespace apsis::time {
 
+class EopTable;  // fwd-decl: full definition in apsis/time/eop_table.h
+
 // Primary template: declared but not defined. Any specialisation not
 // provided below is a link error if instantiated.
 template <class To, class From> Time<To> convert(Time<From> t);
+
+// Primary template (EOP variant): declared but not defined; specialised
+// below for the UT1-touching pairs.
+template <class To, class From> Time<To> convert(Time<From> t, const EopTable& eop);
 
 // Direct (SOFA-mediated) pairs.
 template <> Time<tags::TT> convert<tags::TT, tags::TAI>(Time<tags::TAI>);
@@ -37,8 +55,9 @@ template <> Time<tags::TAI> convert<tags::TAI, tags::TT>(Time<tags::TT>);
 template <> Time<tags::UTC> convert<tags::UTC, tags::TAI>(Time<tags::TAI>);
 template <> Time<tags::TAI> convert<tags::TAI, tags::UTC>(Time<tags::UTC>);
 
-template <> Time<tags::UT1> convert<tags::UT1, tags::TAI>(Time<tags::TAI>);
-template <> Time<tags::TAI> convert<tags::TAI, tags::UT1>(Time<tags::UT1>);
+// UT1-touching: EOP variant.
+template <> Time<tags::UT1> convert<tags::UT1, tags::TAI>(Time<tags::TAI>, const EopTable&);
+template <> Time<tags::TAI> convert<tags::TAI, tags::UT1>(Time<tags::UT1>, const EopTable&);
 
 template <> Time<tags::TDB> convert<tags::TDB, tags::TT>(Time<tags::TT>);
 template <> Time<tags::TT> convert<tags::TT, tags::TDB>(Time<tags::TDB>);
@@ -48,11 +67,12 @@ template <> Time<tags::TT> convert<tags::TT, tags::TDB>(Time<tags::TDB>);
 template <> Time<tags::TT> convert<tags::TT, tags::UTC>(Time<tags::UTC>);
 template <> Time<tags::UTC> convert<tags::UTC, tags::TT>(Time<tags::TT>);
 
-template <> Time<tags::UT1> convert<tags::UT1, tags::UTC>(Time<tags::UTC>);
-template <> Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1>);
+// UT1 <-> UTC and UT1 <-> TT take EOP.
+template <> Time<tags::UT1> convert<tags::UT1, tags::UTC>(Time<tags::UTC>, const EopTable&);
+template <> Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1>, const EopTable&);
 
-template <> Time<tags::TT> convert<tags::TT, tags::UT1>(Time<tags::UT1>);
-template <> Time<tags::UT1> convert<tags::UT1, tags::TT>(Time<tags::TT>);
+template <> Time<tags::TT> convert<tags::TT, tags::UT1>(Time<tags::UT1>, const EopTable&);
+template <> Time<tags::UT1> convert<tags::UT1, tags::TT>(Time<tags::TT>, const EopTable&);
 
 template <> Time<tags::TDB> convert<tags::TDB, tags::TAI>(Time<tags::TAI>);
 template <> Time<tags::TAI> convert<tags::TAI, tags::TDB>(Time<tags::TDB>);
@@ -74,16 +94,5 @@ template <> inline Time<tags::UT1> convert<tags::UT1, tags::UT1>(Time<tags::UT1>
 template <> inline Time<tags::TDB> convert<tags::TDB, tags::TDB>(Time<tags::TDB> t) {
   return t;
 }
-
-// EOP injection: per the plan, UT1-UTC is taken from a process-wide EOP
-// table loaded once at startup. Phase 1 ships a frozen slice; callers may
-// also override the table for tests.
-//
-// Setting a single scalar `dut1` (UT1-UTC, seconds) is sufficient for the
-// regression tests in Phase 1, which all evaluate within the slice's
-// flatness. A future "lookup by epoch" overload can be added without
-// changing call sites that use the scalar form.
-void set_default_dut1(double seconds) noexcept;
-[[nodiscard]] double default_dut1() noexcept;
 
 }  // namespace apsis::time

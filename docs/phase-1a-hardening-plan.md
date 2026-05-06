@@ -153,9 +153,9 @@ implementation exceeds 3× this, STOP and report per
 `qrspi_implement_procedure.md` T4.
 
 **Verify**:
-- [ ] `grep -rn "g_default_dut1\|g_polar_motion_xp\|g_polar_motion_yp" --include='*.cc' --include='*.h' src include` returns nothing.
-- [ ] `EopTable::load_from_csv("data/iers_eop_phase1.csv")` succeeds; `query(known_epoch)` returns row values within 1 µas (polar) / 1 µs (DUT1).
-- [ ] Local CI parity green; `ctest --test-dir build` 48/48 + new EOP unit test pass; sanitizer build green.
+- [x] `grep -rn "g_default_dut1\|g_polar_motion_xp\|g_polar_motion_yp" --include='*.cc' --include='*.h' src include` returns nothing.
+- [x] `EopTable::load_from_csv("data/iers_eop_phase1.csv")` succeeds; `query(known_epoch)` returns row values within 1 µas (polar) / 1 µs (DUT1).
+- [x] Local CI parity green; `ctest --test-dir build` 49/49 + 11 new EopTable tests pass (60 total); sanitizer build green.
 
 ---
 

@@ -12,9 +12,11 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <vector>
 
 #include "apsis/time/convert.h"
 #include "apsis/time/duration.h"
+#include "apsis/time/eop_table.h"
 #include "apsis/time/scale_tags.h"
 #include "apsis/time/time.h"
 
@@ -76,16 +78,23 @@ TEST(Convert, TaiUtcRoundTrip) {
 }
 
 TEST(Convert, UtcUt1RoundTrip) {
-  at::set_default_dut1(0.04);  // arbitrary representative DUT1, ~40 ms
+  // A two-row constant EopTable — flat dut1 = 0.04 s — is the in-test
+  // analogue of the Phase-1 process-wide DUT1 setter. Two rows are the
+  // minimum the EopTable invariant accepts; the bracket straddles the
+  // test epoch so query-by-interpolation returns 0.04 s.
+  std::vector<at::EopRow> rows{
+      {/*mjd_utc=*/60000.0, /*dut1=*/0.04, /*xp=*/0.0, /*yp=*/0.0},
+      {/*mjd_utc=*/61000.0, /*dut1=*/0.04, /*xp=*/0.0, /*yp=*/0.0},
+  };
+  at::EopTable eop(std::move(rows));
   at::Time<at::tags::UTC> utc0{2460676.5, 0.0};
-  auto ut1 = at::convert<at::tags::UT1>(utc0);
-  auto utc1 = at::convert<at::tags::UTC>(ut1);
+  auto ut1 = at::convert<at::tags::UT1>(utc0, eop);
+  auto utc1 = at::convert<at::tags::UTC>(ut1, eop);
   EXPECT_LT(std::abs(diff_seconds(utc0.jd1(), utc0.jd2(), utc1.jd1(), utc1.jd2())),
             kRoundTripTolSec);
-  // UT1 - UTC should equal default_dut1 (modulo internal SOFA noise).
+  // UT1 - UTC should equal the queried dut1 (modulo internal SOFA noise).
   const double diff = diff_seconds(ut1.jd1(), ut1.jd2(), utc0.jd1(), utc0.jd2());
   EXPECT_NEAR(diff, 0.04, 1e-9);
-  at::set_default_dut1(0.0);
 }
 
 TEST(Convert, TtTdbRoundTrip) {

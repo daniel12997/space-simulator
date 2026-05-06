@@ -32,7 +32,7 @@ namespace apsis::force {
 
 class ThirdBody final : public IForceModel {
  public:
-  // ADR-009 conformance flag: partials() below is analytical (the
+  // ADR-009 conformance flag: partials_dadx() below is analytical (the
   // closed-form ∂a/∂r of the conventional third-body acceleration; the
   // indirect term is constant in r and drops out). The VE-contract
   // conformance test parameterises over adapters with
@@ -53,8 +53,8 @@ class ThirdBody final : public IForceModel {
                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
   [[nodiscard]] apsis::math::Mat36
-  partials(apsis::time::Time<apsis::time::tags::TT> t,
-           const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
+  partials_dadx(apsis::time::Time<apsis::time::tags::TT> t,
+                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
  private:
   // Internal: query the third body's position relative to the central body

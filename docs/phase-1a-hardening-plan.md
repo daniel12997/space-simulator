@@ -73,9 +73,9 @@ Mechanical rename. ~10 references. ADR-009's Consequences section
 already says `partials_dadx`; this aligns the code to the ADR.
 
 **Verify**:
-- [ ] `grep -rn "::partials\b" --include='*.cc' --include='*.h' include src tests` returns nothing.
-- [ ] Local CI parity (per `qrspi_implement_procedure.md` T2): all checks green.
-- [ ] `ctest --test-dir build` 48/48 pass.
+- [x] `grep -rn "::partials\b" --include='*.cc' --include='*.h' include src tests` returns nothing.
+- [x] Local CI parity (per `qrspi_implement_procedure.md` T2): all checks green.
+- [x] `ctest --test-dir build` 49/49 pass (one more than the original 48 because A2 adds a beacon test).
 
 ### A2. `State<Frame>` compile-fail test (issue #13)
 
@@ -91,8 +91,8 @@ where `state_in_itrs : State<tags::ITRS>` — and assert the snippet does
 **not** compile. Mirror the existing scale-mixing guard's CMake structure.
 
 **Verify**:
-- [ ] `ctest -R frame_mixing_guard` reports PASSED (compile-fail-as-expected).
-- [ ] Removing the type mismatch in the snippet produces a CTest FAILURE
+- [x] `ctest -R FrameMixingGuard` reports PASSED (compile-fail-as-expected).
+- [x] Removing the type mismatch in the snippet produces a configure-time CMake FATAL_ERROR
       (i.e. the test catches the absence-of-mismatch, proving it isn't
       vacuously passing). Confirm during implementation; do not commit
       the inversion test, just verify it fires.

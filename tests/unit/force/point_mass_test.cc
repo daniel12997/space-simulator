@@ -40,7 +40,7 @@ TEST(PointMass, PartialsSelfConsistent) {
   af::PointMass pm(kMuEarth);
   afr::State<afr::tags::ICRF> x;
   x.r << 7.0e6, 1.0e6, 5.0e5;
-  const auto J = pm.partials(at::Time<at::tags::TT>{}, x);
+  const auto J = pm.partials_dadx(at::Time<at::tags::TT>{}, x);
 
   // Central-difference oracle at h = 10 m.
   constexpr double h = 10.0;

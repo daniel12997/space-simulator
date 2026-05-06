@@ -18,8 +18,8 @@ PointMass::acceleration(apsis::time::Time<apsis::time::tags::TT>,
 }
 
 apsis::math::Mat36
-PointMass::partials(apsis::time::Time<apsis::time::tags::TT>,
-                    const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
+PointMass::partials_dadx(apsis::time::Time<apsis::time::tags::TT>,
+                         const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
   const double kR2 = x.r.squaredNorm();
   const double kR = std::sqrt(kR2);
   const double kR5 = kR2 * kR2 * kR;

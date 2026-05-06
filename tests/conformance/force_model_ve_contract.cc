@@ -14,7 +14,7 @@
 //
 // Adapters **excluded** from this gate (per ADR-009 Phase 1 Implementation
 // Note):
-//   * SphericalHarmonic — `partials()` is itself a finite-difference
+//   * SphericalHarmonic — `partials_dadx()` is itself a finite-difference
 //                         evaluation in Phase 1, pending the Phase 7
 //                         Pines analytical-gradient upgrade. Comparing
 //                         FD-against-FD would be a tautology; the
@@ -112,7 +112,7 @@ void check_adapter(const char* name, const af::IForceModel& model, double rel_to
   const auto samples = make_samples();
   for (size_t i = 0; i < samples.size(); ++i) {
     const auto& s = samples[i];
-    const auto J_analytic = model.partials(s.t, s.x);
+    const auto J_analytic = model.partials_dadx(s.t, s.x);
     const auto J_oracle = oracle_partials(model, s, /*h=*/10.0);
 
     // Position block. Parenthesise block<3,3>(...) so the macro doesn't
@@ -148,7 +148,7 @@ TEST(ForceModelVE, ThirdBodySun) {
 }
 
 // SphericalHarmonic is intentionally excluded — it declares
-// `kAnalyticalPartials = false` because its partials() is itself a
+// `kAnalyticalPartials = false` because its partials_dadx() is itself a
 // finite-difference evaluation pending the Phase 7 Pines analytical
 // gradient. A static_assert here guards the disclosure: if anyone flips
 // the flag without implementing the analytical gradient, this test will

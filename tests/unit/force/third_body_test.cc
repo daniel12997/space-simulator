@@ -82,7 +82,7 @@ TEST(ThirdBody, PartialsSelfConsistent) {
   af::ThirdBody tb(&ephem, /*central=*/399, /*third=*/10, kMuSun);
   afr::State<afr::tags::ICRF> x;
   x.r << 7.0e6, 1.0e6, 5.0e5;
-  const auto J = tb.partials(at::Time<at::tags::TT>{}, x);
+  const auto J = tb.partials_dadx(at::Time<at::tags::TT>{}, x);
   // Independent oracle at h = 10 m.
   constexpr double h = 10.0;
   for (int i = 0; i < 3; ++i) {

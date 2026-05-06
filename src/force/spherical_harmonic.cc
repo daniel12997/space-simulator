@@ -179,8 +179,8 @@ SphericalHarmonic::acceleration(apsis::time::Time<apsis::time::tags::TT>,
 }
 
 apsis::math::Mat36
-SphericalHarmonic::partials(apsis::time::Time<apsis::time::tags::TT> t,
-                            const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
+SphericalHarmonic::partials_dadx(apsis::time::Time<apsis::time::tags::TT> t,
+                                 const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
   // FD partials, pending the Phase 7 Pines analytical-gradient
   // implementation. Tracked as Phase 7 follow-up issue (Pines analytical
   // gradient for SphericalHarmonic). Per ADR-009's Phase 1 Implementation

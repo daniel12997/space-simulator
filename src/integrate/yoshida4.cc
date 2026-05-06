@@ -46,7 +46,7 @@ void verlet_step(apsis::time::Time<apsis::time::tags::TT>& t,
 
   // Kick (full-h on velocity using force at midpoint).
   const auto kA = force.acceleration(t, x);
-  const auto kJ36 = force.partials(t, x);
+  const auto kJ36 = force.partials_dadx(t, x);
   x.v += h * kA;
   apsis::math::Mat6 phi_kick = apsis::math::Mat6::Identity();
   phi_kick.block<3, 3>(3, 0) = h * kJ36.block<3, 3>(0, 0);

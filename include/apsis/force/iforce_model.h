@@ -5,8 +5,8 @@
 // Equations contract (ADR-002, REQ-PHY-016, REQ-PHY-020).
 //
 // Every adapter SHALL provide:
-//   * `acceleration(t, x)` — SI [m/s^2] in ICRF at TT epoch t and ICRF state x.
-//   * `partials(t, x)`     — 3x6 Jacobian. Cols 0..2 = ∂a/∂r; cols 3..5 = ∂a/∂v.
+//   * `acceleration(t, x)`   — SI [m/s^2] in ICRF at TT epoch t and ICRF state x.
+//   * `partials_dadx(t, x)`  — 3x6 Jacobian. Cols 0..2 = ∂a/∂r; cols 3..5 = ∂a/∂v.
 //
 // The 3x6 shape is per the plan §5 deliverable. Force models with no
 // velocity dependence return zeros in cols 3..5; the conformance test
@@ -15,11 +15,11 @@
 // VE-CONTRACT CONFORMANCE — `kAnalyticalPartials`:
 //
 // Each concrete adapter SHALL declare a `static constexpr bool
-// kAnalyticalPartials` indicating whether its `partials()` is implemented
-// analytically (and is therefore eligible for the VE-contract conformance
-// test that compares analytical partials to a finite-difference oracle).
-// Adapters whose partials are themselves finite-difference (e.g. the
-// Phase 1 SphericalHarmonic, pending the Phase 7 Pines analytical
+// kAnalyticalPartials` indicating whether its `partials_dadx()` is
+// implemented analytically (and is therefore eligible for the VE-contract
+// conformance test that compares analytical partials to a finite-difference
+// oracle). Adapters whose partials are themselves finite-difference (e.g.
+// the Phase 1 SphericalHarmonic, pending the Phase 7 Pines analytical
 // gradient) declare `kAnalyticalPartials = false` and are excluded from
 // the conformance gate. ADR-009 requires analytical partials in the
 // steady state; the flag exists to keep that requirement honest while
@@ -53,8 +53,8 @@ class IForceModel {
   // columns; 1/s for the velocity columns when a velocity-dependent force
   // is present, zero otherwise in Phase 1 since drag/SRP are deferred).
   [[nodiscard]] virtual apsis::math::Mat36
-  partials(apsis::time::Time<apsis::time::tags::TT> t,
-           const apsis::frames::State<apsis::frames::tags::ICRF>& x) const = 0;
+  partials_dadx(apsis::time::Time<apsis::time::tags::TT> t,
+                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const = 0;
 };
 
 }  // namespace apsis::force

@@ -46,8 +46,8 @@ ThirdBody::acceleration(apsis::time::Time<apsis::time::tags::TT> t,
 }
 
 apsis::math::Mat36
-ThirdBody::partials(apsis::time::Time<apsis::time::tags::TT> t,
-                    const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
+ThirdBody::partials_dadx(apsis::time::Time<apsis::time::tags::TT> t,
+                         const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
   // Analytical partials per ADR-009 (REQ-PHY-016, REQ-PHY-020).
   //
   // For a spacecraft at r and a third body at r_3 (both relative to the

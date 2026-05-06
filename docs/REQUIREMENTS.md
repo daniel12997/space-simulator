@@ -54,6 +54,7 @@
 | REQ-TIME-010 | The system SHALL transition between CCI and CCF frames at user-configured altitude or SOI boundaries without observable state discontinuity. | M |
 | REQ-TIME-011 | The system MAY provide local floating-origin frames for interstellar-scale precision. | C |
 | REQ-TIME-013 | The `Time` type SHALL be tagged with its time scale (TAI / TT / UTC / UT1 / TDB; optionally TCG / TCB) at the type level. Conversions between scales SHALL be explicit and route through the IAU SOFA library. Mixing scales without explicit conversion SHALL be a compile-time error. See [[wiki/decisions/003-tagged-time-scale-types|ADR-003]] for the rationale (vs untagged) and serialization / Python-binding implications. | M |
+| REQ-FRM-013 | The `State` type SHALL be tagged with its frame (ICRF / GCRS / ITRS / J2000 / TEME / BodyFixed) at the type level. Transforms between frames SHALL be explicit and route through SOFA / EOP-aware machinery. Mixing frames without explicit transform SHALL be a compile-time error. See [[wiki/decisions/010-phantom-typed-time-and-state|ADR-010]] for the implementation pattern. Parallels REQ-TIME-013 for the frame pillar. | M |
 
 ## 2. Physics and force models
 

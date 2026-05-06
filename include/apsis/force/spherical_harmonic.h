@@ -33,7 +33,7 @@ namespace apsis::force {
 
 class SphericalHarmonic final : public IForceModel {
  public:
-  // ADR-009 conformance flag: partials() below is **finite-difference**
+  // ADR-009 conformance flag: partials_dadx() below is **finite-difference**
   // pending the Phase 7 Pines analytical-gradient implementation. The
   // VE-contract conformance test (which compares analytical partials
   // against an independent FD oracle) is **not meaningful** on this
@@ -84,8 +84,8 @@ class SphericalHarmonic final : public IForceModel {
                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
   [[nodiscard]] apsis::math::Mat36
-  partials(apsis::time::Time<apsis::time::tags::TT> t,
-           const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
+  partials_dadx(apsis::time::Time<apsis::time::tags::TT> t,
+                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
   [[nodiscard]] const Coefficients& coefficients() const noexcept { return coeffs_; }
 

@@ -45,7 +45,7 @@ constexpr double kArcsecToRad = 4.8481368110953599358991e-6;
 // the leap-second offset and the TT-TAI offset. UTC JD 2460676.5 +
 // (37 + 32.184)s = 2460676.5 + 0.000800740... days.
 constexpr double kKnownMjdUtc = 60676.0;
-constexpr double kKnownDut1 = -0.038;            // seconds
+constexpr double kKnownDut1 = -0.038;  // seconds
 constexpr double kKnownXpArcsec = 0.040;
 constexpr double kKnownYpArcsec = 0.330;
 
@@ -58,8 +58,7 @@ at::Time<at::tags::TT> tt_at_mjd_utc(double mjd_utc) {
 }
 
 TEST(EopTable, LoadBundledCsv) {
-  const std::filesystem::path csv =
-      std::filesystem::path(APSIS_DATA_DIR) / "iers_eop_phase1.csv";
+  const std::filesystem::path csv = std::filesystem::path(APSIS_DATA_DIR) / "iers_eop_phase1.csv";
   ASSERT_TRUE(std::filesystem::exists(csv)) << "missing " << csv;
   auto eop = at::EopTable::load_from_csv(csv);
   // 41 data rows (lines 16..56 of the bundled CSV; lines 1..15 are
@@ -74,8 +73,7 @@ TEST(EopTable, LoadBundledCsv) {
 }
 
 TEST(EopTable, QueryAtKnownRow) {
-  const std::filesystem::path csv =
-      std::filesystem::path(APSIS_DATA_DIR) / "iers_eop_phase1.csv";
+  const std::filesystem::path csv = std::filesystem::path(APSIS_DATA_DIR) / "iers_eop_phase1.csv";
   auto eop = at::EopTable::load_from_csv(csv);
 
   const auto tt = tt_at_mjd_utc(kKnownMjdUtc);
@@ -171,9 +169,7 @@ TEST(EopTable, LoadRejectsTooFewRows) {
 }
 
 TEST(EopTable, LoadRejectsMissingFile) {
-  EXPECT_THROW(
-      at::EopTable::load_from_csv("/nonexistent/path/eop.csv"),
-      std::runtime_error);
+  EXPECT_THROW(at::EopTable::load_from_csv("/nonexistent/path/eop.csv"), std::runtime_error);
 }
 
 }  // namespace

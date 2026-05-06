@@ -71,8 +71,7 @@ EopRow parse_row(const std::vector<std::string>& fields, std::size_t line_no,
   if (fields.size() != 4) {
     std::ostringstream oss;
     oss << "EopTable::load_from_csv: " << path.string() << ":" << line_no
-        << ": expected 4 fields (mjd_utc,dut1_s,xp_arcsec,yp_arcsec), got "
-        << fields.size();
+        << ": expected 4 fields (mjd_utc,dut1_s,xp_arcsec,yp_arcsec), got " << fields.size();
     throw std::runtime_error(oss.str());
   }
   EopRow row;
@@ -152,9 +151,8 @@ EopValues EopTable::query(Time<tags::TT> t) const {
   // returns the first row with mjd_utc >= mjd; we want strict-greater so
   // the bracket pair is (it - 1, it) for an equality hit too (which gives
   // alpha = 0 and returns the exact row's values).
-  const auto it = std::lower_bound(
-      rows_.begin(), rows_.end(), mjd,
-      [](const EopRow& r, double m) { return r.mjd_utc < m; });
+  const auto it = std::lower_bound(rows_.begin(), rows_.end(), mjd,
+                                   [](const EopRow& r, double m) { return r.mjd_utc < m; });
   // After the upper-clamp above, `it` is in (rows_.begin(), rows_.end()).
   const auto& hi = *it;
   const auto& lo = *(it - 1);

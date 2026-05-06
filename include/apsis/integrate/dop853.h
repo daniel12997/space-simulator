@@ -40,8 +40,6 @@ class Dop853 final : public IIntegrator {
   struct Options {
     double rtol = 1e-13;
     double atol = 1e-9;
-    // Initial step guess (s). If 0.0, an automatic estimate is used.
-    double dt_initial = 0.0;
     // Step-size envelope.
     double dt_min = 1e-6;
     double dt_max = 3600.0;

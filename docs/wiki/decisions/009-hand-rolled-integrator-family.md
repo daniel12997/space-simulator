@@ -356,3 +356,24 @@ Implementation Note above documented as a Phase 7 follow-up:
   catalog-scale propagation case (50k-object SGP4-style) D2 was
   originally targeting is a Phase 5 / Phase 6 concern, not blocked by
   the D2 slip.
+
+## Phase 1A Implementation Note — Batch D' cleanup (2026-05-05)
+
+Phase 1A Batch D' is a follow-on cleanup batch addressing five
+non-blocking findings from the Batch D clear-eyes review. Each is
+tracked separately in this ADR rather than as new architectural
+decisions:
+
+- **D'4 (vestigial `Options::dt_initial`)**. The `Dop853::Options::dt_initial`
+  field was declared but never read in the implementation; deleted.
+  (The matching `Dp54::Options::dt_initial` is also vestigial but is
+  out of scope for this cleanup batch — it lands separately if/when
+  Dp54 is touched.)
+
+(D'1, D'2, D'3, D'5 are documented at their respective commits and
+amend this note as they land.)
+
+The `IIntegrator` seam, the coefficient table contents, and the step
+controller's mathematical specification are all unchanged at this
+cleanup batch; only the `facold` data flow, the asserted-tolerance
+literals, the pinned hash baseline, and one Options field move.

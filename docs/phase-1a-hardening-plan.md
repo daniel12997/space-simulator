@@ -190,9 +190,9 @@ implementation exceeds 3× this, STOP and report per
 **Dependency**: requires Batch B's `EopTable` API. Don't start before B merges.
 
 **Verify**:
-- [ ] Existing zonal-only tests still pass (R_BF←ICRF rotation around the polar axis is a no-op for zonal C_{n,0} coefficients to working precision).
-- [ ] New tesseral C_{2,2}-only test produces an acceleration whose direction tracks the body-fixed equator-bulge, **not** the inertial Z-axis (rotation observable).
-- [ ] Local CI parity green; sanitizer green.
+- [x] Existing zonal-only tests still pass (R_BF←ICRF rotation around the polar axis is a no-op for zonal C_{n,0} coefficients to working precision).
+- [x] New tesseral C_{2,2}-only test produces an acceleration whose direction tracks the body-fixed equator-bulge, **not** the inertial Z-axis (rotation observable).
+- [x] Local CI parity green; sanitizer green.
 
 ### C2. Analytical SH gradient + re-include in VE-contract conformance gate (issue #7)
 
@@ -236,10 +236,10 @@ scope-cut pattern this hardening sprint is designed to prevent.
 **Dependency**: requires C1 (uses the body-fixed rotation in the gradient transform).
 
 **Verify**:
-- [ ] VE-contract conformance test runs over `{PointMass, ThirdBody, SphericalHarmonic}` (3 adapters, was 2) and all pass.
-- [ ] `kAnalyticalPartials == true` for `SphericalHarmonic` (verified by `grep` and by the conformance test no longer skipping the adapter).
-- [ ] C1's tesseral test still passes (gradient consistent with the rotated acceleration).
-- [ ] Local CI parity green; sanitizer green.
+- [x] VE-contract conformance test runs over `{PointMass, ThirdBody, SphericalHarmonic}` (3 adapters, was 2) and all pass.
+- [x] `kAnalyticalPartials == true` for `SphericalHarmonic` (verified by `grep` and by the conformance test no longer skipping the adapter).
+- [x] C1's tesseral test still passes (gradient consistent with the rotated acceleration).
+- [x] Local CI parity green; sanitizer green.
 
 ---
 

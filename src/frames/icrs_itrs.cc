@@ -69,12 +69,18 @@ apsis::math::Mat3 sofa_to_eigen(const std::array<double, 9>& m) {
   return e;
 }
 
+}  // namespace
+
 // Compose the full ICRF -> ITRS rotation matrix at TT epoch t. Pulled into
 // a helper so both forward and inverse transforms share the SOFA
 // bookkeeping. EOP triple (xp, yp, dut1) is queried from `eop` at `tt` so
 // the three scalars are guaranteed coherent (single table lookup).
-apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt,
-                                     const apsis::time::EopTable& eop) {
+//
+// Phase-1A §C1: also exposed as `icrf_to_itrs_rotation` (declared in
+// `transform.h`) for force-model adapters that operate in body-fixed
+// coordinates and need only the rotation matrix, not a full state transform.
+apsis::math::Mat3 icrf_to_itrs_rotation(apsis::time::Time<apsis::time::tags::TT> tt,
+                                        const apsis::time::EopTable& eop) {
   // Single EOP query: xp, yp, dut1 all from the same epoch.
   const apsis::time::EopValues kEop = eop.query(tt);
 
@@ -119,13 +125,11 @@ apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt
   return kW * r_era * kQ;
 }
 
-}  // namespace
-
 template <>
 State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(const State<tags::ICRF>& x,
                                                     apsis::time::Time<apsis::time::tags::TT> tt,
                                                     const apsis::time::EopTable& eop) {
-  const apsis::math::Mat3 kR = build_icrf_to_itrs(tt, eop);
+  const apsis::math::Mat3 kR = icrf_to_itrs_rotation(tt, eop);
   // Velocity: r_itrs_dot = R * r_icrf_dot - omega x r_itrs.
   // Equivalently, in fixed frame: r_itrs_dot = R * (r_icrf_dot - omega_icrf x r_icrf).
   // We compute it via the second form: omega_icrf is omega along the rotation
@@ -144,7 +148,7 @@ template <>
 State<tags::ICRF> transform<tags::ICRF, tags::ITRS>(const State<tags::ITRS>& x,
                                                     apsis::time::Time<apsis::time::tags::TT> tt,
                                                     const apsis::time::EopTable& eop) {
-  const apsis::math::Mat3 kRt = build_icrf_to_itrs(tt, eop).transpose();
+  const apsis::math::Mat3 kRt = icrf_to_itrs_rotation(tt, eop).transpose();
   State<tags::ICRF> y;
   y.r = kRt * x.r;
   const apsis::math::Vec3 kOmegaZ(0.0, 0.0, kOmegaEarth);

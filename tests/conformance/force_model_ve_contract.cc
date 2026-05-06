@@ -3,23 +3,23 @@
 //
 // requirements: REQ-PHY-016, REQ-PHY-020
 //
-// Phase-1 §5 conformance gate: every IForceModel adapter that **claims
-// analytical partials** must agree with a central-difference oracle of
-// `acceleration` to within an adapter-specific tolerance.
+// Phase-1 §5 / Phase-1A §C2 conformance gate: every IForceModel adapter
+// that **claims analytical partials** must agree with a central-difference
+// oracle of `acceleration` to within an adapter-specific tolerance.
 //
 // Adapters under test (those with `kAnalyticalPartials == true`):
 //   * PointMass        — tolerance 1e-6 (closed-form analytical partials)
 //   * ThirdBody        — tolerance 1e-6 (closed-form analytical partials,
 //                        Phase 1 — see src/force/third_body.cc)
-//
-// Adapters **excluded** from this gate (per ADR-009 Phase 1 Implementation
-// Note):
-//   * SphericalHarmonic — `partials_dadx()` is itself a finite-difference
-//                         evaluation in Phase 1, pending the Phase 7
-//                         Pines analytical-gradient upgrade. Comparing
-//                         FD-against-FD would be a tautology; the
-//                         adapter declares `kAnalyticalPartials = false`
-//                         and is excluded by the loop below.
+//   * SphericalHarmonic — tolerance 1e-6 (Cunningham analytical gradient,
+//                         Phase-1A §C2 — see src/force/spherical_harmonic.cc).
+//                         Re-included in this gate now that the Phase-1
+//                         FD `partials_dadx()` has been replaced by the
+//                         analytical Hessian-of-potential via V/W. Set at
+//                         1e-6 to match PointMass; empirical residuals on
+//                         the 32-sample grid sit ~1-2 orders below this
+//                         (the V/W recursion at degree 20 is still 13-14
+//                         sig figs clean).
 //
 // Per the plan: 32 representative (t, x) points; h = 10 m for position
 // columns (chosen to be independent of any adapter's internal h step),
@@ -39,6 +39,7 @@
 #include "apsis/force/point_mass.h"
 #include "apsis/force/spherical_harmonic.h"
 #include "apsis/force/third_body.h"
+#include "apsis/time/eop_table.h"
 
 namespace af = apsis::force;
 namespace at = apsis::time;
@@ -147,15 +148,40 @@ TEST(ForceModelVE, ThirdBodySun) {
   check_adapter("ThirdBody(Sun)", tb, /*rel_tol=*/1e-6, /*abs_tol_vel=*/1e-15);
 }
 
-// SphericalHarmonic is intentionally excluded — it declares
-// `kAnalyticalPartials = false` because its partials_dadx() is itself a
-// finite-difference evaluation pending the Phase 7 Pines analytical
-// gradient. A static_assert here guards the disclosure: if anyone flips
-// the flag without implementing the analytical gradient, this test will
-// fail to compile and force them to add a real conformance case below.
-static_assert(!af::SphericalHarmonic::kAnalyticalPartials,
-              "SphericalHarmonic should declare kAnalyticalPartials=false "
-              "until the Phase 7 Pines analytical gradient ships; flipping "
-              "the flag must be paired with adding a conformance case here.");
+// Phase-1A §C2: SphericalHarmonic is back in the gate. The Phase-1
+// adapter shipped with `kAnalyticalPartials = false` and a finite-
+// difference `partials_dadx()`; Phase-1A §C2 replaces that with the
+// analytical Cunningham gradient (Hessian of the potential via the
+// same V/W table extended by one row). A flat zero-EOP table is used
+// here so the body-fixed -> ICRF rotation (Phase-1A §C1) is exercised
+// but does not depend on data files in the test environment.
+TEST(ForceModelVE, SphericalHarmonicJ2) {
+  static_assert(af::SphericalHarmonic::kAnalyticalPartials,
+                "SphericalHarmonic must declare analytical partials per "
+                "Phase-1A §C2 (Cunningham gradient).");
+  // Flat zero-EOP table covering the conformance epoch grid (TT JD
+  // 2460676.5 + 30 i for i in [0, 31] — well within the [MJD 51000,
+  // MJD 60000] window).
+  std::vector<at::EopRow> rows{
+      {/*mjd_utc=*/51000.0, 0.0, 0.0, 0.0},
+      {/*mjd_utc=*/60000.0, 0.0, 0.0, 0.0},
+  };
+  at::EopTable eop(std::move(rows));
+  // J2-only model — small enough degree that the conformance loop is fast
+  // and the V/W truncation error doesn't dominate the FD oracle's bound.
+  af::SphericalHarmonic::Coefficients c;
+  c.degree = 2;
+  c.order = 0;
+  c.mu = kMuEarth;
+  c.r_ref = 6378136.3;
+  c.c_norm.assign(6, 0.0);
+  c.s_norm.assign(6, 0.0);
+  c.c_norm[0] = 1.0;
+  // C_{2,0} normalised: -J2 / sqrt(5).
+  constexpr double kJ2 = 1.0826266835531513e-3;
+  c.c_norm[3] = -kJ2 / std::sqrt(5.0);
+  af::SphericalHarmonic sh(std::move(c), eop);
+  check_adapter("SphericalHarmonic(J2)", sh, /*rel_tol=*/1e-6, /*abs_tol_vel=*/1e-15);
+}
 
 }  // namespace

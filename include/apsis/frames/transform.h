@@ -21,6 +21,7 @@
 
 #include "apsis/frames/frame_tags.h"
 #include "apsis/frames/state.h"
+#include "apsis/math/types.h"
 #include "apsis/time/scale_tags.h"
 #include "apsis/time/time.h"
 
@@ -29,6 +30,16 @@ class EopTable;  // fwd-decl; full definition in apsis/time/eop_table.h
 }  // namespace apsis::time
 
 namespace apsis::frames {
+
+// Phase-1A §C1: expose the bare ICRF -> ITRS rotation matrix (used by force
+// models that operate in body-fixed coordinates and need to apply the
+// rotation themselves rather than transforming a full kinematic state).
+// `R = W * R3(ERA) * Q^T` per the CEO pipeline; orthogonal so its inverse
+// is its transpose. The same `EopTable` query that drives
+// `transform<ITRS, ICRF>(...)` is used here, so the matrix is consistent
+// with a state transform at the same epoch.
+[[nodiscard]] apsis::math::Mat3 icrf_to_itrs_rotation(apsis::time::Time<apsis::time::tags::TT> tt,
+                                                      const apsis::time::EopTable& eop);
 
 // Primary template (EOP-free). Specialisations: GCRS<->ICRF, J2000<->ICRF,
 // TEME<->ITRS, and the same-frame identity overloads below.

@@ -402,3 +402,35 @@ Established Apsis's NASA software-classification posture and the Class D process
 - Updating `docs/00-design-overview.md` "Design decisions" section to mention ADR-013. Substantive design-doc edits remain deliberate human-or-jointly-authored passes.
 
 This batch is process bolt-on — no code touched, no architectural ADRs revised, no existing artefacts moved. The Class D envelope is documentation of the framework Apsis already implements in spirit, not a new development discipline.
+
+## [2026-05-05] ingest + decision-update | Phase 1A Batch C — SphericalHarmonic quality
+
+Phase 1A Batch C of the hardening sprint closed two Phase-1
+`SphericalHarmonic` deferrals: the body-fixed rotation gap (issue #11)
+and the analytical SH gradient (issue #7). The companion wiki edits:
+
+- **[[sources/orekit-holmes-featherstone-impl]]** — new source page
+  citing Orekit's `HolmesFeatherstoneAttractionModel.java`
+  (Apache-2.0) as the open-source reference implementation studied
+  while porting the Cunningham gradient. Apsis chose the Cunningham
+  formulation (M-G §3.2.5) over Holmes-Featherstone because it stays
+  inside the existing V/W skeleton; the Orekit file is cited for
+  attribution and audit-trail completeness.
+- **[[decisions/009-hand-rolled-integrator-family]]** — new "Phase 1A
+  Implementation Note — Batch C closures" section appended below the
+  Phase 1 note. Documents the C1 (rotation) and C2 (analytical
+  gradient) closures, the algorithm choice (Cunningham V/W over
+  Holmes-Featherstone / Pines), and the empirical residual the
+  conformance gate sees (~1e-10 on J2-only deg=2; ~2.4e-10 on full-
+  order deg=8 synthetic; comfortably below the 1e-6 PointMass-sibling
+  tolerance).
+- **`docs/wiki/index.md`** — sources count 47 → 48; new entry under
+  *Force models*.
+
+This is `ingest:` + `decision:` (the source page is an ingest; the
+ADR-009 update is a decision-rev). Source code edits in this batch
+(`src/force/spherical_harmonic.cc`, `tests/conformance/...`,
+`tests/unit/force/...`) are *not* wiki operations — they live on the
+implementation-side of the wiki and are tracked by the project's
+git history, with `code:` references to follow as `components/`
+pages get filled in for the force-model adapters.

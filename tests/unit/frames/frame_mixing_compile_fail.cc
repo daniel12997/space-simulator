@@ -23,8 +23,8 @@ int main() {
   // The next line MUST NOT compile: explicit `From = ICRF` does not match
   // the actual argument type `State<ITRS>`. Mixing frames is only
   // permitted via an explicit `transform<>` between matching tags.
-  auto bad = apsis::frames::transform<apsis::frames::tags::ICRF,
-                                      apsis::frames::tags::ICRF>(state_in_itrs, t);
+  auto bad = apsis::frames::transform<apsis::frames::tags::ICRF, apsis::frames::tags::ICRF>(
+      state_in_itrs, t);
   (void)bad;
   return 0;
 }

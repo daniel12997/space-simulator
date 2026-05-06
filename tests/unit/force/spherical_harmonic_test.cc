@@ -30,10 +30,10 @@ af::SphericalHarmonic::Coefficients make_point_mass() {
   c.degree = 0;
   c.order = 0;
   c.mu = kMuEarth;
-  c.R = kReEarth;
+  c.r_ref = kReEarth;
   // (degree+1)(degree+2)/2 = 1 entry
-  c.C_norm = {1.0};
-  c.S_norm = {0.0};
+  c.c_norm = {1.0};
+  c.s_norm = {0.0};
   return c;
 }
 
@@ -42,13 +42,13 @@ af::SphericalHarmonic::Coefficients make_j2_only() {
   c.degree = 2;
   c.order = 0;
   c.mu = kMuEarth;
-  c.R = kReEarth;
+  c.r_ref = kReEarth;
   // Triangular size = 6 entries: (0,0), (1,0), (1,1), (2,0), (2,1), (2,2)
-  c.C_norm.assign(6, 0.0);
-  c.S_norm.assign(6, 0.0);
-  c.C_norm[0] = 1.0;  // C_{0,0}
+  c.c_norm.assign(6, 0.0);
+  c.s_norm.assign(6, 0.0);
+  c.c_norm[0] = 1.0;  // C_{0,0}
   // C_{2,0} normalised: -J2 / sqrt(5).
-  c.C_norm[3] = -kJ2 / std::sqrt(5.0);
+  c.c_norm[3] = -kJ2 / std::sqrt(5.0);
   return c;
 }
 

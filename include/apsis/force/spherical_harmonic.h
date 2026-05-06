@@ -6,8 +6,10 @@
 // (Phase 1 ships with EGM2008 truncated to deg 20).
 //
 // Coefficients are passed in normalised form (the same convention as
-// IERS / EGM2008 distribution): C_nm and S_nm in row-major triangular
-// storage with index `idx(n, m) = n * (n + 1) / 2 + m` for 0 <= m <= n.
+// IERS / EGM2008 distribution): the normalised Stokes coefficients C_{n,m}
+// and S_{n,m} (held in members `c_norm` / `s_norm`) live in row-major
+// triangular storage with index `idx(n, m) = n * (n + 1) / 2 + m` for
+// 0 <= m <= n.
 //
 // Acceleration is computed analytically via Cunningham's V/W functions
 // (Cunningham 1970; Vallado §8.6). Partials are computed by central
@@ -45,14 +47,16 @@ class SphericalHarmonic final : public IForceModel {
   // un-normalising recurrence is built into the Cunningham recursion in
   // the .cc file.
   struct Coefficients {
-    int degree = 0;   // n_max
-    int order = 0;    // m_max  (m_max <= n_max)
-    double mu = 0.0;  // central-body GM [m^3/s^2]
-    double R = 0.0;   // reference radius (e.g. Earth's equatorial) [m]
+    int degree = 0;       // n_max
+    int order = 0;        // m_max  (m_max <= n_max)
+    double mu = 0.0;      // central-body GM [m^3/s^2]
+    double r_ref = 0.0;   // reference radius (R_E in geodesy literature, e.g.
+                          // Earth's equatorial radius) [m]
     // Triangular storage: size = (degree + 1) * (degree + 2) / 2.
-    // C_norm[idx(n, m)] = C_{n,m} normalised (Geodesy convention).
-    std::vector<double> C_norm;
-    std::vector<double> S_norm;
+    // c_norm[idx(n, m)] = C_{n,m} normalised (Geodesy convention).
+    // s_norm[idx(n, m)] = S_{n,m} normalised (Geodesy convention).
+    std::vector<double> c_norm;
+    std::vector<double> s_norm;
 
     [[nodiscard]] static std::size_t idx(int n, int m) noexcept {
       // Widen both operands before multiplication to avoid clang-tidy

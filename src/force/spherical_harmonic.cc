@@ -60,10 +60,10 @@ SphericalHarmonic::SphericalHarmonic(Coefficients coeffs) : coeffs_(std::move(co
   // Validate coefficient block size; convert normalised -> un-normalised
   // in place so the hot path doesn't pay the lgamma cost.
   const int needed = coeffs_.triangular_size();
-  if (static_cast<int>(coeffs_.C_norm.size()) != needed ||
-      static_cast<int>(coeffs_.S_norm.size()) != needed) {
+  if (static_cast<int>(coeffs_.c_norm.size()) != needed ||
+      static_cast<int>(coeffs_.s_norm.size()) != needed) {
     throw std::invalid_argument(
-        "SphericalHarmonic: C_norm/S_norm must hold (degree+1)(degree+2)/2 entries");
+        "SphericalHarmonic: c_norm/s_norm must hold (degree+1)(degree+2)/2 entries");
   }
   if (coeffs_.order > coeffs_.degree) {
     throw std::invalid_argument("SphericalHarmonic: order must be <= degree");
@@ -72,8 +72,8 @@ SphericalHarmonic::SphericalHarmonic(Coefficients coeffs) : coeffs_(std::move(co
     const int m_max = std::min(n, coeffs_.order);
     for (int m = 0; m <= m_max; ++m) {
       const double f = normalisation_factor(n, m);
-      coeffs_.C_norm[Coefficients::idx(n, m)] *= f;
-      coeffs_.S_norm[Coefficients::idx(n, m)] *= f;
+      coeffs_.c_norm[Coefficients::idx(n, m)] *= f;
+      coeffs_.s_norm[Coefficients::idx(n, m)] *= f;
     }
   }
 }
@@ -81,7 +81,7 @@ SphericalHarmonic::SphericalHarmonic(Coefficients coeffs) : coeffs_(std::move(co
 apsis::math::Vec3 SphericalHarmonic::acceleration_body(const apsis::math::Vec3& r_bf) const {
   const int N = coeffs_.degree;
   const int M = coeffs_.order;
-  const double R = coeffs_.R;
+  const double R = coeffs_.r_ref;
   const double mu = coeffs_.mu;
 
   const double x = r_bf.x();
@@ -143,8 +143,8 @@ apsis::math::Vec3 SphericalHarmonic::acceleration_body(const apsis::math::Vec3& 
   for (int n = 0; n <= N; ++n) {
     const int m_max = std::min(n, M);
     for (int m = 0; m <= m_max; ++m) {
-      const double C = coeffs_.C_norm[Coefficients::idx(n, m)];
-      const double S = coeffs_.S_norm[Coefficients::idx(n, m)];
+      const double C = coeffs_.c_norm[Coefficients::idx(n, m)];
+      const double S = coeffs_.s_norm[Coefficients::idx(n, m)];
       if (m == 0) {
         ax -= C * V[vw_idx(n + 1, 1)];
         ay -= C * W[vw_idx(n + 1, 1)];

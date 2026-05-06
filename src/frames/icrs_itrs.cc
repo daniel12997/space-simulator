@@ -21,6 +21,7 @@
 // model dR/dt = R * [omega_e]_z (cross product), which is the standard
 // approximation in flight-dynamics-grade pipelines for short arcs.
 
+#include <array>
 #include <atomic>
 
 #include <Eigen/Core>
@@ -46,12 +47,21 @@ constexpr double kOmegaEarth = 7.2921151467064e-5;  // rad/s
 std::atomic<double> g_polar_motion_xp{0.0};
 std::atomic<double> g_polar_motion_yp{0.0};
 
-// Convert a SOFA 3x3 row-major C array into an Eigen Mat3.
-apsis::math::Mat3 sofa_to_eigen(const double m[3][3]) {
+// SOFA's iauC2ixys / iauPom00 take `double[3][3]` row-major output matrices.
+// To avoid C-style array declarations at the C++ call site, we re-declare
+// the entry points we need with a flat `double*` signature and bind them to
+// the real SOFA symbols via a linker alias. The C ABI is identical because
+// `double[3][3]` is passed as a pointer to 9 contiguous doubles in row-major
+// order — exactly what we hand SOFA via `std::array<double, 9>::data()`.
+extern "C" void sofa_c2ixys_flat(double x, double y, double s, double* rc2i) asm("iauC2ixys");
+extern "C" void sofa_pom00_flat(double xp, double yp, double sp, double* rpom) asm("iauPom00");
+
+// Convert a flat 9-element row-major SOFA matrix into an Eigen Mat3.
+apsis::math::Mat3 sofa_to_eigen(const std::array<double, 9>& m) {
   apsis::math::Mat3 e;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      e(i, j) = m[i][j];
+  for (std::size_t i = 0; i < 3; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
+      e(static_cast<int>(i), static_cast<int>(j)) = m.at(i * 3 + j);
     }
   }
   return e;
@@ -63,38 +73,40 @@ apsis::math::Mat3 sofa_to_eigen(const double m[3][3]) {
 apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt) {
   // CIP X, Y and CEO position s at TT (full IAU 2006/2000A, periodic terms
   // included). iauXys06a is the canonical one-call entry point.
-  double X{}, Y{}, s{};
-  iauXys06a(tt.jd1(), tt.jd2(), &X, &Y, &s);
+  double cip_x{};
+  double cip_y{};
+  double ceo_s{};
+  iauXys06a(tt.jd1(), tt.jd2(), &cip_x, &cip_y, &ceo_s);
 
   // Celestial -> CIRS rotation matrix Q.
-  double q_c[3][3];
-  iauC2ixys(X, Y, s, q_c);
-  const apsis::math::Mat3 Q = sofa_to_eigen(q_c);
+  std::array<double, 9> q_c{};
+  sofa_c2ixys_flat(cip_x, cip_y, ceo_s, q_c.data());
+  const apsis::math::Mat3 kQ = sofa_to_eigen(q_c);
 
   // Earth rotation angle from UT1.
-  const auto ut1 = apsis::time::convert<apsis::time::tags::UT1>(tt);
-  const double era = iauEra00(ut1.jd1(), ut1.jd2());
+  const auto kUt1 = apsis::time::convert<apsis::time::tags::UT1>(tt);
+  const double kEra = iauEra00(kUt1.jd1(), kUt1.jd2());
 
-  apsis::math::Mat3 R_era = apsis::math::Mat3::Identity();
-  const double c = std::cos(era);
-  const double sn = std::sin(era);
+  apsis::math::Mat3 r_era = apsis::math::Mat3::Identity();
+  const double kCos = std::cos(kEra);
+  const double kSin = std::sin(kEra);
   // R3(ERA): rotation about +z. The CIO/TIO convention uses the IAU R3(theta)
   // form whose matrix is [[c, s, 0], [-s, c, 0], [0, 0, 1]].
-  R_era(0, 0) = c;
-  R_era(0, 1) = sn;
-  R_era(1, 0) = -sn;
-  R_era(1, 1) = c;
+  r_era(0, 0) = kCos;
+  r_era(0, 1) = kSin;
+  r_era(1, 0) = -kSin;
+  r_era(1, 1) = kCos;
 
   // Polar motion W = iauPom00(xp, yp, sp). sp (TIO locator) is small enough
   // to ignore at v1 tolerances per ADR-001 §"polar motion x_p, y_p".
-  const double xp = g_polar_motion_xp.load(std::memory_order_relaxed);
-  const double yp = g_polar_motion_yp.load(std::memory_order_relaxed);
-  double w_c[3][3];
-  iauPom00(xp, yp, /*sp=*/0.0, w_c);
-  const apsis::math::Mat3 W = sofa_to_eigen(w_c);
+  const double kXp = g_polar_motion_xp.load(std::memory_order_relaxed);
+  const double kYp = g_polar_motion_yp.load(std::memory_order_relaxed);
+  std::array<double, 9> w_c{};
+  sofa_pom00_flat(kXp, kYp, /*sp=*/0.0, w_c.data());
+  const apsis::math::Mat3 kW = sofa_to_eigen(w_c);
 
   // Q is celestial->CIRS already; ICRF->ITRS = W * R_era * Q.
-  return W * R_era * Q;
+  return kW * r_era * kQ;
 }
 
 }  // namespace
@@ -113,9 +125,9 @@ double default_polar_motion_yp() noexcept {
 }
 
 template <>
-State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(State<tags::ICRF> x,
+State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(const State<tags::ICRF>& x,
                                                     apsis::time::Time<apsis::time::tags::TT> tt) {
-  const apsis::math::Mat3 R = build_icrf_to_itrs(tt);
+  const apsis::math::Mat3 kR = build_icrf_to_itrs(tt);
   // Velocity: r_itrs_dot = R * r_icrf_dot - omega x r_itrs.
   // Equivalently, in fixed frame: r_itrs_dot = R * (r_icrf_dot - omega_icrf x r_icrf).
   // We compute it via the second form: omega_icrf is omega along the rotation
@@ -123,22 +135,22 @@ State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(State<tags::ICRF> x,
   // +z in the intermediate frame, which after Q is small-angle from ICRF +z.
   // Use the simpler form r_itrs_dot = R*v_icrf - omega_z x r_itrs in ITRS.
   State<tags::ITRS> y;
-  y.r = R * x.r;
-  const apsis::math::Vec3 v_rot = R * x.v;
-  const apsis::math::Vec3 omega_z(0.0, 0.0, kOmegaEarth);
-  y.v = v_rot - omega_z.cross(y.r);
+  y.r = kR * x.r;
+  const apsis::math::Vec3 kVRot = kR * x.v;
+  const apsis::math::Vec3 kOmegaZ(0.0, 0.0, kOmegaEarth);
+  y.v = kVRot - kOmegaZ.cross(y.r);
   return y;
 }
 
 template <>
-State<tags::ICRF> transform<tags::ICRF, tags::ITRS>(State<tags::ITRS> x,
+State<tags::ICRF> transform<tags::ICRF, tags::ITRS>(const State<tags::ITRS>& x,
                                                     apsis::time::Time<apsis::time::tags::TT> tt) {
-  const apsis::math::Mat3 Rt = build_icrf_to_itrs(tt).transpose();
+  const apsis::math::Mat3 kRt = build_icrf_to_itrs(tt).transpose();
   State<tags::ICRF> y;
-  y.r = Rt * x.r;
-  const apsis::math::Vec3 omega_z(0.0, 0.0, kOmegaEarth);
+  y.r = kRt * x.r;
+  const apsis::math::Vec3 kOmegaZ(0.0, 0.0, kOmegaEarth);
   // Inverse: v_icrf = R^T * (v_itrs + omega_z x r_itrs).
-  y.v = Rt * (x.v + omega_z.cross(x.r));
+  y.v = kRt * (x.v + kOmegaZ.cross(x.r));
   return y;
 }
 

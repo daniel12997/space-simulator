@@ -48,30 +48,30 @@ class DeviationForce final : public apsis::force::IForceModel {
                  apsis::time::Time<apsis::time::tags::TT> t_ref0, double mu)
       : full_(full), x_ref0_(x_ref0), t_ref0_(t_ref0), mu_(mu) {}
 
-  apsis::math::Vec3
+  [[nodiscard]] apsis::math::Vec3
   acceleration(apsis::time::Time<apsis::time::tags::TT> t,
                const apsis::frames::State<apsis::frames::tags::ICRF>& x_dev) const override {
     // Reference position at this time, via f-and-g.
-    const double dt_from_ref = (t - t_ref0_).seconds();
-    auto x_kep = apsis::math::fandg::propagate(x_ref0_, dt_from_ref, mu_);
+    const double kDtFromRef = (t - t_ref0_).seconds();
+    auto x_kep = apsis::math::fandg::propagate(x_ref0_, kDtFromRef, mu_);
     apsis::frames::State<apsis::frames::tags::ICRF> x_full;
     x_full.r = x_kep.r + x_dev.r;
     x_full.v = x_kep.v + x_dev.v;
-    const auto a_full = full_.acceleration(t, x_full);
+    const auto kAFull = full_.acceleration(t, x_full);
     // Kepler acceleration of the reference's position.
-    const double r3 = x_kep.r.norm();
-    const apsis::math::Vec3 a_kep = -(mu_ / (r3 * r3 * r3)) * x_kep.r;
-    return a_full - a_kep;
+    const double kR3 = x_kep.r.norm();
+    const apsis::math::Vec3 kAKep = -(mu_ / (kR3 * kR3 * kR3)) * x_kep.r;
+    return kAFull - kAKep;
   }
 
-  apsis::math::Mat36
+  [[nodiscard]] apsis::math::Mat36
   partials(apsis::time::Time<apsis::time::tags::TT> t,
            const apsis::frames::State<apsis::frames::tags::ICRF>& x_dev) const override {
     // Partial wrt x_dev. The Kepler subtraction is a constant in x_dev,
     // so its partial vanishes; we just return the full-force partials at
     // x_full = x_kep + x_dev.
-    const double dt_from_ref = (t - t_ref0_).seconds();
-    auto x_kep = apsis::math::fandg::propagate(x_ref0_, dt_from_ref, mu_);
+    const double kDtFromRef = (t - t_ref0_).seconds();
+    auto x_kep = apsis::math::fandg::propagate(x_ref0_, kDtFromRef, mu_);
     apsis::frames::State<apsis::frames::tags::ICRF> x_full;
     x_full.r = x_kep.r + x_dev.r;
     x_full.v = x_kep.v + x_dev.v;

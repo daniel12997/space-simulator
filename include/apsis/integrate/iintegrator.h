@@ -34,7 +34,7 @@ namespace apsis::integrate {
 struct StepResult {
   apsis::frames::State<apsis::frames::tags::ICRF> x;
   apsis::math::Mat6 phi;
-  double dt_actually_taken;  // == dt for fixed-step adapters
+  double dt_actually_taken = 0.0;  // == dt for fixed-step adapters
 };
 
 class IIntegrator {
@@ -53,15 +53,15 @@ class IIntegrator {
 };
 
 // Helper: assemble the 6x6 dynamics Jacobian A from a 3x6 force partial.
-inline apsis::math::Mat6 assemble_A(const apsis::math::Mat36& dadx) {
-  apsis::math::Mat6 A = apsis::math::Mat6::Zero();
+[[nodiscard]] inline apsis::math::Mat6 assemble_a(const apsis::math::Mat36& dadx) {
+  apsis::math::Mat6 a = apsis::math::Mat6::Zero();
   // Top-right: dr/dt = v -> identity in the position-rate-vs-velocity block.
-  A.block<3, 3>(0, 3).setIdentity();
+  a.block<3, 3>(0, 3).setIdentity();
   // Bottom-left: dv/dt = a -> da/dr.
-  A.block<3, 3>(3, 0) = dadx.block<3, 3>(0, 0);
+  a.block<3, 3>(3, 0) = dadx.block<3, 3>(0, 0);
   // Bottom-right: da/dv (zero in Phase 1).
-  A.block<3, 3>(3, 3) = dadx.block<3, 3>(0, 3);
-  return A;
+  a.block<3, 3>(3, 3) = dadx.block<3, 3>(0, 3);
+  return a;
 }
 
 }  // namespace apsis::integrate

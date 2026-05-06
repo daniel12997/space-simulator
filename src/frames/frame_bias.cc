@@ -7,6 +7,8 @@
 // polynomial parts vanish, leaving the pure bias. ICRF <-> GCRS is identity
 // in v1 (handled by the same file as a small adjacent specialisation).
 
+#include <array>
+
 #include <Eigen/Core>
 
 #include "apsis/frames/transform.h"
@@ -23,59 +25,69 @@ namespace {
 // Cached bias matrix (B such that r_icrf = B^T * r_j2000, equivalently
 // r_j2000 = B * r_icrf — sign convention follows SOFA's iauBp06: the
 // returned `rb` is the bias from GCRF to mean-of-J2000-equator).
+// SOFA's iauBp06 takes `double[3][3]` for each output matrix. We re-declare
+// the SOFA entry point we need with a flat `double*` signature to avoid the
+// C-array parameter type at the C++ call site; the linker resolves it to the
+// same SOFA symbol because the C ABI is identical for passing a contiguous
+// 9-double row-major matrix.
+extern "C" void sofa_bp06_flat(double date1, double date2, double* rb, double* rp,
+                             double* rbp) asm("iauBp06");
+
 apsis::math::Mat3 build_bias_matrix() {
   // iauBp06 returns rb (bias), rp (precession), rbp (combined). At J2000
   // (DJ00, 0) precession is the identity, so rb == rbp; either is fine for
   // our caching purposes. We use iauBp06 directly so the operation is
   // unambiguous regardless of any future SOFA convention drift in iauPmat06.
-  double rb[3][3], rp[3][3], rbp[3][3];
-  iauBp06(DJ00, 0.0, rb, rp, rbp);
-  apsis::math::Mat3 B;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      B(i, j) = rb[i][j];
+  std::array<double, 9> rb{};
+  std::array<double, 9> rp{};
+  std::array<double, 9> rbp{};
+  sofa_bp06_flat(DJ00, 0.0, rb.data(), rp.data(), rbp.data());
+  apsis::math::Mat3 b;
+  for (std::size_t i = 0; i < 3; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
+      b(static_cast<int>(i), static_cast<int>(j)) = rb.at(i * 3 + j);
     }
   }
-  return B;
+  return b;
 }
 
 const apsis::math::Mat3& bias_icrf_to_j2000() {
-  static const apsis::math::Mat3 B = build_bias_matrix();
-  return B;
+  static const apsis::math::Mat3 kB = build_bias_matrix();
+  return kB;
 }
 
 }  // namespace
 
 template <>
-State<tags::J2000> transform<tags::J2000, tags::ICRF>(State<tags::ICRF> x,
+State<tags::J2000> transform<tags::J2000, tags::ICRF>(const State<tags::ICRF>& x,
                                                       apsis::time::Time<apsis::time::tags::TT>) {
-  const apsis::math::Mat3& B = bias_icrf_to_j2000();
+  const apsis::math::Mat3& b = bias_icrf_to_j2000();
   State<tags::J2000> y;
-  y.r = B * x.r;
-  y.v = B * x.v;  // bias is constant -> velocity transforms as a rotation
+  y.r = b * x.r;
+  y.v = b * x.v;  // bias is constant -> velocity transforms as a rotation
   return y;
 }
 
 template <>
-State<tags::ICRF> transform<tags::ICRF, tags::J2000>(State<tags::J2000> x,
+State<tags::ICRF> transform<tags::ICRF, tags::J2000>(const State<tags::J2000>& x,
                                                      apsis::time::Time<apsis::time::tags::TT>) {
-  const apsis::math::Mat3 Bt = bias_icrf_to_j2000().transpose();
+  const apsis::math::Mat3 kBt = bias_icrf_to_j2000().transpose();
   State<tags::ICRF> y;
-  y.r = Bt * x.r;
-  y.v = Bt * x.v;
+  y.r = kBt * x.r;
+  y.v = kBt * x.v;
   return y;
 }
 
 // ICRF <-> GCRS: identity in v1. Defined here rather than in icrs_itrs.cc to
 // keep all "non-rotating identity-grade" specialisations in one file.
 template <>
-State<tags::GCRS> transform<tags::GCRS, tags::ICRF>(State<tags::ICRF> x,
+State<tags::GCRS> transform<tags::GCRS, tags::ICRF>(const State<tags::ICRF>& x,
                                                     apsis::time::Time<apsis::time::tags::TT>) {
   return State<tags::GCRS>{x.r, x.v};
 }
 
 template <>
-State<tags::ICRF> transform<tags::ICRF, tags::GCRS>(State<tags::GCRS> x,
+State<tags::ICRF> transform<tags::ICRF, tags::GCRS>(const State<tags::GCRS>& x,
                                                     apsis::time::Time<apsis::time::tags::TT>) {
   return State<tags::ICRF>{x.r, x.v};
 }

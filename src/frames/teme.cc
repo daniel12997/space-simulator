@@ -19,14 +19,14 @@
 namespace apsis::frames {
 
 template <>
-State<tags::ITRS> transform<tags::ITRS, tags::TEME>(State<tags::TEME>,
+State<tags::ITRS> transform<tags::ITRS, tags::TEME>(const State<tags::TEME>&,
                                                     apsis::time::Time<apsis::time::tags::TT>) {
   throw std::logic_error("transform<ITRS, TEME>: stubbed in Phase 1; full implementation lands "
                          "in Phase 2 with SGP4. See src/frames/teme.cc.");
 }
 
 template <>
-State<tags::TEME> transform<tags::TEME, tags::ITRS>(State<tags::ITRS>,
+State<tags::TEME> transform<tags::TEME, tags::ITRS>(const State<tags::ITRS>&,
                                                     apsis::time::Time<apsis::time::tags::TT>) {
   throw std::logic_error("transform<TEME, ITRS>: stubbed in Phase 1; full implementation lands "
                          "in Phase 2 with SGP4. See src/frames/teme.cc.");

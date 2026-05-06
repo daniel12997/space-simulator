@@ -12,10 +12,10 @@
 //
 // Tolerances per the plan:
 //   * Dp54         : final error  < 1     m  over one period (rtol 1e-12)
-//   * Dop853       : final error  < 5e-5  m  over one period (rtol 1e-12) —
+//   * Dop853       : final error  < 2e-5  m  over one period (rtol 1e-12) —
 //                    Hairer Vol I Table 5.2; lands in Phase 1A §D1.
-//                    Empirical residual ~4e-6 m on the development host;
-//                    bound is ~10x margin. ~5 orders below Dp54 — slightly
+//                    Empirical residual ~4.15e-6 m on the development host;
+//                    bound is ~5x margin. ~5 orders below Dp54 — slightly
 //                    less than the §D1-anticipated 7 orders because at
 //                    rtol=1e-12 / orbit radius ~7e6 m the achievable per-step
 //                    error is bounded by rtol * r ~ 7e-6 m, not by the
@@ -105,11 +105,11 @@ TEST(IntegratorKepler, Dop853) {
   opts.dt_max = 600.0;
   ai::Dop853 d(opts);
   // The full DOP853 (Hairer Vol I Table 5.2) closes Kepler over one period
-  // to ~4e-6 m on the development host at rtol=1e-12 / atol=1e-9 (about
-  // rtol * orbit-radius — the floor at this rtol). The 5e-5 m bound below
-  // gives ~10x margin against CI host noise. ~5 orders below Dp54's 1 m
+  // to ~4.15e-6 m on the development host at rtol=1e-12 / atol=1e-9 (about
+  // rtol * orbit-radius — the floor at this rtol). The 2e-5 m bound below
+  // gives ~5x margin against CI host noise. ~5 orders below Dp54's 1 m
   // bound on the same problem.
-  propagate_one_period(d, pm, /*dt=*/600.0, /*tol_m=*/5e-5);
+  propagate_one_period(d, pm, /*dt=*/600.0, /*tol_m=*/2e-5);
 }
 
 TEST(IntegratorKepler, Yoshida4) {

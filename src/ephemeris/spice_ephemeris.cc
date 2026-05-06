@@ -19,6 +19,7 @@
 
 #include "apsis/ephemeris/spice_ephemeris.h"
 
+#include <array>
 #include <mutex>
 #include <stdexcept>
 #include <string>
@@ -62,12 +63,12 @@ constexpr int kObserverSSB = 0;  // NAIF: 0 = Solar-System Barycentre
 // Caller must hold the global CSPICE lock.
 [[noreturn]] void throw_spice_error(const std::string& context) {
   constexpr SpiceInt kBuf = 1840;
-  SpiceChar msg[kBuf];
+  std::array<SpiceChar, kBuf> msg{};
   // "LONG" gives the multi-line technical message; this is a developer-
   // facing API so we ship the long form.
-  getmsg_c("LONG", kBuf, msg);
+  getmsg_c("LONG", kBuf, msg.data());
   reset_c();
-  throw std::runtime_error(context + ": " + msg);
+  throw std::runtime_error(context + ": " + msg.data());
 }
 
 // Two-component TDB Julian Date -> ephemeris time (seconds past J2000).
@@ -76,8 +77,8 @@ constexpr int kObserverSSB = 0;  // NAIF: 0 = Solar-System Barycentre
 double tdb_to_et_seconds(apsis::time::Time<apsis::time::tags::TDB> t) {
   // J2000 TDB = JD 2451545.0. To preserve precision we subtract the integer
   // portion before scaling.
-  constexpr double j2000_jd = 2451545.0;
-  return ((t.jd1() - j2000_jd) + t.jd2()) * 86400.0;
+  constexpr double kJ2000Jd = 2451545.0;
+  return ((t.jd1() - kJ2000Jd) + t.jd2()) * 86400.0;
 }
 
 // km / km-per-second -> m / m-per-second. SPICE units are kilometre-based;
@@ -90,9 +91,13 @@ SpiceEphemeris::SpiceEphemeris(const std::vector<std::string>& kernel_paths) {
   CspiceLock lock;
 
   // Promote CSPICE errors to RETURN mode so we can surface them as C++
-  // exceptions instead of having CSPICE call exit() on us.
-  erract_c("SET", 0, const_cast<SpiceChar*>("RETURN"));
-  errprt_c("SET", 0, const_cast<SpiceChar*>("NONE"));
+  // exceptions instead of having CSPICE call exit() on us. CSPICE's
+  // erract_c/errprt_c take non-const SpiceChar*; we stage the keywords in
+  // mutable buffers to avoid const_cast on string literals.
+  std::string action_return = "RETURN";
+  std::string action_none = "NONE";
+  erract_c("SET", 0, action_return.data());
+  errprt_c("SET", 0, action_none.data());
 
   for (const auto& path : kernel_paths) {
     furnsh_c(path.c_str());
@@ -123,24 +128,24 @@ apsis::frames::State<apsis::frames::tags::ICRF>
 SpiceEphemeris::state(int body_naif_id, apsis::time::Time<apsis::time::tags::TDB> t) const {
   CspiceLock lock;
 
-  const double et = tdb_to_et_seconds(t);
+  const double kEt = tdb_to_et_seconds(t);
 
   // spkezr_c takes the target name as a string. NAIF supports numeric IDs
   // either by name table lookup or by passing the integer as a decimal
   // string; the latter avoids any naming-table dependence.
-  const std::string target = std::to_string(body_naif_id);
-  const std::string observer = std::to_string(kObserverSSB);
+  const std::string kTarget = std::to_string(body_naif_id);
+  const std::string kObserver = std::to_string(kObserverSSB);
 
-  SpiceDouble state6[6] = {0.0};
+  std::array<SpiceDouble, 6> state6{};
   SpiceDouble lt = 0.0;
-  spkezr_c(target.c_str(), et, kSpiceFrame, kAbcorr, observer.c_str(), state6, &lt);
+  spkezr_c(kTarget.c_str(), kEt, kSpiceFrame, kAbcorr, kObserver.c_str(), state6.data(), &lt);
   if (failed_c()) {
-    throw_spice_error("SpiceEphemeris::state(body=" + target + ")");
+    throw_spice_error("SpiceEphemeris::state(body=" + kTarget + ")");
   }
 
   apsis::frames::State<apsis::frames::tags::ICRF> out;
-  out.r << state6[0] * kKmToM, state6[1] * kKmToM, state6[2] * kKmToM;
-  out.v << state6[3] * kKmToM, state6[4] * kKmToM, state6[5] * kKmToM;
+  out.r << state6.at(0) * kKmToM, state6.at(1) * kKmToM, state6.at(2) * kKmToM;
+  out.v << state6.at(3) * kKmToM, state6.at(4) * kKmToM, state6.at(5) * kKmToM;
   return out;
 }
 

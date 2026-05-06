@@ -62,17 +62,17 @@ double default_dut1() noexcept {
 
 template <> Time<tags::TT> convert<tags::TT, tags::TAI>(Time<tags::TAI> t) {
   double tt1, tt2;
-  const int rc = iauTaitt(t.jd1(), t.jd2(), &tt1, &tt2);
-  assert(rc == 0 && "iauTaitt: non-zero status");
-  (void)rc;
+  const int kRc = iauTaitt(t.jd1(), t.jd2(), &tt1, &tt2);
+  assert(kRc == 0 && "iauTaitt: non-zero status");
+  (void)kRc;
   return Time<tags::TT>{tt1, tt2};
 }
 
 template <> Time<tags::TAI> convert<tags::TAI, tags::TT>(Time<tags::TT> t) {
   double tai1, tai2;
-  const int rc = iauTttai(t.jd1(), t.jd2(), &tai1, &tai2);
-  assert(rc == 0 && "iauTttai: non-zero status");
-  (void)rc;
+  const int kRc = iauTttai(t.jd1(), t.jd2(), &tai1, &tai2);
+  assert(kRc == 0 && "iauTttai: non-zero status");
+  (void)kRc;
   return Time<tags::TAI>{tai1, tai2};
 }
 
@@ -82,18 +82,18 @@ template <> Time<tags::TAI> convert<tags::TAI, tags::TT>(Time<tags::TT> t) {
 
 template <> Time<tags::UTC> convert<tags::UTC, tags::TAI>(Time<tags::TAI> t) {
   double utc1, utc2;
-  const int rc = iauTaiutc(t.jd1(), t.jd2(), &utc1, &utc2);
-  // rc == 1 is "dubious year"; rc < 0 is an actual error.
-  assert(rc >= 0 && "iauTaiutc: error status");
-  (void)rc;
+  const int kRc = iauTaiutc(t.jd1(), t.jd2(), &utc1, &utc2);
+  // kRc == 1 is "dubious year"; kRc < 0 is an actual error.
+  assert(kRc >= 0 && "iauTaiutc: error status");
+  (void)kRc;
   return Time<tags::UTC>{utc1, utc2};
 }
 
 template <> Time<tags::TAI> convert<tags::TAI, tags::UTC>(Time<tags::UTC> t) {
   double tai1, tai2;
-  const int rc = iauUtctai(t.jd1(), t.jd2(), &tai1, &tai2);
-  assert(rc >= 0 && "iauUtctai: error status");
-  (void)rc;
+  const int kRc = iauUtctai(t.jd1(), t.jd2(), &tai1, &tai2);
+  assert(kRc >= 0 && "iauUtctai: error status");
+  (void)kRc;
   return Time<tags::TAI>{tai1, tai2};
 }
 
@@ -103,17 +103,17 @@ template <> Time<tags::TAI> convert<tags::TAI, tags::UTC>(Time<tags::UTC> t) {
 
 template <> Time<tags::UT1> convert<tags::UT1, tags::UTC>(Time<tags::UTC> t) {
   double ut11, ut12;
-  const int rc = iauUtcut1(t.jd1(), t.jd2(), default_dut1(), &ut11, &ut12);
-  assert(rc >= 0 && "iauUtcut1: error status");
-  (void)rc;
+  const int kRc = iauUtcut1(t.jd1(), t.jd2(), default_dut1(), &ut11, &ut12);
+  assert(kRc >= 0 && "iauUtcut1: error status");
+  (void)kRc;
   return Time<tags::UT1>{ut11, ut12};
 }
 
 template <> Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1> t) {
   double utc1, utc2;
-  const int rc = iauUt1utc(t.jd1(), t.jd2(), default_dut1(), &utc1, &utc2);
-  assert(rc >= 0 && "iauUt1utc: error status");
-  (void)rc;
+  const int kRc = iauUt1utc(t.jd1(), t.jd2(), default_dut1(), &utc1, &utc2);
+  assert(kRc >= 0 && "iauUt1utc: error status");
+  (void)kRc;
   return Time<tags::UTC>{utc1, utc2};
 }
 
@@ -134,11 +134,11 @@ template <> Time<tags::TAI> convert<tags::TAI, tags::UT1>(Time<tags::UT1> t) {
 // ---------------------------------------------------------------------------
 
 template <> Time<tags::TDB> convert<tags::TDB, tags::TT>(Time<tags::TT> t) {
-  const double dtr = dtr_geo_approx(t.jd1(), t.jd2());
+  const double kDtr = dtr_geo_approx(t.jd1(), t.jd2());
   double tdb1, tdb2;
-  const int rc = iauTttdb(t.jd1(), t.jd2(), dtr, &tdb1, &tdb2);
-  assert(rc == 0 && "iauTttdb: non-zero status");
-  (void)rc;
+  const int kRc = iauTttdb(t.jd1(), t.jd2(), kDtr, &tdb1, &tdb2);
+  assert(kRc == 0 && "iauTttdb: non-zero status");
+  (void)kRc;
   return Time<tags::TDB>{tdb1, tdb2};
 }
 
@@ -148,11 +148,11 @@ template <> Time<tags::TT> convert<tags::TT, tags::TDB>(Time<tags::TDB> t) {
   // ~10^-23 s — far below the float resolution of jd2 — so for the inverse
   // we evaluate dtr at the input (TDB) directly. SOFA's tdbtt then folds in
   // the negation.
-  const double dtr = dtr_geo_approx(t.jd1(), t.jd2());
+  const double kDtr = dtr_geo_approx(t.jd1(), t.jd2());
   double tt1, tt2;
-  const int rc = iauTdbtt(t.jd1(), t.jd2(), dtr, &tt1, &tt2);
-  assert(rc == 0 && "iauTdbtt: non-zero status");
-  (void)rc;
+  const int kRc = iauTdbtt(t.jd1(), t.jd2(), kDtr, &tt1, &tt2);
+  assert(kRc == 0 && "iauTdbtt: non-zero status");
+  (void)kRc;
   return Time<tags::TT>{tt1, tt2};
 }
 

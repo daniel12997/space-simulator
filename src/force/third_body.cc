@@ -13,10 +13,10 @@ namespace apsis::force {
 
 apsis::math::Vec3
 ThirdBody::third_body_pos_central(apsis::time::Time<apsis::time::tags::TT> t) const {
-  const auto t_tdb = apsis::time::convert<apsis::time::tags::TDB>(t);
-  const auto third_state = ephem_->state(third_body_naif_id_, t_tdb);
-  const auto central_state = ephem_->state(central_body_naif_id_, t_tdb);
-  return third_state.r - central_state.r;
+  const auto kTtdb = apsis::time::convert<apsis::time::tags::TDB>(t);
+  const auto kThirdState = ephem_->state(third_body_naif_id_, kTtdb);
+  const auto kCentralState = ephem_->state(central_body_naif_id_, kTtdb);
+  return kThirdState.r - kCentralState.r;
 }
 
 apsis::math::Vec3
@@ -35,14 +35,14 @@ ThirdBody::acceleration(apsis::time::Time<apsis::time::tags::TT> t,
   // analytical Jacobian below in lockstep with the literature derivation.
   // The Battin substitution is reinstated as an opt-in path in Phase 7
   // if conjunction-screening close approaches require it.
-  const auto r3 = third_body_pos_central(t);
-  const apsis::math::Vec3 d = r3 - x.r;  // spacecraft -> third body
-  const double d_norm_sq = d.squaredNorm();
-  const double d_norm = std::sqrt(d_norm_sq);
-  const double d_cubed = d_norm_sq * d_norm;
-  const double r3_norm = r3.norm();
-  const double r3_cubed = r3_norm * r3_norm * r3_norm;
-  return mu_third_ * (d / d_cubed - r3 / r3_cubed);
+  const auto kR3 = third_body_pos_central(t);
+  const apsis::math::Vec3 kD = kR3 - x.r;  // spacecraft -> third body
+  const double kDNormSq = kD.squaredNorm();
+  const double kDNorm = std::sqrt(kDNormSq);
+  const double kDCubed = kDNormSq * kDNorm;
+  const double kR3Norm = kR3.norm();
+  const double kR3Cubed = kR3Norm * kR3Norm * kR3Norm;
+  return mu_third_ * (kD / kDCubed - kR3 / kR3Cubed);
 }
 
 apsis::math::Mat36
@@ -68,21 +68,21 @@ ThirdBody::partials(apsis::time::Time<apsis::time::tags::TT> t,
   // position. Verified against the FD oracle in
   // tests/conformance/force_model_ve_contract.cc (h = 10 m) to ~1e-10
   // relative.
-  const auto r3 = third_body_pos_central(t);
-  const apsis::math::Vec3 d = r3 - x.r;
-  const double d_norm_sq = d.squaredNorm();
-  const double d_norm = std::sqrt(d_norm_sq);
-  const double d_cubed = d_norm_sq * d_norm;
-  const double d_fifth = d_cubed * d_norm_sq;
+  const auto kR3 = third_body_pos_central(t);
+  const apsis::math::Vec3 kD = kR3 - x.r;
+  const double kDNormSq = kD.squaredNorm();
+  const double kDNorm = std::sqrt(kDNormSq);
+  const double kDCubed = kDNormSq * kDNorm;
+  const double kDFifth = kDCubed * kDNormSq;
 
-  apsis::math::Mat3 J3 = apsis::math::Mat3::Zero();
-  J3.diagonal().setConstant(-mu_third_ / d_cubed);
-  J3 += (3.0 * mu_third_ / d_fifth) * (d * d.transpose());
+  apsis::math::Mat3 jac3 = apsis::math::Mat3::Zero();
+  jac3.diagonal().setConstant(-mu_third_ / kDCubed);
+  jac3 += (3.0 * mu_third_ / kDFifth) * (kD * kD.transpose());
 
-  apsis::math::Mat36 J = apsis::math::Mat36::Zero();
-  J.block<3, 3>(0, 0) = J3;
+  apsis::math::Mat36 jac = apsis::math::Mat36::Zero();
+  jac.block<3, 3>(0, 0) = jac3;
   // Velocity columns remain zero — no velocity dependence in Phase 1.
-  return J;
+  return jac;
 }
 
 }  // namespace apsis::force

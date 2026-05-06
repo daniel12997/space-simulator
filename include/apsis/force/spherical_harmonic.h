@@ -62,9 +62,8 @@ class SphericalHarmonic final : public IForceModel {
       // Widen both operands before multiplication to avoid clang-tidy
       // bugprone-misplaced-widening-cast and -Wsign-conversion (and any
       // genuine overflow risk if degree ever exceeds ~46k).
-      const auto un = static_cast<std::size_t>(n);
-      const auto um = static_cast<std::size_t>(m);
-      return un * (un + 1) / 2 + um;
+      return static_cast<std::size_t>(n) * static_cast<std::size_t>(n + 1) / 2 +
+             static_cast<std::size_t>(m);
     }
     [[nodiscard]] int triangular_size() const noexcept { return (degree + 1) * (degree + 2) / 2; }
   };

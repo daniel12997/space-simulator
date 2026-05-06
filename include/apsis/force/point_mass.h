@@ -12,9 +12,10 @@ namespace apsis::force {
 
 class PointMass final : public IForceModel {
  public:
-  // ADR-009 conformance flag: partials() below is analytical (closed form
-  // ∂a/∂r derived from the inverse-cube law). The VE-contract conformance
-  // test parameterises over adapters with `kAnalyticalPartials == true`.
+  // ADR-009 conformance flag: partials_dadx() below is analytical (closed
+  // form ∂a/∂r derived from the inverse-cube law). The VE-contract
+  // conformance test parameterises over adapters with
+  // `kAnalyticalPartials == true`.
   static constexpr bool kAnalyticalPartials = true;
 
   // mu in SI: m^3 / s^2.
@@ -25,8 +26,8 @@ class PointMass final : public IForceModel {
                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
   [[nodiscard]] apsis::math::Mat36
-  partials(apsis::time::Time<apsis::time::tags::TT> t,
-           const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
+  partials_dadx(apsis::time::Time<apsis::time::tags::TT> t,
+                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
   [[nodiscard]] double mu() const noexcept { return mu_; }
 

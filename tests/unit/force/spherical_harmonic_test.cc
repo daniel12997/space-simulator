@@ -91,7 +91,7 @@ TEST(SphericalHarmonic, PartialsSelfConsistent) {
   af::SphericalHarmonic sh(make_j2_only());
   afr::State<afr::tags::ICRF> x;
   x.r << 7.0e6, 1.0e6, 5.0e5;
-  const auto J = sh.partials(at::Time<at::tags::TT>{}, x);
+  const auto J = sh.partials_dadx(at::Time<at::tags::TT>{}, x);
   // Independent oracle at h = 10 m (adapter uses h = 1 m internally).
   constexpr double h = 10.0;
   for (int i = 0; i < 3; ++i) {

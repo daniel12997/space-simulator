@@ -23,7 +23,7 @@ using Vec6 = Eigen::Matrix<double, 6, 1>;
 using VecX = Eigen::VectorXd;
 
 // 3x3 rotations / inertia tensors, 6x6 state-transition matrices, and a 3x6
-// shape used by `IForceModel::partials` (cols 0..2 = ∂a/∂r, cols 3..5 =
+// shape used by `IForceModel::partials_dadx` (cols 0..2 = ∂a/∂r, cols 3..5 =
 // ∂a/∂v). `Mat66` is an alias for `Mat6` kept for symmetry with `Mat36`.
 using Mat3 = Eigen::Matrix<double, 3, 3>;
 using Mat6 = Eigen::Matrix<double, 6, 6>;

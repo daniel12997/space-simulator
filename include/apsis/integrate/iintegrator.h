@@ -12,7 +12,7 @@
 // matrix d(state(t+dt))/d(state(t0)). Caller seeds Phi = I when starting
 // a fresh segment; subsequent steps maintain Phi by integrating
 // dPhi/dt = A(t) * Phi where A is the 6x6 Jacobian assembled from
-// force.partials():
+// force.partials_dadx():
 //
 //     A = [[ 0      I    ]
 //          [ da/dr  da/dv ]]

@@ -35,7 +35,7 @@ Deriv evaluate(apsis::time::Time<apsis::time::tags::TT> t,
                const apsis::math::Mat6& phi, const apsis::force::IForceModel& force) {
   Deriv d;
   const auto kA = force.acceleration(t, x);
-  const auto kJ36 = force.partials(t, x);
+  const auto kJ36 = force.partials_dadx(t, x);
   d.dx.head<3>() = x.v;
   d.dx.tail<3>() = kA;
   const auto kAmat = assemble_a(kJ36);

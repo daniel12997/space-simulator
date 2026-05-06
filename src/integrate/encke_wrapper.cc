@@ -65,8 +65,8 @@ class DeviationForce final : public apsis::force::IForceModel {
   }
 
   [[nodiscard]] apsis::math::Mat36
-  partials(apsis::time::Time<apsis::time::tags::TT> t,
-           const apsis::frames::State<apsis::frames::tags::ICRF>& x_dev) const override {
+  partials_dadx(apsis::time::Time<apsis::time::tags::TT> t,
+                const apsis::frames::State<apsis::frames::tags::ICRF>& x_dev) const override {
     // Partial wrt x_dev. The Kepler subtraction is a constant in x_dev,
     // so its partial vanishes; we just return the full-force partials at
     // x_full = x_kep + x_dev.
@@ -75,7 +75,7 @@ class DeviationForce final : public apsis::force::IForceModel {
     apsis::frames::State<apsis::frames::tags::ICRF> x_full;
     x_full.r = x_kep.r + x_dev.r;
     x_full.v = x_kep.v + x_dev.v;
-    return full_.partials(t, x_full);
+    return full_.partials_dadx(t, x_full);
   }
 
  private:

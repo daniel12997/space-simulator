@@ -30,7 +30,7 @@ class SpiceEphemeris final : public IEphemeris {
   // Calls kclear_c under the lock to release loaded kernels.
   ~SpiceEphemeris() override;
 
-  apsis::frames::State<apsis::frames::tags::ICRF>
+  [[nodiscard]] apsis::frames::State<apsis::frames::tags::ICRF>
   state(int body_naif_id, apsis::time::Time<apsis::time::tags::TDB> t) const override;
 };
 

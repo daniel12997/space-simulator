@@ -48,18 +48,19 @@ class ThirdBody final : public IForceModel {
       : ephem_(ephem), central_body_naif_id_(central_body_naif_id),
         third_body_naif_id_(third_body_naif_id), mu_third_(mu_third) {}
 
-  apsis::math::Vec3
+  [[nodiscard]] apsis::math::Vec3
   acceleration(apsis::time::Time<apsis::time::tags::TT> t,
                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
-  apsis::math::Mat36
+  [[nodiscard]] apsis::math::Mat36
   partials(apsis::time::Time<apsis::time::tags::TT> t,
            const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
  private:
   // Internal: query the third body's position relative to the central body
   // at TT epoch t (converts TT->TDB internally).
-  apsis::math::Vec3 third_body_pos_central(apsis::time::Time<apsis::time::tags::TT> t) const;
+  [[nodiscard]] apsis::math::Vec3
+  third_body_pos_central(apsis::time::Time<apsis::time::tags::TT> t) const;
 
   const apsis::ephemeris::IEphemeris* ephem_;
   int central_body_naif_id_;

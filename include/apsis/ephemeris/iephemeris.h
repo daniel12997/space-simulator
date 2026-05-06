@@ -27,7 +27,7 @@ class IEphemeris {
   // Output is in ICRF (J2000-equivalent for SPICE's "J2000" frame,
   // which is what NAIF's planetary kernels use), wrt the
   // Solar-System Barycentre, in metres and metres/second.
-  virtual apsis::frames::State<apsis::frames::tags::ICRF>
+  [[nodiscard]] virtual apsis::frames::State<apsis::frames::tags::ICRF>
   state(int body_naif_id, apsis::time::Time<apsis::time::tags::TDB> t) const = 0;
 };
 

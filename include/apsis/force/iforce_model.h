@@ -45,14 +45,14 @@ class IForceModel {
   virtual ~IForceModel() = default;
 
   // Acceleration in ICRF at TT epoch `t` for state `x` (ICRF, SI units).
-  virtual apsis::math::Vec3
+  [[nodiscard]] virtual apsis::math::Vec3
   acceleration(apsis::time::Time<apsis::time::tags::TT> t,
                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const = 0;
 
   // 3x6 partials: ∂a/∂[r; v] in the same units (1/s^2 for the position
   // columns; 1/s for the velocity columns when a velocity-dependent force
   // is present, zero otherwise in Phase 1 since drag/SRP are deferred).
-  virtual apsis::math::Mat36
+  [[nodiscard]] virtual apsis::math::Mat36
   partials(apsis::time::Time<apsis::time::tags::TT> t,
            const apsis::frames::State<apsis::frames::tags::ICRF>& x) const = 0;
 };

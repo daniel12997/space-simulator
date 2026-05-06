@@ -55,10 +55,12 @@ class SphericalHarmonic final : public IForceModel {
     std::vector<double> S_norm;
 
     [[nodiscard]] static std::size_t idx(int n, int m) noexcept {
-      // Widen before multiplication to avoid spurious clang-tidy
-      // bugprone-misplaced-widening-cast (and any genuine overflow risk
-      // if degree ever exceeds ~46k).
-      return static_cast<std::size_t>(n) * (n + 1) / 2 + static_cast<std::size_t>(m);
+      // Widen both operands before multiplication to avoid clang-tidy
+      // bugprone-misplaced-widening-cast and -Wsign-conversion (and any
+      // genuine overflow risk if degree ever exceeds ~46k).
+      const auto un = static_cast<std::size_t>(n);
+      const auto um = static_cast<std::size_t>(m);
+      return un * (un + 1) / 2 + um;
     }
     [[nodiscard]] int triangular_size() const noexcept { return (degree + 1) * (degree + 2) / 2; }
   };
@@ -74,11 +76,11 @@ class SphericalHarmonic final : public IForceModel {
   // the conformance test grid which uses contrived synthetic states).
   explicit SphericalHarmonic(Coefficients coeffs);
 
-  apsis::math::Vec3
+  [[nodiscard]] apsis::math::Vec3
   acceleration(apsis::time::Time<apsis::time::tags::TT> t,
                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
-  apsis::math::Mat36
+  [[nodiscard]] apsis::math::Mat36
   partials(apsis::time::Time<apsis::time::tags::TT> t,
            const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
@@ -87,7 +89,7 @@ class SphericalHarmonic final : public IForceModel {
  private:
   // Internal: acceleration in body-fixed frame given a body-fixed position.
   // Phase 1 treats body-fixed and ICRF as aligned (see class comment).
-  apsis::math::Vec3 acceleration_body(const apsis::math::Vec3& r_bf) const;
+  [[nodiscard]] apsis::math::Vec3 acceleration_body(const apsis::math::Vec3& r_bf) const;
 
   Coefficients coeffs_;
 };

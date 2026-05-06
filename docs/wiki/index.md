@@ -2,7 +2,7 @@
 
 The catalog of every page in this wiki. Read this first when querying. Updated on every ingest, document, query-fileback, and lint operation.
 
-## Sources (48)
+## Sources (49)
 
 ### Time / frames / ephemerides
 | Slug | Title | Type | Reliability | Ingested |
@@ -36,6 +36,7 @@ The catalog of every page in this wiki. Read this first when querying. Updated o
 | Slug | Title | Type | Reliability | Ingested |
 |---|---|---|---|---|
 | [[sources/berry-healy-2004-gauss-jackson]] | Implementation of Gauss-Jackson Integration for Orbit Propagation | paper | peer-reviewed | 2026-05-04 |
+| [[sources/berry-healy-2004-gj8-generator]] | Berry-Healy 2004 Gauss-Jackson coefficient generator (Healy, Common Lisp + Python port) | code | primary | 2026-05-06 |
 
 ### Multi-body dynamics
 | Slug | Title | Type | Reliability | Ingested |

@@ -112,8 +112,77 @@ the `IForceModel::partials_dadx` from the VE contract.
   via central-difference perturbation of initial conditions to the same
   tolerance. This is the *only* mechanism by which a new integrator
   adapter is admitted to the seam.
-- Coefficient tables are committed as `constexpr std::array` in headers
-  and hashed in CI to prevent silent corruption.
+- Coefficient tables are committed as `constexpr std::array` in headers.
+  (An earlier draft of this ADR specified hashing them in CI to prevent
+  silent corruption; that mechanism has not been wired and the claim is
+  withdrawn here. Phase 7 may add it once the full DOP853 / GJ8 tables
+  land.)
 - Encke-wrapper composition ([[concepts/long-arc-state-conditioning]]) is
   a separate module that takes any `IIntegrator` and reframes it as a
   deviation propagator.
+
+## Phase 1 Implementation Note (2026-05-05)
+
+Phase 1 lands the IIntegrator seam, the Φ augmentation, the Encke
+wrapper, and the conformance tests as committed above, but ships a
+narrower adapter set than the steady-state vision:
+
+- The adaptive RK adapter that ships in Phase 1 is **`Dp54`** —
+  Dormand-Prince 5(4), Hairer Vol I Table 5.1. The full DOP853
+  (Hairer Vol I Table 5.2) is deferred to Phase 7. The seam, the
+  PI step controller, the Φ augmentation, and the conformance gate
+  are unchanged at the upgrade; only the coefficient table and the
+  per-step error weights move. The Phase 1 conformance tolerances
+  are widened accordingly (Kepler closure < 1 m / 1 period at rtol
+  1e-12 instead of the < 1e-7 m the plan originally targeted; the
+  upgrade rebuilds those by ~7 orders of magnitude).
+  Naming the class `Dp54` (rather than re-using `Dop853`) is
+  intentional: the previous `Dop853` alias over a DP5(4) coefficient
+  table was a load-bearing lie — a future maintainer would have read
+  "Dop853" and assumed Hairer Table 5.2 fidelity.
+
+- The Berry-Healy 2004 ordinate-form Gauss-Jackson 8 implementation
+  is **deferred to Phase 7**. The `GaussJackson8` adapter and its
+  conformance test were removed in Phase 1 because the seam-only
+  stand-in (a single Dp54 step under the GJ8 name) carried zero
+  distinct behaviour and the conformance test under both names was
+  the same integrator twice. Phase 7 reintroduces the type behind
+  `IIntegrator` with the second-sum starter and the ordinate-form
+  predictor-corrector, at which point GJ8 rejoins the parameterised
+  conformance gate.
+
+- Analytical partials for `SphericalHarmonic` (the Pines gradient)
+  are deferred to Phase 7. The Phase 1 SH adapter ships with a
+  central-difference `partials()` and is **excluded** from the VE-
+  contract conformance test parameterisation (the test runs on
+  `{PointMass, ThirdBody}` only). `PointMass` and `ThirdBody`
+  partials are analytical in Phase 1 as ADR-009 requires. Each
+  adapter carries a `static constexpr bool kAnalyticalPartials`;
+  the conformance test loops only over those that claim `true`,
+  and a `static_assert` on `SphericalHarmonic::kAnalyticalPartials
+  == false` in the conformance source guards the disclosure.
+
+- The Phase 1 `ThirdBody` adapter's `acceleration()` was changed in
+  service of fix-set landing this note: it now returns the
+  conventional Vallado §8.7.2 / Montenbruck-Gill §3.3.2 form
+  `mu_3 * ((r_3 - r) / |r_3 - r|^3 - r_3 / |r_3|^3)` rather than the
+  Battin / f(q) stable substitution that was previously wired. The
+  switch was made for clarity and to keep the analytical Jacobian
+  directly verifiable against the literature derivation; an earlier
+  draft of this note characterised the prior Battin form as having a
+  numerical sign discrepancy in the LEO-vs-Sun regime, but that claim
+  was not substantiated against an independent oracle and has been
+  withdrawn — both expressions describe the same vector field
+  algebraically, and absent a smoking-gun unit test the substitution
+  is best framed as a clarity/maintainability change rather than a
+  bug fix. REQ-PHY-005's "must be numerically stable at small
+  spacecraft-central-body distances" is unaffected at LEO (the
+  conventional-form cancellation costs ~5 of ~16 sig figs, well above
+  the 1e-6 conformance tolerance); the Battin substitution returns as
+  a Phase 7 hardening item (tracked separately) if conjunction-
+  screening close approaches require it.
+
+The IIntegrator and IForceModel seams as documented above are
+unchanged at the Phase 7 upgrades; these notes describe the fidelity
+of what is wired behind the seams, not changes to the seams
+themselves.

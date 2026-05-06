@@ -23,6 +23,10 @@ external/cspice/_extracted_marker
 # Fetched large reference data (Tier 2 — see ADR 011)
 data/_fetched/
 
+# Large SPK kernels — fetched via cmake/fetch_large_data.cmake when
+# APSIS_FETCH_LARGE_DATA=ON. The Phase 1 regression tests skip when missing.
+data/*.bsp
+
 # IDE noise
 .vscode/
 .idea/

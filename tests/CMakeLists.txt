@@ -40,3 +40,6 @@ function(apsis_add_test name)
 endfunction()
 
 add_subdirectory(smoke)
+add_subdirectory(unit)
+add_subdirectory(conformance)
+add_subdirectory(regression)

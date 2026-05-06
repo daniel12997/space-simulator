@@ -91,6 +91,49 @@ jobs:
       - name: CSPICE seam lint
         run: python3 tools/lint/cspice_seam.py --root .
 
+      # Phase 1 §11: gcov coverage gate. Runs only on the gcc-13 Linux
+      # job per ADR-013 / Phase 1 plan §11. The threshold is 80% statement
+      # coverage on first-party files; vendored upstreams excluded.
+      - name: Install lcov (for coverage)
+        if: matrix.toolchain == 'gcc-13'
+        run: sudo apt-get install -y lcov
+
+      - name: Configure (coverage)
+        if: matrix.toolchain == 'gcc-13'
+        env:
+          CC:  ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+          CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
+        run: |
+          cmake -S . -B build-cov -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DAPSIS_ENABLE_COVERAGE=ON
+
+      - name: Build (coverage)
+        if: matrix.toolchain == 'gcc-13'
+        run: cmake --build build-cov --parallel
+
+      - name: Test (coverage)
+        if: matrix.toolchain == 'gcc-13'
+        run: ctest --test-dir build-cov --output-on-failure
+
+      - name: Coverage gate
+        if: matrix.toolchain == 'gcc-13'
+        run: cmake --build build-cov --target coverage
+
+      - name: Upload coverage artefact
+        if: matrix.toolchain == 'gcc-13'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lcov-info
+          path: build-cov/coverage/lcov.info
+
+      # Phase 1 §12: REQ-* traceability lint (soft mode default; the CI
+      # gate WARNS but does not fail until STRICT_REQ_TRACEABILITY=1 is set).
+      - name: REQ traceability lint (soft)
+        if: matrix.toolchain == 'gcc-13'
+        run: python3 tools/lint/req_traceability.py --root .
+
   sanitizers:
     name: ubuntu-24.04 / clang-17 / ASan+UBSan
     runs-on: ubuntu-24.04

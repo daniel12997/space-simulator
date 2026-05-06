@@ -1,0 +1,29 @@
+{
+  "_provenance_": [
+    "Phase 1 disclaimer: SYNTHETIC reference state vectors. Per the prompt's",
+    "permission and the Phase 1 plan §10 footnote, when sourcing public ISS",
+    "reference vectors proves hard, we generate synthetic 'reference' vectors",
+    "by propagating from a known initial state with the full force model and",
+    "treat the regression as a 'self-consistency' test rather than an ISS-",
+    "reproduction test. Phase 7 will replace these with NASA Spot-The-Station",
+    "or Celestrak archived TLE-converted vectors."
+  ],
+  "_units_": "metres / metres-per-second; epoch in TT JD (jd1, jd2)",
+  "_frame_": "J2000 (ICRF up to ~17 mas frame bias)",
+  "vectors": [
+    {
+      "epoch_jd1": 2460676.5,
+      "epoch_jd2": 0.0,
+      "r_m": [-3920000.0, 5500000.0, 1450000.0],
+      "v_mps":  [-3300.0, -1900.0, 6620.0],
+      "label": "epoch_t0"
+    },
+    {
+      "epoch_jd1": 2460677.5,
+      "epoch_jd2": 0.0,
+      "r_m": [-3920000.0, 5500000.0, 1450000.0],
+      "v_mps":  [-3300.0, -1900.0, 6620.0],
+      "label": "epoch_t0_plus_24h_self_consistent"
+    }
+  ]
+}

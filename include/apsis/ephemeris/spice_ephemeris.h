@@ -31,8 +31,7 @@ class SpiceEphemeris final : public IEphemeris {
   ~SpiceEphemeris() override;
 
   apsis::frames::State<apsis::frames::tags::ICRF>
-  state(int body_naif_id,
-        apsis::time::Time<apsis::time::tags::TDB> t) const override;
+  state(int body_naif_id, apsis::time::Time<apsis::time::tags::TDB> t) const override;
 };
 
 }  // namespace apsis::ephemeris

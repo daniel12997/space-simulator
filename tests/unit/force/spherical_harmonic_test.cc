@@ -22,15 +22,15 @@ namespace afr = apsis::frames;
 namespace {
 
 constexpr double kMuEarth = 3.986004418e14;
-constexpr double kReEarth = 6378136.3;        // m
-constexpr double kJ2      = 1.0826266835531513e-3;  // EGM2008 zonal J2
+constexpr double kReEarth = 6378136.3;         // m
+constexpr double kJ2 = 1.0826266835531513e-3;  // EGM2008 zonal J2
 
 af::SphericalHarmonic::Coefficients make_point_mass() {
   af::SphericalHarmonic::Coefficients c;
   c.degree = 0;
-  c.order  = 0;
-  c.mu     = kMuEarth;
-  c.R      = kReEarth;
+  c.order = 0;
+  c.mu = kMuEarth;
+  c.R = kReEarth;
   // (degree+1)(degree+2)/2 = 1 entry
   c.C_norm = {1.0};
   c.S_norm = {0.0};
@@ -40,9 +40,9 @@ af::SphericalHarmonic::Coefficients make_point_mass() {
 af::SphericalHarmonic::Coefficients make_j2_only() {
   af::SphericalHarmonic::Coefficients c;
   c.degree = 2;
-  c.order  = 0;
-  c.mu     = kMuEarth;
-  c.R      = kReEarth;
+  c.order = 0;
+  c.mu = kMuEarth;
+  c.R = kReEarth;
   // Triangular size = 6 entries: (0,0), (1,0), (1,1), (2,0), (2,1), (2,2)
   c.C_norm.assign(6, 0.0);
   c.S_norm.assign(6, 0.0);
@@ -82,8 +82,7 @@ TEST(SphericalHarmonic, J2OnlySignAndMagnitude) {
   // pole (away from the equatorial bulge).
   const double r = x.r.norm();
   const double mag_ref = 3.0 * kJ2 * (kMuEarth / (r * r)) * std::pow(kReEarth / r, 2);
-  EXPECT_NEAR(a_j2.norm(), mag_ref, mag_ref * 5e-2)
-      << "actual=" << a_j2.transpose();
+  EXPECT_NEAR(a_j2.norm(), mag_ref, mag_ref * 5e-2) << "actual=" << a_j2.transpose();
   // Direction: +z (outward at north pole).
   EXPECT_GT(a_j2.z(), 0.0);
 }
@@ -104,8 +103,7 @@ TEST(SphericalHarmonic, PartialsSelfConsistent) {
     const auto am = sh.acceleration(at::Time<at::tags::TT>{}, xm);
     const auto col = (ap - am) / (2.0 * h);
     for (int row = 0; row < 3; ++row) {
-      EXPECT_NEAR(J(row, i), col[row], 1e-7)
-          << "row=" << row << " col=" << i;
+      EXPECT_NEAR(J(row, i), col[row], 1e-7) << "row=" << row << " col=" << i;
     }
   }
 }

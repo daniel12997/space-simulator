@@ -29,10 +29,8 @@ const std::array<double, 3> kSubsteps = {kW1, kW0, kW1};
 
 // One Verlet (DKD) sub-step of size h, advancing both state and Phi.
 void verlet_step(apsis::time::Time<apsis::time::tags::TT>& t,
-                 apsis::frames::State<apsis::frames::tags::ICRF>& x,
-                 apsis::math::Mat6& phi,
-                 double h,
-                 const apsis::force::IForceModel& force) {
+                 apsis::frames::State<apsis::frames::tags::ICRF>& x, apsis::math::Mat6& phi,
+                 double h, const apsis::force::IForceModel& force) {
   // Drift dt/2.
   x.r += 0.5 * h * x.v;
   // Phi drift: top half advances by velocity-block of A. For the linear
@@ -67,8 +65,7 @@ void verlet_step(apsis::time::Time<apsis::time::tags::TT>& t,
 
 StepResult Yoshida4::step(apsis::time::Time<apsis::time::tags::TT> t,
                           const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-                          const apsis::math::Mat6& phi,
-                          double dt,
+                          const apsis::math::Mat6& phi, double dt,
                           const apsis::force::IForceModel& force) {
   apsis::frames::State<apsis::frames::tags::ICRF> x_cur = x;
   apsis::math::Mat6 phi_cur = phi;

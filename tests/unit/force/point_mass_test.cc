@@ -53,8 +53,7 @@ TEST(PointMass, PartialsSelfConsistent) {
     const auto am = pm.acceleration(at::Time<at::tags::TT>{}, xm);
     const auto col = (ap - am) / (2.0 * h);
     for (int row = 0; row < 3; ++row) {
-      EXPECT_NEAR(J(row, i), col[row], 1e-9)
-          << "row=" << row << " col=" << i;
+      EXPECT_NEAR(J(row, i), col[row], 1e-9) << "row=" << row << " col=" << i;
     }
   }
   // Velocity columns are zero.

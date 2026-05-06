@@ -29,9 +29,8 @@ TEST(SpiceEphemeris, EmptyKernelListConstructs) {
 }
 
 TEST(SpiceEphemeris, BadKernelPathThrows) {
-  EXPECT_THROW(
-      apsis::ephemeris::SpiceEphemeris ephem({"/nonexistent/no/such/kernel.bsp"}),
-      std::runtime_error);
+  EXPECT_THROW(apsis::ephemeris::SpiceEphemeris ephem({"/nonexistent/no/such/kernel.bsp"}),
+               std::runtime_error);
 }
 
 TEST(SpiceEphemeris, QueryWithoutKernelThrows) {

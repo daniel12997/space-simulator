@@ -41,9 +41,7 @@ double stumpff_S(double z) {
 }  // namespace
 
 apsis::frames::State<apsis::frames::tags::ICRF>
-propagate(const apsis::frames::State<apsis::frames::tags::ICRF>& state0,
-          double dt,
-          double mu) {
+propagate(const apsis::frames::State<apsis::frames::tags::ICRF>& state0, double dt, double mu) {
   const auto& r0 = state0.r;
   const auto& v0 = state0.v;
   const double r0_norm = r0.norm();
@@ -66,18 +64,17 @@ propagate(const apsis::frames::State<apsis::frames::tags::ICRF>& state0,
     const double psi = chi * chi * alpha;
     const double C = stumpff_C(psi);
     const double S = stumpff_S(psi);
-    const double r = chi * chi * C
-                     + (r0_dot_v0 / sqrt_mu) * chi * (1.0 - psi * S)
-                     + r0_norm * (1.0 - psi * C);
-    const double f_chi = (r0_dot_v0 / sqrt_mu) * chi * chi * C
-                         + (1.0 - r0_norm * alpha) * chi * chi * chi * S
-                         + r0_norm * chi
-                         - sqrt_mu * dt;
+    const double r =
+        chi * chi * C + (r0_dot_v0 / sqrt_mu) * chi * (1.0 - psi * S) + r0_norm * (1.0 - psi * C);
+    const double f_chi = (r0_dot_v0 / sqrt_mu) * chi * chi * C +
+                         (1.0 - r0_norm * alpha) * chi * chi * chi * S + r0_norm * chi -
+                         sqrt_mu * dt;
     // Newton step: g(chi) = f_chi (already includes the -sqrt_mu*dt term);
     // g'(chi) = r. So dchi = -g(chi)/g'(chi).
     const double dchi = -f_chi / r;
     chi += dchi;
-    if (std::abs(dchi) < 1e-12 * std::max(std::abs(chi), 1.0)) break;
+    if (std::abs(dchi) < 1e-12 * std::max(std::abs(chi), 1.0))
+      break;
   }
 
   const double psi = chi * chi * alpha;
@@ -85,8 +82,8 @@ propagate(const apsis::frames::State<apsis::frames::tags::ICRF>& state0,
   const double S = stumpff_S(psi);
 
   // Lagrange f, g, fdot, gdot (Vallado eqs 2-67, 2-68).
-  const double f    = 1.0 - (chi * chi / r0_norm) * C;
-  const double g    = dt - (1.0 / sqrt_mu) * chi * chi * chi * S;
+  const double f = 1.0 - (chi * chi / r0_norm) * C;
+  const double g = dt - (1.0 / sqrt_mu) * chi * chi * chi * S;
 
   apsis::frames::State<apsis::frames::tags::ICRF> result;
   result.r = f * r0 + g * v0;

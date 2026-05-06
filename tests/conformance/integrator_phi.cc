@@ -55,7 +55,8 @@ Trajectory propagate(ai::IIntegrator& integ, const af::IForceModel& force,
     const double step_dt = std::min(kInternalDt, kHorizonSec - t_acc);
     auto res = integ.step(t, x0, phi, step_dt, force);
     x0 = res.x;
-    if (track_phi) phi = res.phi;
+    if (track_phi)
+      phi = res.phi;
     t = t + at::Duration{res.dt_actually_taken};
     t_acc += res.dt_actually_taken;
   }
@@ -66,8 +67,8 @@ Trajectory propagate(ai::IIntegrator& integ, const af::IForceModel& force,
 }
 
 // Verify Phi matches finite-difference map for one integrator.
-void check_phi(ai::IIntegrator& integ, const af::IForceModel& force,
-               double pos_tol_m, double vel_tol_mps) {
+void check_phi(ai::IIntegrator& integ, const af::IForceModel& force, double pos_tol_m,
+               double vel_tol_mps) {
   auto x0 = initial_state();
   auto base = propagate(integ, force, x0, /*track_phi=*/true);
 
@@ -75,8 +76,10 @@ void check_phi(ai::IIntegrator& integ, const af::IForceModel& force,
   const std::array<double, 6> h = {1.0, 1.0, 1.0, 1e-3, 1e-3, 1e-3};
   for (int i = 0; i < 6; ++i) {
     auto x_pert = x0;
-    if (i < 3) x_pert.r[i] += h[static_cast<std::size_t>(i)];
-    else        x_pert.v[i - 3] += h[static_cast<std::size_t>(i)];
+    if (i < 3)
+      x_pert.r[i] += h[static_cast<std::size_t>(i)];
+    else
+      x_pert.v[i - 3] += h[static_cast<std::size_t>(i)];
     auto pert = propagate(integ, force, x_pert, /*track_phi=*/false);
 
     apsis::math::Vec6 dx;

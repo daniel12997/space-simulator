@@ -69,7 +69,7 @@ TEST(Convert, TaiUtcRoundTrip) {
   // 2025-01-01 00:00:00 TAI is well clear of any leap second. iauTaiutc /
   // iauUtctai will round-trip exactly modulo internal SOFA precision.
   at::Time<at::tags::TAI> tai0{2460676.5, 0.0};
-  auto utc  = at::convert<at::tags::UTC>(tai0);
+  auto utc = at::convert<at::tags::UTC>(tai0);
   auto tai1 = at::convert<at::tags::TAI>(utc);
   EXPECT_LT(std::abs(diff_seconds(tai0.jd1(), tai0.jd2(), tai1.jd1(), tai1.jd2())),
             kRoundTripTolSec);
@@ -78,7 +78,7 @@ TEST(Convert, TaiUtcRoundTrip) {
 TEST(Convert, UtcUt1RoundTrip) {
   at::set_default_dut1(0.04);  // arbitrary representative DUT1, ~40 ms
   at::Time<at::tags::UTC> utc0{2460676.5, 0.0};
-  auto ut1  = at::convert<at::tags::UT1>(utc0);
+  auto ut1 = at::convert<at::tags::UT1>(utc0);
   auto utc1 = at::convert<at::tags::UTC>(ut1);
   EXPECT_LT(std::abs(diff_seconds(utc0.jd1(), utc0.jd2(), utc1.jd1(), utc1.jd2())),
             kRoundTripTolSec);
@@ -93,14 +93,13 @@ TEST(Convert, TtTdbRoundTrip) {
   auto tdb = at::convert<at::tags::TDB>(tt0);
   auto tt1 = at::convert<at::tags::TT>(tdb);
   // TT/TDB difference is ≤ ~1.6 ms periodic; round-trip must be MUCH tighter.
-  EXPECT_LT(std::abs(diff_seconds(tt0.jd1(), tt0.jd2(), tt1.jd1(), tt1.jd2())),
-            kRoundTripTolSec);
+  EXPECT_LT(std::abs(diff_seconds(tt0.jd1(), tt0.jd2(), tt1.jd1(), tt1.jd2())), kRoundTripTolSec);
 }
 
 TEST(Convert, ComposedUtcToTtMatchesViaTai) {
   at::Time<at::tags::UTC> utc0{2460676.5, 0.0};
-  auto tt_direct   = at::convert<at::tags::TT>(utc0);
-  auto tt_via_tai  = at::convert<at::tags::TT>(at::convert<at::tags::TAI>(utc0));
+  auto tt_direct = at::convert<at::tags::TT>(utc0);
+  auto tt_via_tai = at::convert<at::tags::TT>(at::convert<at::tags::TAI>(utc0));
   EXPECT_DOUBLE_EQ(tt_direct.jd1(), tt_via_tai.jd1());
   EXPECT_DOUBLE_EQ(tt_direct.jd2(), tt_via_tai.jd2());
 }

@@ -32,8 +32,9 @@
 
 #include "apsis/integrate/encke_wrapper.h"
 
-#include "../math/f_and_g_series.h"
 #include "apsis/force/iforce_model.h"
+
+#include "../math/f_and_g_series.h"
 
 namespace apsis::integrate {
 namespace {
@@ -44,13 +45,12 @@ class DeviationForce final : public apsis::force::IForceModel {
  public:
   DeviationForce(const apsis::force::IForceModel& full,
                  const apsis::frames::State<apsis::frames::tags::ICRF>& x_ref0,
-                 apsis::time::Time<apsis::time::tags::TT> t_ref0,
-                 double mu)
+                 apsis::time::Time<apsis::time::tags::TT> t_ref0, double mu)
       : full_(full), x_ref0_(x_ref0), t_ref0_(t_ref0), mu_(mu) {}
 
-  apsis::math::Vec3 acceleration(
-      apsis::time::Time<apsis::time::tags::TT> t,
-      const apsis::frames::State<apsis::frames::tags::ICRF>& x_dev) const override {
+  apsis::math::Vec3
+  acceleration(apsis::time::Time<apsis::time::tags::TT> t,
+               const apsis::frames::State<apsis::frames::tags::ICRF>& x_dev) const override {
     // Reference position at this time, via f-and-g.
     const double dt_from_ref = (t - t_ref0_).seconds();
     auto x_kep = apsis::math::fandg::propagate(x_ref0_, dt_from_ref, mu_);
@@ -64,9 +64,9 @@ class DeviationForce final : public apsis::force::IForceModel {
     return a_full - a_kep;
   }
 
-  apsis::math::Mat36 partials(
-      apsis::time::Time<apsis::time::tags::TT> t,
-      const apsis::frames::State<apsis::frames::tags::ICRF>& x_dev) const override {
+  apsis::math::Mat36
+  partials(apsis::time::Time<apsis::time::tags::TT> t,
+           const apsis::frames::State<apsis::frames::tags::ICRF>& x_dev) const override {
     // Partial wrt x_dev. The Kepler subtraction is a constant in x_dev,
     // so its partial vanishes; we just return the full-force partials at
     // x_full = x_kep + x_dev.
@@ -87,12 +87,10 @@ class DeviationForce final : public apsis::force::IForceModel {
 
 }  // namespace
 
-StepResult EnckeWrapper::step(
-    apsis::time::Time<apsis::time::tags::TT> t,
-    const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-    const apsis::math::Mat6& phi,
-    double dt,
-    const apsis::force::IForceModel& force) {
+StepResult EnckeWrapper::step(apsis::time::Time<apsis::time::tags::TT> t,
+                              const apsis::frames::State<apsis::frames::tags::ICRF>& x,
+                              const apsis::math::Mat6& phi, double dt,
+                              const apsis::force::IForceModel& force) {
   // Per-step rebase: the reference is `x` at `t`. Deviation starts at zero.
   apsis::frames::State<apsis::frames::tags::ICRF> dev0;  // r = v = 0
   DeviationForce dev_force(force, x, t, opts_.mu);

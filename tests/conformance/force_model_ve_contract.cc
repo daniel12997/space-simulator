@@ -48,15 +48,16 @@ namespace ae = apsis::ephemeris;
 namespace {
 
 constexpr double kMuEarth = 3.986004418e14;
-constexpr double kMuSun   = 1.32712440018e20;
-constexpr double kAU      = 1.495978707e11;
+constexpr double kMuSun = 1.32712440018e20;
+constexpr double kAU = 1.495978707e11;
 
 class StubEphem : public ae::IEphemeris {
  public:
   afr::State<afr::tags::ICRF> state(int body, at::Time<at::tags::TDB>) const override {
     afr::State<afr::tags::ICRF> s;
-    if (body == 10) s.r = apsis::math::Vec3(kAU, 0.0, 0.0);  // Sun
-    return s;  // others (central-body 399) at origin
+    if (body == 10)
+      s.r = apsis::math::Vec3(kAU, 0.0, 0.0);  // Sun
+    return s;                                  // others (central-body 399) at origin
   }
 };
 
@@ -79,18 +80,15 @@ std::vector<Sample> make_samples() {
     const double r = mag(rng);
     const double theta = angle(rng);
     const double phi = std::acos(2.0 * std::uniform_real_distribution<double>(0.0, 1.0)(rng) - 1.0);
-    s.x.r << r * std::sin(phi) * std::cos(theta),
-             r * std::sin(phi) * std::sin(theta),
-             r * std::cos(phi);
+    s.x.r << r * std::sin(phi) * std::cos(theta), r * std::sin(phi) * std::sin(theta),
+        r * std::cos(phi);
     s.x.v << 0.0, 7.5e3, 0.0;  // velocity unused in Phase 1 (no drag)
     samples.push_back(s);
   }
   return samples;
 }
 
-apsis::math::Mat36 oracle_partials(const af::IForceModel& model,
-                                    const Sample& s,
-                                    double h_pos) {
+apsis::math::Mat36 oracle_partials(const af::IForceModel& model, const Sample& s, double h_pos) {
   apsis::math::Mat36 J = apsis::math::Mat36::Zero();
   for (int i = 0; i < 3; ++i) {
     auto xp = s.x;
@@ -109,15 +107,13 @@ apsis::math::Mat36 oracle_partials(const af::IForceModel& model,
 // Adapter-agnostic conformance check: max relative error in the position-
 // partials block (cols 0..2) must be below `rel_tol`. Velocity columns
 // must be exactly zero (Phase 1).
-void check_adapter(const char* name,
-                   const af::IForceModel& model,
-                   double rel_tol_pos,
+void check_adapter(const char* name, const af::IForceModel& model, double rel_tol_pos,
                    double abs_tol_vel) {
   const auto samples = make_samples();
   for (size_t i = 0; i < samples.size(); ++i) {
     const auto& s = samples[i];
     const auto J_analytic = model.partials(s.t, s.x);
-    const auto J_oracle   = oracle_partials(model, s, /*h=*/10.0);
+    const auto J_oracle = oracle_partials(model, s, /*h=*/10.0);
 
     // Position block. Parenthesise block<3,3>(...) so the macro doesn't
     // see the template comma as a macro argument separator.
@@ -125,10 +121,9 @@ void check_adapter(const char* name,
     const apsis::math::Mat3 J_or_pos = J_oracle.block<3, 3>(0, 0);
     const double scale = std::max(J_or_pos.norm(), 1e-12);
     const double err = (J_an_pos - J_or_pos).norm();
-    EXPECT_LT(err / scale, rel_tol_pos)
-        << name << " sample " << i
-        << " analytic=\n" << J_an_pos
-        << "\noracle=\n" << J_or_pos;
+    EXPECT_LT(err / scale, rel_tol_pos) << name << " sample " << i << " analytic=\n"
+                                        << J_an_pos << "\noracle=\n"
+                                        << J_or_pos;
 
     // Velocity block (Phase 1 = zero).
     const apsis::math::Mat3 J_an_vel = J_analytic.block<3, 3>(0, 3);
@@ -143,7 +138,6 @@ TEST(ForceModelVE, PointMass) {
   af::PointMass pm(kMuEarth);
   check_adapter("PointMass", pm, /*rel_tol=*/1e-6, /*abs_tol_vel=*/1e-15);
 }
-
 
 TEST(ForceModelVE, ThirdBodySun) {
   static_assert(af::ThirdBody::kAnalyticalPartials,

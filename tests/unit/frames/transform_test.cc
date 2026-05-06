@@ -45,8 +45,8 @@ TEST(Transform, IcrfJ2000Bias) {
   // Bias is ~17 mas = ~ 8e-8 rad. At |r| = 7e6 m the displacement is
   // ~0.6 m. We assert the magnitude is well-bounded.
   const double dr = (j.r - x.r).norm();
-  EXPECT_LT(dr, 1.0);          // < 1 m
-  EXPECT_GT(dr, 1e-3);         // > 1 mm (it is ~0.6 m, must be nonzero)
+  EXPECT_LT(dr, 1.0);   // < 1 m
+  EXPECT_GT(dr, 1e-3);  // > 1 mm (it is ~0.6 m, must be nonzero)
 }
 
 TEST(Transform, IcrfItrsAtJ2000RotatesVector) {
@@ -66,9 +66,7 @@ TEST(Transform, IcrfItrsAtJ2000RotatesVector) {
 
 TEST(Transform, TemeStubThrows) {
   af::State<af::tags::TEME> x;
-  EXPECT_THROW(
-      (void)af::transform<af::tags::ITRS>(x, j2000_epoch()),
-      std::logic_error);
+  EXPECT_THROW((void)af::transform<af::tags::ITRS>(x, j2000_epoch()), std::logic_error);
 }
 
 TEST(Transform, IdentitySameFrame) {

@@ -38,8 +38,7 @@ TEST(SpiceEphemerisConcurrency, TwoInstancesShareGlobalLock) {
   std::atomic<int> a_throws{0};
   std::atomic<int> b_throws{0};
 
-  auto hammer = [](apsis::ephemeris::SpiceEphemeris& e,
-                   std::atomic<int>& throws) {
+  auto hammer = [](apsis::ephemeris::SpiceEphemeris& e, std::atomic<int>& throws) {
     for (int i = 0; i < kIters; ++i) {
       apsis::time::Time<apsis::time::tags::TDB> t{2451545.0, 0.0};
       try {

@@ -32,7 +32,6 @@ struct TEME {};
 // is itself a tag (e.g. `bodies::Earth`); Phase 1 only uses Earth's body-fixed
 // frame indirectly via `ITRS`. The `BodyFixed` template is reserved for the
 // generalisation and not used by Phase 1 transforms.
-template <class Body>
-struct BodyFixed {};
+template <class Body> struct BodyFixed {};
 
 }  // namespace apsis::frames::tags

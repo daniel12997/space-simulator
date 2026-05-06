@@ -20,8 +20,7 @@ namespace apsis::time {
 // `Duration` (seconds) and `jd2` (days) inspectable in one place.
 inline constexpr double kSecondsPerDay = 86400.0;
 
-template <class Scale>
-class Time {
+template <class Scale> class Time {
  public:
   using scale_type = Scale;
 
@@ -57,9 +56,7 @@ class Time {
     t += d;
     return t;
   }
-  friend constexpr Time operator+(Duration d, Time t) noexcept {
-    return t + d;
-  }
+  friend constexpr Time operator+(Duration d, Time t) noexcept { return t + d; }
   friend constexpr Time operator-(Time t, Duration d) noexcept {
     t -= d;
     return t;

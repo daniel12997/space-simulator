@@ -55,8 +55,8 @@ class CspiceLock {
 // SPICE "J2000" output as ICRF is exact at the documented kernel quality.
 // A separate adapter could compose the J2000->ICRF bias for stricter use).
 constexpr const char* kSpiceFrame = "J2000";
-constexpr const char* kAbcorr     = "NONE";
-constexpr int         kObserverSSB = 0;  // NAIF: 0 = Solar-System Barycentre
+constexpr const char* kAbcorr = "NONE";
+constexpr int kObserverSSB = 0;  // NAIF: 0 = Solar-System Barycentre
 
 // Read CSPICE's pending error message, reset the error stack, and throw.
 // Caller must hold the global CSPICE lock.
@@ -120,8 +120,7 @@ SpiceEphemeris::~SpiceEphemeris() {
 }
 
 apsis::frames::State<apsis::frames::tags::ICRF>
-SpiceEphemeris::state(int body_naif_id,
-                      apsis::time::Time<apsis::time::tags::TDB> t) const {
+SpiceEphemeris::state(int body_naif_id, apsis::time::Time<apsis::time::tags::TDB> t) const {
   CspiceLock lock;
 
   const double et = tdb_to_et_seconds(t);
@@ -134,8 +133,7 @@ SpiceEphemeris::state(int body_naif_id,
 
   SpiceDouble state6[6] = {0.0};
   SpiceDouble lt = 0.0;
-  spkezr_c(target.c_str(), et, kSpiceFrame, kAbcorr, observer.c_str(),
-           state6, &lt);
+  spkezr_c(target.c_str(), et, kSpiceFrame, kAbcorr, observer.c_str(), state6, &lt);
   if (failed_c()) {
     throw_spice_error("SpiceEphemeris::state(body=" + target + ")");
   }

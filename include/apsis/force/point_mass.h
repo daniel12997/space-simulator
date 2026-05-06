@@ -20,13 +20,13 @@ class PointMass final : public IForceModel {
   // mu in SI: m^3 / s^2.
   explicit PointMass(double mu) noexcept : mu_(mu) {}
 
-  apsis::math::Vec3 acceleration(
-      apsis::time::Time<apsis::time::tags::TT> t,
-      const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
+  apsis::math::Vec3
+  acceleration(apsis::time::Time<apsis::time::tags::TT> t,
+               const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
-  apsis::math::Mat36 partials(
-      apsis::time::Time<apsis::time::tags::TT> t,
-      const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
+  apsis::math::Mat36
+  partials(apsis::time::Time<apsis::time::tags::TT> t,
+           const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
   [[nodiscard]] double mu() const noexcept { return mu_; }
 

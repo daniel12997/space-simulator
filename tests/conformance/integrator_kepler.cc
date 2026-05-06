@@ -32,7 +32,7 @@ namespace afr = apsis::frames;
 namespace {
 
 constexpr double kMu = 3.986004418e14;
-constexpr double kRadius = 7.0e6;        // circular radius in m
+constexpr double kRadius = 7.0e6;  // circular radius in m
 constexpr double kPi = 3.141592653589793;
 
 afr::State<afr::tags::ICRF> initial_state() {
@@ -54,10 +54,8 @@ afr::State<afr::tags::ICRF> kepler_circular_at(double t_seconds) {
   return s;
 }
 
-void propagate_one_period(ai::IIntegrator& integ,
-                           const af::IForceModel& force,
-                           double dt,
-                           double tolerance_m) {
+void propagate_one_period(ai::IIntegrator& integ, const af::IForceModel& force, double dt,
+                          double tolerance_m) {
   auto x = initial_state();
   apsis::math::Mat6 phi = apsis::math::Mat6::Identity();
   at::Time<at::tags::TT> t{2460676.5, 0.0};

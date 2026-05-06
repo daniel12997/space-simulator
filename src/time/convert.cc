@@ -60,8 +60,7 @@ double default_dut1() noexcept {
 // TAI <-> TT (fixed offset)
 // ---------------------------------------------------------------------------
 
-template <>
-Time<tags::TT> convert<tags::TT, tags::TAI>(Time<tags::TAI> t) {
+template <> Time<tags::TT> convert<tags::TT, tags::TAI>(Time<tags::TAI> t) {
   double tt1, tt2;
   const int rc = iauTaitt(t.jd1(), t.jd2(), &tt1, &tt2);
   assert(rc == 0 && "iauTaitt: non-zero status");
@@ -69,8 +68,7 @@ Time<tags::TT> convert<tags::TT, tags::TAI>(Time<tags::TAI> t) {
   return Time<tags::TT>{tt1, tt2};
 }
 
-template <>
-Time<tags::TAI> convert<tags::TAI, tags::TT>(Time<tags::TT> t) {
+template <> Time<tags::TAI> convert<tags::TAI, tags::TT>(Time<tags::TT> t) {
   double tai1, tai2;
   const int rc = iauTttai(t.jd1(), t.jd2(), &tai1, &tai2);
   assert(rc == 0 && "iauTttai: non-zero status");
@@ -82,8 +80,7 @@ Time<tags::TAI> convert<tags::TAI, tags::TT>(Time<tags::TT> t) {
 // TAI <-> UTC (leap-second aware)
 // ---------------------------------------------------------------------------
 
-template <>
-Time<tags::UTC> convert<tags::UTC, tags::TAI>(Time<tags::TAI> t) {
+template <> Time<tags::UTC> convert<tags::UTC, tags::TAI>(Time<tags::TAI> t) {
   double utc1, utc2;
   const int rc = iauTaiutc(t.jd1(), t.jd2(), &utc1, &utc2);
   // rc == 1 is "dubious year"; rc < 0 is an actual error.
@@ -92,8 +89,7 @@ Time<tags::UTC> convert<tags::UTC, tags::TAI>(Time<tags::TAI> t) {
   return Time<tags::UTC>{utc1, utc2};
 }
 
-template <>
-Time<tags::TAI> convert<tags::TAI, tags::UTC>(Time<tags::UTC> t) {
+template <> Time<tags::TAI> convert<tags::TAI, tags::UTC>(Time<tags::UTC> t) {
   double tai1, tai2;
   const int rc = iauUtctai(t.jd1(), t.jd2(), &tai1, &tai2);
   assert(rc >= 0 && "iauUtctai: error status");
@@ -105,8 +101,7 @@ Time<tags::TAI> convert<tags::TAI, tags::UTC>(Time<tags::UTC> t) {
 // UTC <-> UT1 (uses default_dut1)
 // ---------------------------------------------------------------------------
 
-template <>
-Time<tags::UT1> convert<tags::UT1, tags::UTC>(Time<tags::UTC> t) {
+template <> Time<tags::UT1> convert<tags::UT1, tags::UTC>(Time<tags::UTC> t) {
   double ut11, ut12;
   const int rc = iauUtcut1(t.jd1(), t.jd2(), default_dut1(), &ut11, &ut12);
   assert(rc >= 0 && "iauUtcut1: error status");
@@ -114,8 +109,7 @@ Time<tags::UT1> convert<tags::UT1, tags::UTC>(Time<tags::UTC> t) {
   return Time<tags::UT1>{ut11, ut12};
 }
 
-template <>
-Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1> t) {
+template <> Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1> t) {
   double utc1, utc2;
   const int rc = iauUt1utc(t.jd1(), t.jd2(), default_dut1(), &utc1, &utc2);
   assert(rc >= 0 && "iauUt1utc: error status");
@@ -127,13 +121,11 @@ Time<tags::UTC> convert<tags::UTC, tags::UT1>(Time<tags::UT1> t) {
 // TAI <-> UT1 (composed via UTC for ΔAT bookkeeping)
 // ---------------------------------------------------------------------------
 
-template <>
-Time<tags::UT1> convert<tags::UT1, tags::TAI>(Time<tags::TAI> t) {
+template <> Time<tags::UT1> convert<tags::UT1, tags::TAI>(Time<tags::TAI> t) {
   return convert<tags::UT1>(convert<tags::UTC>(t));
 }
 
-template <>
-Time<tags::TAI> convert<tags::TAI, tags::UT1>(Time<tags::UT1> t) {
+template <> Time<tags::TAI> convert<tags::TAI, tags::UT1>(Time<tags::UT1> t) {
   return convert<tags::TAI>(convert<tags::UTC>(t));
 }
 
@@ -141,8 +133,7 @@ Time<tags::TAI> convert<tags::TAI, tags::UT1>(Time<tags::UT1> t) {
 // TT <-> TDB (geocentric approximation; observer position not carried)
 // ---------------------------------------------------------------------------
 
-template <>
-Time<tags::TDB> convert<tags::TDB, tags::TT>(Time<tags::TT> t) {
+template <> Time<tags::TDB> convert<tags::TDB, tags::TT>(Time<tags::TT> t) {
   const double dtr = dtr_geo_approx(t.jd1(), t.jd2());
   double tdb1, tdb2;
   const int rc = iauTttdb(t.jd1(), t.jd2(), dtr, &tdb1, &tdb2);
@@ -151,8 +142,7 @@ Time<tags::TDB> convert<tags::TDB, tags::TT>(Time<tags::TT> t) {
   return Time<tags::TDB>{tdb1, tdb2};
 }
 
-template <>
-Time<tags::TT> convert<tags::TT, tags::TDB>(Time<tags::TDB> t) {
+template <> Time<tags::TT> convert<tags::TT, tags::TDB>(Time<tags::TDB> t) {
   // iauDtdb is parameterised on TT (the function returns TDB-TT given a TT
   // input); evaluating it with TDB introduces a second-order error of
   // ~10^-23 s — far below the float resolution of jd2 — so for the inverse
@@ -171,33 +161,27 @@ Time<tags::TT> convert<tags::TT, tags::TDB>(Time<tags::TDB> t) {
 // TT is the pivot for {TDB}).
 // ---------------------------------------------------------------------------
 
-template <>
-Time<tags::TT> convert<tags::TT, tags::UTC>(Time<tags::UTC> t) {
+template <> Time<tags::TT> convert<tags::TT, tags::UTC>(Time<tags::UTC> t) {
   return convert<tags::TT>(convert<tags::TAI>(t));
 }
 
-template <>
-Time<tags::UTC> convert<tags::UTC, tags::TT>(Time<tags::TT> t) {
+template <> Time<tags::UTC> convert<tags::UTC, tags::TT>(Time<tags::TT> t) {
   return convert<tags::UTC>(convert<tags::TAI>(t));
 }
 
-template <>
-Time<tags::TT> convert<tags::TT, tags::UT1>(Time<tags::UT1> t) {
+template <> Time<tags::TT> convert<tags::TT, tags::UT1>(Time<tags::UT1> t) {
   return convert<tags::TT>(convert<tags::TAI>(t));
 }
 
-template <>
-Time<tags::UT1> convert<tags::UT1, tags::TT>(Time<tags::TT> t) {
+template <> Time<tags::UT1> convert<tags::UT1, tags::TT>(Time<tags::TT> t) {
   return convert<tags::UT1>(convert<tags::TAI>(t));
 }
 
-template <>
-Time<tags::TDB> convert<tags::TDB, tags::TAI>(Time<tags::TAI> t) {
+template <> Time<tags::TDB> convert<tags::TDB, tags::TAI>(Time<tags::TAI> t) {
   return convert<tags::TDB>(convert<tags::TT>(t));
 }
 
-template <>
-Time<tags::TAI> convert<tags::TAI, tags::TDB>(Time<tags::TDB> t) {
+template <> Time<tags::TAI> convert<tags::TAI, tags::TDB>(Time<tags::TDB> t) {
   return convert<tags::TAI>(convert<tags::TT>(t));
 }
 

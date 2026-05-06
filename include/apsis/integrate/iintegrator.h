@@ -46,12 +46,10 @@ class IIntegrator {
   IIntegrator& operator=(IIntegrator&&) = delete;
   virtual ~IIntegrator() = default;
 
-  virtual StepResult step(
-      apsis::time::Time<apsis::time::tags::TT> t,
-      const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-      const apsis::math::Mat6& phi,
-      double dt,
-      const apsis::force::IForceModel& force) = 0;
+  virtual StepResult step(apsis::time::Time<apsis::time::tags::TT> t,
+                          const apsis::frames::State<apsis::frames::tags::ICRF>& x,
+                          const apsis::math::Mat6& phi, double dt,
+                          const apsis::force::IForceModel& force) = 0;
 };
 
 // Helper: assemble the 6x6 dynamics Jacobian A from a 3x6 force partial.

@@ -27,15 +27,16 @@ namespace {
 // Stub: planet at fixed inertial offset.
 class StubEphem : public ae::IEphemeris {
  public:
-  StubEphem(int third_id, const apsis::math::Vec3& r_third,
-            int central_id, const apsis::math::Vec3& r_central)
-      : third_id_(third_id), r_third_(r_third),
-        central_id_(central_id), r_central_(r_central) {}
+  StubEphem(int third_id, const apsis::math::Vec3& r_third, int central_id,
+            const apsis::math::Vec3& r_central)
+      : third_id_(third_id), r_third_(r_third), central_id_(central_id), r_central_(r_central) {}
 
   afr::State<afr::tags::ICRF> state(int body, at::Time<at::tags::TDB>) const override {
     afr::State<afr::tags::ICRF> s;
-    if (body == third_id_) s.r = r_third_;
-    else if (body == central_id_) s.r = r_central_;
+    if (body == third_id_)
+      s.r = r_third_;
+    else if (body == central_id_)
+      s.r = r_central_;
     return s;
   }
 
@@ -46,11 +47,11 @@ class StubEphem : public ae::IEphemeris {
   apsis::math::Vec3 r_central_;
 };
 
-constexpr double kAU      = 1.495978707e11;  // m
-constexpr double kMuSun   = 1.32712440018e20;  // m^3/s^2
+constexpr double kAU = 1.495978707e11;       // m
+constexpr double kMuSun = 1.32712440018e20;  // m^3/s^2
 
 TEST(ThirdBody, AccelerationVanishesAtCentralBody) {
-  StubEphem ephem(/*third=*/10,    apsis::math::Vec3(kAU, 0.0, 0.0),
+  StubEphem ephem(/*third=*/10, apsis::math::Vec3(kAU, 0.0, 0.0),
                   /*central=*/399, apsis::math::Vec3::Zero());
   af::ThirdBody tb(&ephem, /*central=*/399, /*third=*/10, kMuSun);
   afr::State<afr::tags::ICRF> x;  // r = 0
@@ -93,8 +94,7 @@ TEST(ThirdBody, PartialsSelfConsistent) {
     const auto am = tb.acceleration(at::Time<at::tags::TT>{}, xm);
     const auto col = (ap - am) / (2.0 * h);
     for (int row = 0; row < 3; ++row) {
-      EXPECT_NEAR(J(row, i), col[row], 1e-13)
-          << "row=" << row << " col=" << i;
+      EXPECT_NEAR(J(row, i), col[row], 1e-13) << "row=" << row << " col=" << i;
     }
   }
 }

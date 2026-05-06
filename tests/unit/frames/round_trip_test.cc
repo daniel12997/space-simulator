@@ -31,8 +31,8 @@ namespace {
 // pushing the round-trip residual up to ~1e-9 m for IcrfJ2000 and
 // ~1e-7 m for IcrfItrs. We pick tolerances generous to those without
 // hiding a sign error (which would yield meters, not nanometers).
-constexpr double kPosTol = 1e-6;     // 1 µm
-constexpr double kVelTol = 1e-9;     // 1 nm/s
+constexpr double kPosTol = 1e-6;  // 1 µm
+constexpr double kVelTol = 1e-9;  // 1 nm/s
 
 // 12 epochs across one year, separated by 30 days.
 struct EpochSweep {

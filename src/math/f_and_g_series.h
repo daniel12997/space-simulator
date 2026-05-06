@@ -22,8 +22,6 @@ namespace apsis::math::fandg {
 // state at t = dt. Uses universal-variable iteration; converges in
 // typically 6-8 iterations to ~1e-12 m for typical LEO/GEO step sizes.
 apsis::frames::State<apsis::frames::tags::ICRF>
-propagate(const apsis::frames::State<apsis::frames::tags::ICRF>& state0,
-          double dt,
-          double mu);
+propagate(const apsis::frames::State<apsis::frames::tags::ICRF>& state0, double dt, double mu);
 
 }  // namespace apsis::math::fandg

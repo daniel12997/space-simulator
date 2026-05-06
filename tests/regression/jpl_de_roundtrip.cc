@@ -40,7 +40,7 @@ namespace ae = apsis::ephemeris;
 
 namespace {
 
-constexpr double kMuSun  = 1.32712440018e20;
+constexpr double kMuSun = 1.32712440018e20;
 constexpr double kMuMoon = 4.9028000661637e12;
 
 #ifndef APSIS_DATA_DIR
@@ -72,7 +72,7 @@ TEST(JplDeRoundTrip, EarthHeliocentric10Years) {
   // PointMass at origin is the dominant force.
   const auto t0_tdb = at::convert<at::tags::TDB>(t0);
   const auto earth0 = ephem.state(/*Earth=*/399, t0_tdb);
-  const auto sun0   = ephem.state(/*Sun=*/10, t0_tdb);
+  const auto sun0 = ephem.state(/*Sun=*/10, t0_tdb);
   afr::State<afr::tags::ICRF> x0;
   x0.r = earth0.r - sun0.r;
   x0.v = earth0.v - sun0.v;
@@ -110,7 +110,7 @@ TEST(JplDeRoundTrip, EarthHeliocentric10Years) {
   // Direct kernel query at the final epoch — also heliocentric.
   const auto t_tdb = at::convert<at::tags::TDB>(t);
   const auto earth1 = ephem.state(/*Earth=*/399, t_tdb);
-  const auto sun1   = ephem.state(/*Sun=*/10, t_tdb);
+  const auto sun1 = ephem.state(/*Sun=*/10, t_tdb);
   afr::State<afr::tags::ICRF> x_kernel;
   x_kernel.r = earth1.r - sun1.r;
   x_kernel.v = earth1.v - sun1.v;

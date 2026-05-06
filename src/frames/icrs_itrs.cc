@@ -21,13 +21,12 @@
 // model dR/dt = R * [omega_e]_z (cross product), which is the standard
 // approximation in flight-dynamics-grade pipelines for short arcs.
 
-#include "apsis/frames/transform.h"
-
 #include <atomic>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include "apsis/frames/transform.h"
 #include "apsis/math/types.h"
 #include "apsis/time/convert.h"
 
@@ -81,8 +80,10 @@ apsis::math::Mat3 build_icrf_to_itrs(apsis::time::Time<apsis::time::tags::TT> tt
   const double sn = std::sin(era);
   // R3(ERA): rotation about +z. The CIO/TIO convention uses the IAU R3(theta)
   // form whose matrix is [[c, s, 0], [-s, c, 0], [0, 0, 1]].
-  R_era(0, 0) = c;   R_era(0, 1) = sn;
-  R_era(1, 0) = -sn; R_era(1, 1) = c;
+  R_era(0, 0) = c;
+  R_era(0, 1) = sn;
+  R_era(1, 0) = -sn;
+  R_era(1, 1) = c;
 
   // Polar motion W = iauPom00(xp, yp, sp). sp (TIO locator) is small enough
   // to ignore at v1 tolerances per ADR-001 §"polar motion x_p, y_p".
@@ -112,8 +113,8 @@ double default_polar_motion_yp() noexcept {
 }
 
 template <>
-State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(
-    State<tags::ICRF> x, apsis::time::Time<apsis::time::tags::TT> tt) {
+State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(State<tags::ICRF> x,
+                                                    apsis::time::Time<apsis::time::tags::TT> tt) {
   const apsis::math::Mat3 R = build_icrf_to_itrs(tt);
   // Velocity: r_itrs_dot = R * r_icrf_dot - omega x r_itrs.
   // Equivalently, in fixed frame: r_itrs_dot = R * (r_icrf_dot - omega_icrf x r_icrf).
@@ -130,8 +131,8 @@ State<tags::ITRS> transform<tags::ITRS, tags::ICRF>(
 }
 
 template <>
-State<tags::ICRF> transform<tags::ICRF, tags::ITRS>(
-    State<tags::ITRS> x, apsis::time::Time<apsis::time::tags::TT> tt) {
+State<tags::ICRF> transform<tags::ICRF, tags::ITRS>(State<tags::ITRS> x,
+                                                    apsis::time::Time<apsis::time::tags::TT> tt) {
   const apsis::math::Mat3 Rt = build_icrf_to_itrs(tt).transpose();
   State<tags::ICRF> y;
   y.r = Rt * x.r;

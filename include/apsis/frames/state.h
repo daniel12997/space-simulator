@@ -13,8 +13,7 @@
 
 namespace apsis::frames {
 
-template <class Frame>
-struct State {
+template <class Frame> struct State {
   using frame_type = Frame;
 
   // Position [m] expressed in the parameter frame.

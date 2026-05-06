@@ -26,16 +26,15 @@ namespace dp = apsis::integrate::dp54;
 
 // Augmented derivative: given (state, Phi) at (t, x), returns (dx/dt, dPhi/dt).
 struct Deriv {
-  apsis::math::Vec6  dx;
-  apsis::math::Mat6  dphi;
+  apsis::math::Vec6 dx;
+  apsis::math::Mat6 dphi;
 };
 
 Deriv evaluate(apsis::time::Time<apsis::time::tags::TT> t,
                const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-               const apsis::math::Mat6& phi,
-               const apsis::force::IForceModel& force) {
+               const apsis::math::Mat6& phi, const apsis::force::IForceModel& force) {
   Deriv d;
-  const auto a   = force.acceleration(t, x);
+  const auto a = force.acceleration(t, x);
   const auto J36 = force.partials(t, x);
   d.dx.head<3>() = x.v;
   d.dx.tail<3>() = a;
@@ -44,16 +43,14 @@ Deriv evaluate(apsis::time::Time<apsis::time::tags::TT> t,
   return d;
 }
 
-apsis::frames::State<apsis::frames::tags::ICRF>
-state_from_vec(const apsis::math::Vec6& y) {
+apsis::frames::State<apsis::frames::tags::ICRF> state_from_vec(const apsis::math::Vec6& y) {
   apsis::frames::State<apsis::frames::tags::ICRF> s;
   s.r = y.head<3>();
   s.v = y.tail<3>();
   return s;
 }
 
-apsis::math::Vec6 vec_from_state(
-    const apsis::frames::State<apsis::frames::tags::ICRF>& s) {
+apsis::math::Vec6 vec_from_state(const apsis::frames::State<apsis::frames::tags::ICRF>& s) {
   apsis::math::Vec6 y;
   y.head<3>() = s.r;
   y.tail<3>() = s.v;
@@ -69,9 +66,8 @@ apsis::math::Vec6 vec_from_state(
 // pathologically shrinking the step over long horizons where the
 // dynamics Jacobian is large (e.g. Encke deviation propagation against a
 // full force model).
-double scaled_norm(const apsis::math::Vec6& err_state,
-                   const apsis::math::Vec6& y_now,
-                   double atol, double rtol) {
+double scaled_norm(const apsis::math::Vec6& err_state, const apsis::math::Vec6& y_now, double atol,
+                   double rtol) {
   double sum = 0.0;
   for (int i = 0; i < 6; ++i) {
     const double sc = atol + rtol * std::abs(y_now[i]);
@@ -85,13 +81,12 @@ double scaled_norm(const apsis::math::Vec6& err_state,
 
 StepResult Dp54::step(apsis::time::Time<apsis::time::tags::TT> t,
                       const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-                      const apsis::math::Mat6& phi,
-                      double dt,
+                      const apsis::math::Mat6& phi, double dt,
                       const apsis::force::IForceModel& force) {
   // Adaptive: try `dt`, accept or reduce, return the FIRST accepted step.
   // We do not advance more than the requested `dt`.
   double h = dt;
-  apsis::frames::State<apsis::frames::tags::ICRF> x_in  = x;
+  apsis::frames::State<apsis::frames::tags::ICRF> x_in = x;
   apsis::math::Mat6 phi_in = phi;
 
   for (int attempt = 0; attempt < opts_.max_iters_per_step; ++attempt) {
@@ -103,8 +98,10 @@ StepResult Dp54::step(apsis::time::Time<apsis::time::tags::TT> t,
       apsis::math::Vec6 y_stage = vec_from_state(x_in);
       apsis::math::Mat6 p_stage = phi_in;
       for (int j = 0; j < s; ++j) {
-        y_stage += h * dp::kA[static_cast<std::size_t>(s)][static_cast<std::size_t>(j)] * kx[static_cast<std::size_t>(j)];
-        p_stage += h * dp::kA[static_cast<std::size_t>(s)][static_cast<std::size_t>(j)] * kp[static_cast<std::size_t>(j)];
+        y_stage += h * dp::kA[static_cast<std::size_t>(s)][static_cast<std::size_t>(j)] *
+                   kx[static_cast<std::size_t>(j)];
+        p_stage += h * dp::kA[static_cast<std::size_t>(s)][static_cast<std::size_t>(j)] *
+                   kp[static_cast<std::size_t>(j)];
       }
       const auto t_stage = t + apsis::time::Duration{h * dp::kC[static_cast<std::size_t>(s)]};
       const auto deriv = evaluate(t_stage, state_from_vec(y_stage), p_stage, force);
@@ -139,8 +136,8 @@ StepResult Dp54::step(apsis::time::Time<apsis::time::tags::TT> t,
     }
 
     // Reject; shrink step. Order p = 5.
-    const double factor = std::clamp(opts_.safety * std::pow(1.0 / E, 1.0 / 5.0),
-                                     opts_.min_shrink, opts_.max_grow);
+    const double factor =
+        std::clamp(opts_.safety * std::pow(1.0 / E, 1.0 / 5.0), opts_.min_shrink, opts_.max_grow);
     h *= factor;
     if (h < opts_.dt_min) {
       h = opts_.dt_min;

@@ -32,13 +32,11 @@ class EnckeWrapper final : public IIntegrator {
 
   // Wraps `inner` (whose lifetime must outlast this wrapper). The wrapper
   // does not take ownership.
-  EnckeWrapper(IIntegrator* inner, Options opts) noexcept
-      : inner_(inner), opts_(opts) {}
+  EnckeWrapper(IIntegrator* inner, Options opts) noexcept : inner_(inner), opts_(opts) {}
 
   StepResult step(apsis::time::Time<apsis::time::tags::TT> t,
                   const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-                  const apsis::math::Mat6& phi,
-                  double dt,
+                  const apsis::math::Mat6& phi, double dt,
                   const apsis::force::IForceModel& force) override;
 
  private:

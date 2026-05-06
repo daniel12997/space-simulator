@@ -41,15 +41,14 @@ class SphericalHarmonic final : public IForceModel {
   // tests/unit/force/spherical_harmonic_test.cc.)
   static constexpr bool kAnalyticalPartials = false;
 
-
   // Coefficient block. Phase 1 holds normalised C/S directly; the
   // un-normalising recurrence is built into the Cunningham recursion in
   // the .cc file.
   struct Coefficients {
-    int degree = 0;     // n_max
-    int order  = 0;     // m_max  (m_max <= n_max)
-    double mu  = 0.0;   // central-body GM [m^3/s^2]
-    double R   = 0.0;   // reference radius (e.g. Earth's equatorial) [m]
+    int degree = 0;   // n_max
+    int order = 0;    // m_max  (m_max <= n_max)
+    double mu = 0.0;  // central-body GM [m^3/s^2]
+    double R = 0.0;   // reference radius (e.g. Earth's equatorial) [m]
     // Triangular storage: size = (degree + 1) * (degree + 2) / 2.
     // C_norm[idx(n, m)] = C_{n,m} normalised (Geodesy convention).
     std::vector<double> C_norm;
@@ -58,9 +57,7 @@ class SphericalHarmonic final : public IForceModel {
     [[nodiscard]] static std::size_t idx(int n, int m) noexcept {
       return static_cast<std::size_t>(n * (n + 1) / 2 + m);
     }
-    [[nodiscard]] int triangular_size() const noexcept {
-      return (degree + 1) * (degree + 2) / 2;
-    }
+    [[nodiscard]] int triangular_size() const noexcept { return (degree + 1) * (degree + 2) / 2; }
   };
 
   // The body-fixed-to-inertial rotation is applied externally (the SH model
@@ -74,13 +71,13 @@ class SphericalHarmonic final : public IForceModel {
   // the conformance test grid which uses contrived synthetic states).
   explicit SphericalHarmonic(Coefficients coeffs);
 
-  apsis::math::Vec3 acceleration(
-      apsis::time::Time<apsis::time::tags::TT> t,
-      const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
+  apsis::math::Vec3
+  acceleration(apsis::time::Time<apsis::time::tags::TT> t,
+               const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
-  apsis::math::Mat36 partials(
-      apsis::time::Time<apsis::time::tags::TT> t,
-      const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
+  apsis::math::Mat36
+  partials(apsis::time::Time<apsis::time::tags::TT> t,
+           const apsis::frames::State<apsis::frames::tags::ICRF>& x) const override;
 
   [[nodiscard]] const Coefficients& coefficients() const noexcept { return coeffs_; }
 

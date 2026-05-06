@@ -39,16 +39,12 @@ class Duration {
   friend constexpr Duration operator-(Duration a, Duration b) noexcept {
     return Duration{a.seconds_ - b.seconds_};
   }
-  friend constexpr Duration operator-(Duration a) noexcept {
-    return Duration{-a.seconds_};
-  }
+  friend constexpr Duration operator-(Duration a) noexcept { return Duration{-a.seconds_}; }
 
   friend constexpr bool operator==(Duration a, Duration b) noexcept {
     return a.seconds_ == b.seconds_;
   }
-  friend constexpr bool operator!=(Duration a, Duration b) noexcept {
-    return !(a == b);
-  }
+  friend constexpr bool operator!=(Duration a, Duration b) noexcept { return !(a == b); }
   friend constexpr bool operator<(Duration a, Duration b) noexcept {
     return a.seconds_ < b.seconds_;
   }

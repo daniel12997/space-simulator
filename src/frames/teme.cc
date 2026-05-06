@@ -12,26 +12,24 @@
 //   * Sidereal time via the equation-of-equinoxes form (NOT iauEra00),
 //     because TEME is an equinox-based intermediate frame.
 
-#include "apsis/frames/transform.h"
-
 #include <stdexcept>
+
+#include "apsis/frames/transform.h"
 
 namespace apsis::frames {
 
 template <>
-State<tags::ITRS> transform<tags::ITRS, tags::TEME>(
-    State<tags::TEME>, apsis::time::Time<apsis::time::tags::TT>) {
-  throw std::logic_error(
-      "transform<ITRS, TEME>: stubbed in Phase 1; full implementation lands "
-      "in Phase 2 with SGP4. See src/frames/teme.cc.");
+State<tags::ITRS> transform<tags::ITRS, tags::TEME>(State<tags::TEME>,
+                                                    apsis::time::Time<apsis::time::tags::TT>) {
+  throw std::logic_error("transform<ITRS, TEME>: stubbed in Phase 1; full implementation lands "
+                         "in Phase 2 with SGP4. See src/frames/teme.cc.");
 }
 
 template <>
-State<tags::TEME> transform<tags::TEME, tags::ITRS>(
-    State<tags::ITRS>, apsis::time::Time<apsis::time::tags::TT>) {
-  throw std::logic_error(
-      "transform<TEME, ITRS>: stubbed in Phase 1; full implementation lands "
-      "in Phase 2 with SGP4. See src/frames/teme.cc.");
+State<tags::TEME> transform<tags::TEME, tags::ITRS>(State<tags::ITRS>,
+                                                    apsis::time::Time<apsis::time::tags::TT>) {
+  throw std::logic_error("transform<TEME, ITRS>: stubbed in Phase 1; full implementation lands "
+                         "in Phase 2 with SGP4. See src/frames/teme.cc.");
 }
 
 }  // namespace apsis::frames

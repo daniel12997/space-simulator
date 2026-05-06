@@ -11,17 +11,17 @@
 
 namespace apsis::force {
 
-apsis::math::Vec3 ThirdBody::third_body_pos_central(
-    apsis::time::Time<apsis::time::tags::TT> t) const {
+apsis::math::Vec3
+ThirdBody::third_body_pos_central(apsis::time::Time<apsis::time::tags::TT> t) const {
   const auto t_tdb = apsis::time::convert<apsis::time::tags::TDB>(t);
-  const auto third_state    = ephem_->state(third_body_naif_id_, t_tdb);
-  const auto central_state  = ephem_->state(central_body_naif_id_, t_tdb);
+  const auto third_state = ephem_->state(third_body_naif_id_, t_tdb);
+  const auto central_state = ephem_->state(central_body_naif_id_, t_tdb);
   return third_state.r - central_state.r;
 }
 
-apsis::math::Vec3 ThirdBody::acceleration(
-    apsis::time::Time<apsis::time::tags::TT> t,
-    const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
+apsis::math::Vec3
+ThirdBody::acceleration(apsis::time::Time<apsis::time::tags::TT> t,
+                        const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
   // Conventional third-body acceleration (Vallado §8.7.2, Montenbruck &
   // Gill §3.3.2):
   //
@@ -45,9 +45,9 @@ apsis::math::Vec3 ThirdBody::acceleration(
   return mu_third_ * (d / d_cubed - r3 / r3_cubed);
 }
 
-apsis::math::Mat36 ThirdBody::partials(
-    apsis::time::Time<apsis::time::tags::TT> t,
-    const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
+apsis::math::Mat36
+ThirdBody::partials(apsis::time::Time<apsis::time::tags::TT> t,
+                    const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
   // Analytical partials per ADR-009 (REQ-PHY-016, REQ-PHY-020).
   //
   // For a spacecraft at r and a third body at r_3 (both relative to the

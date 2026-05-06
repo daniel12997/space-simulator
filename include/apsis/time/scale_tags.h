@@ -17,7 +17,7 @@ namespace apsis::time::tags {
 // TT <-> TDB. Any other path is an explicit composition of the above
 // (see `apsis::time::convert<>`).
 struct TAI {};
-struct TT  {};
+struct TT {};
 struct UTC {};
 struct UT1 {};
 struct TDB {};

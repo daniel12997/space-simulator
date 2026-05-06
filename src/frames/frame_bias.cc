@@ -7,10 +7,9 @@
 // polynomial parts vanish, leaving the pure bias. ICRF <-> GCRS is identity
 // in v1 (handled by the same file as a small adjacent specialisation).
 
-#include "apsis/frames/transform.h"
-
 #include <Eigen/Core>
 
+#include "apsis/frames/transform.h"
 #include "apsis/math/types.h"
 
 extern "C" {
@@ -48,8 +47,8 @@ const apsis::math::Mat3& bias_icrf_to_j2000() {
 }  // namespace
 
 template <>
-State<tags::J2000> transform<tags::J2000, tags::ICRF>(
-    State<tags::ICRF> x, apsis::time::Time<apsis::time::tags::TT>) {
+State<tags::J2000> transform<tags::J2000, tags::ICRF>(State<tags::ICRF> x,
+                                                      apsis::time::Time<apsis::time::tags::TT>) {
   const apsis::math::Mat3& B = bias_icrf_to_j2000();
   State<tags::J2000> y;
   y.r = B * x.r;
@@ -58,8 +57,8 @@ State<tags::J2000> transform<tags::J2000, tags::ICRF>(
 }
 
 template <>
-State<tags::ICRF> transform<tags::ICRF, tags::J2000>(
-    State<tags::J2000> x, apsis::time::Time<apsis::time::tags::TT>) {
+State<tags::ICRF> transform<tags::ICRF, tags::J2000>(State<tags::J2000> x,
+                                                     apsis::time::Time<apsis::time::tags::TT>) {
   const apsis::math::Mat3 Bt = bias_icrf_to_j2000().transpose();
   State<tags::ICRF> y;
   y.r = Bt * x.r;
@@ -70,14 +69,14 @@ State<tags::ICRF> transform<tags::ICRF, tags::J2000>(
 // ICRF <-> GCRS: identity in v1. Defined here rather than in icrs_itrs.cc to
 // keep all "non-rotating identity-grade" specialisations in one file.
 template <>
-State<tags::GCRS> transform<tags::GCRS, tags::ICRF>(
-    State<tags::ICRF> x, apsis::time::Time<apsis::time::tags::TT>) {
+State<tags::GCRS> transform<tags::GCRS, tags::ICRF>(State<tags::ICRF> x,
+                                                    apsis::time::Time<apsis::time::tags::TT>) {
   return State<tags::GCRS>{x.r, x.v};
 }
 
 template <>
-State<tags::ICRF> transform<tags::ICRF, tags::GCRS>(
-    State<tags::GCRS> x, apsis::time::Time<apsis::time::tags::TT>) {
+State<tags::ICRF> transform<tags::ICRF, tags::GCRS>(State<tags::GCRS> x,
+                                                    apsis::time::Time<apsis::time::tags::TT>) {
   return State<tags::ICRF>{x.r, x.v};
 }
 

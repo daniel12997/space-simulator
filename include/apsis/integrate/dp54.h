@@ -47,8 +47,7 @@ class Dp54 final : public IIntegrator {
 
   StepResult step(apsis::time::Time<apsis::time::tags::TT> t,
                   const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-                  const apsis::math::Mat6& phi,
-                  double dt,
+                  const apsis::math::Mat6& phi, double dt,
                   const apsis::force::IForceModel& force) override;
 
   [[nodiscard]] const Options& options() const noexcept { return opts_; }

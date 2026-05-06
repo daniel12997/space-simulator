@@ -61,7 +61,7 @@ namespace afr = apsis::frames;
 namespace {
 
 constexpr double kMuEarth = 3.986004418e14;
-constexpr double kRadius  = 6.8e6;  // ~ISS altitude (geocentric radius)
+constexpr double kRadius = 6.8e6;  // ~ISS altitude (geocentric radius)
 
 // Pure circular ISS-like initial state in J2000.
 afr::State<afr::tags::J2000> initial_state_j2000() {
@@ -74,11 +74,9 @@ afr::State<afr::tags::J2000> initial_state_j2000() {
   return s;
 }
 
-afr::State<afr::tags::ICRF> propagate_dp54(
-    const af::IForceModel& force,
-    afr::State<afr::tags::ICRF> x,
-    at::Time<at::tags::TT> t,
-    double horizon_sec) {
+afr::State<afr::tags::ICRF> propagate_dp54(const af::IForceModel& force,
+                                           afr::State<afr::tags::ICRF> x, at::Time<at::tags::TT> t,
+                                           double horizon_sec) {
   ai::Dp54::Options opts;
   opts.rtol = 1e-12;
   opts.atol = 1e-9;
@@ -105,8 +103,7 @@ TEST(LeoKepler24h, Dp54MatchesFAndGOracle) {
   // will need.
   const auto x0_j2000 = initial_state_j2000();
   at::Time<at::tags::TT> t0{2460676.5, 0.0};
-  const auto x0_icrf = afr::transform<afr::tags::ICRF, afr::tags::J2000>(
-      x0_j2000, t0);
+  const auto x0_icrf = afr::transform<afr::tags::ICRF, afr::tags::J2000>(x0_j2000, t0);
 
   // 3. Force model: pure central-body Kepler.
   af::PointMass earth_pm(kMuEarth);

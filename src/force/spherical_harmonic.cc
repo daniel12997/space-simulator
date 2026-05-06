@@ -56,8 +56,7 @@ std::size_t vw_idx(int n, int m) {
 
 }  // namespace
 
-SphericalHarmonic::SphericalHarmonic(Coefficients coeffs)
-    : coeffs_(std::move(coeffs)) {
+SphericalHarmonic::SphericalHarmonic(Coefficients coeffs) : coeffs_(std::move(coeffs)) {
   // Validate coefficient block size; convert normalised -> un-normalised
   // in place so the hot path doesn't pay the lgamma cost.
   const int needed = coeffs_.triangular_size();
@@ -67,8 +66,7 @@ SphericalHarmonic::SphericalHarmonic(Coefficients coeffs)
         "SphericalHarmonic: C_norm/S_norm must hold (degree+1)(degree+2)/2 entries");
   }
   if (coeffs_.order > coeffs_.degree) {
-    throw std::invalid_argument(
-        "SphericalHarmonic: order must be <= degree");
+    throw std::invalid_argument("SphericalHarmonic: order must be <= degree");
   }
   for (int n = 0; n <= coeffs_.degree; ++n) {
     const int m_max = std::min(n, coeffs_.order);
@@ -80,8 +78,7 @@ SphericalHarmonic::SphericalHarmonic(Coefficients coeffs)
   }
 }
 
-apsis::math::Vec3 SphericalHarmonic::acceleration_body(
-    const apsis::math::Vec3& r_bf) const {
+apsis::math::Vec3 SphericalHarmonic::acceleration_body(const apsis::math::Vec3& r_bf) const {
   const int N = coeffs_.degree;
   const int M = coeffs_.order;
   const double R = coeffs_.R;
@@ -91,7 +88,7 @@ apsis::math::Vec3 SphericalHarmonic::acceleration_body(
   const double y = r_bf.y();
   const double z = r_bf.z();
   const double r2 = x * x + y * y + z * z;
-  const double r  = std::sqrt(r2);
+  const double r = std::sqrt(r2);
   const double Rr = R / r;
   const double Rr2 = Rr * Rr;
   const double Rxr2 = R * x / r2;
@@ -166,9 +163,9 @@ apsis::math::Vec3 SphericalHarmonic::acceleration_body(
   return apsis::math::Vec3(mu_R2 * ax, mu_R2 * ay, mu_R2 * az);
 }
 
-apsis::math::Vec3 SphericalHarmonic::acceleration(
-    apsis::time::Time<apsis::time::tags::TT>,
-    const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
+apsis::math::Vec3
+SphericalHarmonic::acceleration(apsis::time::Time<apsis::time::tags::TT>,
+                                const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
   // Phase 1: body-fixed and ICRF treated as aligned. Composing with the
   // ITRS<->ICRF rotation is a Phase 1 followup; for the conformance grid
   // and the ISS regression as currently scoped, the result is sufficient
@@ -178,9 +175,9 @@ apsis::math::Vec3 SphericalHarmonic::acceleration(
   return acceleration_body(x.r);
 }
 
-apsis::math::Mat36 SphericalHarmonic::partials(
-    apsis::time::Time<apsis::time::tags::TT> t,
-    const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
+apsis::math::Mat36
+SphericalHarmonic::partials(apsis::time::Time<apsis::time::tags::TT> t,
+                            const apsis::frames::State<apsis::frames::tags::ICRF>& x) const {
   // FD partials, pending the Phase 7 Pines analytical-gradient
   // implementation. Tracked as Phase 7 follow-up issue (Pines analytical
   // gradient for SphericalHarmonic). Per ADR-009's Phase 1 Implementation
@@ -196,9 +193,9 @@ apsis::math::Mat36 SphericalHarmonic::partials(
   for (int i = 0; i < 3; ++i) {
     auto x_plus = x;
     auto x_minus = x;
-    x_plus.r[i]  += h;
+    x_plus.r[i] += h;
     x_minus.r[i] -= h;
-    const auto a_plus  = acceleration(t, x_plus);
+    const auto a_plus = acceleration(t, x_plus);
     const auto a_minus = acceleration(t, x_minus);
     J.col(i) = (a_plus - a_minus) / (2.0 * h);
   }

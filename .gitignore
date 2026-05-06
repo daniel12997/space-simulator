@@ -33,3 +33,7 @@ data/*.bsp
 *.swp
 *.swo
 .DS_Store
+
+# Python bytecode caches
+__pycache__/
+*.pyc

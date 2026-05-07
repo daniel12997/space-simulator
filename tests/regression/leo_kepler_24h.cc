@@ -22,12 +22,13 @@
 //   4. Propagate forward 24 h with `Dop853` at rtol=1e-12 / atol=1e-9.
 //   5. Compare to the f-and-g closed-form at the same final epoch.
 //
-// Tolerance: 2e-4 m position, 2e-7 m/s velocity. Picked experimentally
+// Tolerance: 1e-4 m position, 1e-7 m/s velocity. Picked experimentally
 // against the local Phase 1A §D1 build — the Dop853 (Hairer Vol I Table
 // 5.2) 24-h residual at rtol=1e-12 / atol=1e-9 / dt_max=60 s runs
-// ~1.9e-5 m / ~2.1e-8 m/s on the development host (about 3 orders below
-// Dp54's prior ~1.5e-2 m residual). The asserted bounds give ~10x margin
-// so a noisy CI host doesn't flake the gate. The Phase 1 plan §10
+// ~1.87e-5 m / ~2.10e-8 m/s on the development host (about 3 orders below
+// Dp54's prior ~1.5e-2 m residual). The asserted bounds give ~5x margin —
+// tight enough that any drift would alarm; loose enough that ordinary CI
+// host variation doesn't flake the gate. The Phase 1 plan §10
 // "anticipated ~7 orders" was over-optimistic: the dominant residual is
 // step-control noise at rtol=1e-12 (rtol * r * sqrt(N_orbits) = ~3e-5 m),
 // not the method's truncation. Tightening rtol below 1e-12 hits double-
@@ -119,14 +120,14 @@ TEST(LeoKepler24h, Dop853MatchesFAndGOracle) {
 
   // Tolerances: numerical Dop853 vs f-and-g closed-form on a pure Kepler
   // orbit over 24 h. Empirical residual at rtol=1e-12 / atol=1e-9 with
-  // dt_max=60 s is ~1.9e-5 m / ~2.1e-8 m/s on the development host (about
-  // 3 orders below Dp54's residual on the same problem; see the file
-  // header for why this is less than the §10-anticipated ~7 orders).
-  // The bounds below give ~10x margin.
+  // dt_max=60 s is ~1.87e-5 m / ~2.10e-8 m/s on the development host
+  // (about 3 orders below Dp54's residual on the same problem; see the
+  // file header for why this is less than the §10-anticipated ~7 orders).
+  // The bounds below give ~5x margin.
   const double dr = (x_num.r - x_oracle.r).norm();
   const double dv = (x_num.v - x_oracle.v).norm();
-  EXPECT_LT(dr, 2e-4) << "Dop853 vs f-and-g 24-h closure: " << dr << " m";
-  EXPECT_LT(dv, 2e-7) << "Dop853 vs f-and-g 24-h velocity closure: " << dv << " m/s";
+  EXPECT_LT(dr, 1e-4) << "Dop853 vs f-and-g 24-h closure: " << dr << " m";
+  EXPECT_LT(dv, 1e-7) << "Dop853 vs f-and-g 24-h velocity closure: " << dv << " m/s";
 }
 
 }  // namespace

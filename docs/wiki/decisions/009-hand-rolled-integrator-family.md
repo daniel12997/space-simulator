@@ -356,3 +356,79 @@ Implementation Note above documented as a Phase 7 follow-up:
   catalog-scale propagation case (50k-object SGP4-style) D2 was
   originally targeting is a Phase 5 / Phase 6 concern, not blocked by
   the D2 slip.
+
+## Phase 1A Implementation Note — Batch D' cleanup (2026-05-05)
+
+Phase 1A Batch D' is a follow-on cleanup batch addressing five
+non-blocking findings from the Batch D clear-eyes review. Each is
+tracked separately in this ADR rather than as new architectural
+decisions:
+
+- **D'1 (regression-tolerance tightening)**. Asserted bounds on
+  `LeoKepler24h.Dop853MatchesFAndGOracle` and `IntegratorKepler.Dop853`
+  retuned from ~10× to ~5× the empirical residual. Empirical values on
+  the dev host (re-measured by both implementer and clear-eyes reviewer):
+  Kepler 1-period 4.150e-6 m; LEO 24h 1.865e-5 m / 2.101e-8 m/s. New
+  asserted bounds: 2e-5 m (Kepler) and 1e-4 m / 1e-7 m/s (LEO 24h).
+  The Phi-conformance gate is intentionally left at the looser
+  ~10× margin because it is FD-oracle-bounded and tightening would
+  fight round-off rather than catch real regressions.
+
+- **D'2 (PI controller `facold` persistence)**. Hairer Vol I §II.5's
+  PI step controller requires `facold` (the previous accepted step's
+  normalised error) to persist across `step()` calls so the I-term has
+  memory across the integration. Phase 1A Batch D shipped `facold` as
+  a function-local variable re-initialised to `1e-4` at the top of
+  every `step()`, defeating the persistence and degrading the PI
+  controller to plain-I when `beta != 0`. Fix: `facold_` is now an
+  instance member of `Dop853` (initialised to `1e-4` in the
+  constructor); `step()` reads on rejects and writes on accepts. The
+  default `beta = 0.0` codepath is unaffected (`pow(facold, 0) == 1`),
+  so no behaviour-change for the existing tests.
+
+  A `facold_for_test()` accessor on `Dop853` exposes the persisted
+  value so the conformance test can assert it. The
+  `IntegratorPhi.Dop853WithBeta` test exercises both `beta = 0.0` and
+  `beta = 0.04` (Hairer's recommendation), runs a 1-hour Kepler
+  integration, and asserts (a) step counts in a coarse band, (b)
+  PI/I step-count ratio within 2×, (c) final-state agreement to 1 m,
+  (d) `facold_` remains in `[1e-4, 1.0]`, and (e) **inversion-detecting
+  assertion**: `facold_ > 1e-3` after the integration. (e) is the
+  load-bearing check — under the original bug `facold_` would stay at
+  the constructor-seed `1e-4`, so this assertion fires under the bug
+  and passes under the fix. Verified by inversion: re-introducing the
+  bug (writing the accept-path update to a function-local) produces a
+  test failure.
+
+- **D'3 (FNV-1a coefficient-table hash baseline)**. Batch D shipped a
+  `kCoefficientHash` constexpr but with only a `static_assert(kCoefficientHash != 0)`
+  check, which is not load-bearing for typo detection (any single-bit
+  flip changes the hash but no compile-time assert fires on the change).
+  Fix: pinned the baseline literal `0xB3EDD5CF93EBB0EEULL` via
+  `static_assert`. The misleading comment block at `dop853_coeffs.h`
+  rewritten to honestly describe the magnitude-encoding (FNV-1a over
+  `int64(|x| * 2^53)` with bitwise-not for negatives), explicitly
+  noting the limitation ("catches IEEE-754-distinguishable edits, not
+  sub-ULP edits that round to the same double") and disclaiming
+  cryptographic use. Verified: flipping a digit in any coefficient
+  fires the assert with the rebaseline-script reminder.
+
+- **D'4 (vestigial `Options::dt_initial`)**. The `Dop853::Options::dt_initial`
+  field was declared but never read in the implementation; deleted.
+  (The matching `Dp54::Options::dt_initial` is also vestigial but is
+  out of scope for this cleanup batch — it lands separately if/when
+  Dp54 is touched.)
+
+- **D'5 (`recompute_dop853_hash.sh`)**. New helper script at
+  `tools/dev/recompute_dop853_hash.sh` builds the coefficient header,
+  links it into a tiny printer harness, and emits the `kCoefficientHash`
+  literal in the `static_assert` form ready to paste at the pinned
+  baseline. Run this script after any *intentional* coefficient edit
+  to rebaseline. Verified by both implementer and clear-eyes reviewer
+  on the dev host: emits `0xB3EDD5CF93EBB0EEULL` matching the current
+  baseline.
+
+The `IIntegrator` seam, the coefficient table contents, and the step
+controller's mathematical specification are all unchanged at this
+cleanup batch; only the `facold` data flow, the asserted-tolerance
+literals, the pinned hash baseline, and one Options field move.

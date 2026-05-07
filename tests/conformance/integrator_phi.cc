@@ -21,6 +21,7 @@
 #include "apsis/force/point_mass.h"
 #include "apsis/integrate/dop853.h"
 #include "apsis/integrate/dp54.h"
+#include "apsis/integrate/gauss_jackson_8.h"
 #include "apsis/integrate/iintegrator.h"
 #include "apsis/integrate/yoshida4.h"
 
@@ -127,9 +128,20 @@ TEST(IntegratorPhi, Yoshida4) {
   check_phi(y, pm, /*pos_tol=*/100.0, /*vel_tol=*/1e-1);
 }
 
-// GaussJackson8 Phi conformance removed in Phase 1 — see the matching
-// removal in integrator_kepler.cc. The Berry-Healy 2004 ordinate-form
-// implementation rejoins the parameterised gate in Phase 7.
+// Phase 1A Batch D'' (GJ8 re-attempt): GaussJackson8 Phi rejoins the
+// parameterised gate. The Phi tolerance is set wider than Kepler-position
+// because GJ8's Phi is bootstrapped from a central-difference STM oracle
+// (the closed-form universal-variable Kepler STM is the Phase 7 upgrade
+// per the deliverable plan), so the FD truncation (~ pos_eps^2 * |∂³r/∂r³|)
+// on LEO at h=60 s bounds achievable Phi fidelity at ~1e-3 m (the same
+// order as the Dop853 gate, which uses the same FD oracle).
+TEST(IntegratorPhi, GaussJackson8) {
+  af::PointMass pm(kMu);
+  ai::GaussJackson8::Options opts;
+  opts.mu_starter = kMu;
+  ai::GaussJackson8 gj8(opts);
+  check_phi(gj8, pm, /*pos_tol=*/1e-3, /*vel_tol=*/1e-6);
+}
 
 // PI-controller (`beta != 0`) regression: Hairer §II.5 / §IV.2 recommends
 // `beta = 0.04` for stiffer problems. The Phase 1A Batch D' cleanup wires

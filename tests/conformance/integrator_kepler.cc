@@ -31,6 +31,7 @@
 #include "apsis/force/point_mass.h"
 #include "apsis/integrate/dop853.h"
 #include "apsis/integrate/dp54.h"
+#include "apsis/integrate/gauss_jackson_8.h"
 #include "apsis/integrate/iintegrator.h"
 #include "apsis/integrate/yoshida4.h"
 
@@ -124,10 +125,20 @@ TEST(IntegratorKepler, Yoshida4) {
   propagate_one_period(y, pm, /*dt=*/30.0, /*tol_m=*/100.0);
 }
 
-// GaussJackson8 conformance test removed in Phase 1: the Phase 1 stand-in
-// shared the Dp54 implementation, so the parameterised gate ran the same
-// integrator twice. The Berry-Healy 2004 ordinate-form GJ8 lands behind
-// the IIntegrator seam in Phase 7; conformance over {Dp54, Yoshida4, GJ8}
-// returns at that point.
+// Phase 1A Batch D'' (GJ8 re-attempt): GaussJackson8 rejoins the
+// parameterised conformance gate. Berry-Healy 2004 ordinate-form
+// summed-Adams / summed-Cowell PECE; tables transcribed from the
+// generator output (docs/raw/code/berry-healy-2004-gj8-generator/
+// coefficients-output.txt). Empirical residual on the dev host is
+// ~1.21e-6 m closure over one period at fixed dt=60 s; the asserted
+// 1e-5 m bound gives ~10x margin (the standard Apsis conformance
+// margin per the Phase 1A Batch D' tolerance retune).
+TEST(IntegratorKepler, GaussJackson8) {
+  af::PointMass pm(kMu);
+  ai::GaussJackson8::Options opts;
+  opts.mu_starter = kMu;
+  ai::GaussJackson8 gj8(opts);
+  propagate_one_period(gj8, pm, /*dt=*/60.0, /*tol_m=*/1e-5);
+}
 
 }  // namespace

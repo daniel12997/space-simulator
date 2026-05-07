@@ -432,3 +432,119 @@ The `IIntegrator` seam, the coefficient table contents, and the step
 controller's mathematical specification are all unchanged at this
 cleanup batch; only the `facold` data flow, the asserted-tolerance
 literals, the pinned hash baseline, and one Options field move.
+
+## Phase 1A Implementation Note — Batch D'' closure (2026-05-05)
+
+Phase 1A Batch D'' is the GJ8 re-attempt that the Batch D1 closure
+above flagged as deferred (D2). The cycle's new ground truth is the
+verified Berry-Healy 2004 coefficient generator at
+`docs/raw/code/berry-healy-2004-gj8-generator/` (Healy's original Lisp
+preserved as corpus, Python port with corrected
+`half_acceleration_in_sum`, paper-cross-check harness `verify.py`).
+This batch lands the deliverable end-to-end:
+
+### What landed (load-bearing, exercised)
+
+- **Coefficient table**: `src/integrate/gj8_coeffs.h` transcribes Tables
+  5 (b_{j,k} ordinate-form summed-Adams) and 6 (a_{j,k} ordinate-form
+  summed-Cowell) verbatim from the generator's
+  `coefficients-output.txt`. Each rational `p/q` is a `static_cast<double>`
+  of `int64_t` literals (several entries overflow `int32_t`). Compile-time
+  `static_assert`s pin the paper-canonical anchor cells (`(j=-4, k=-4)`,
+  `(j=+4, k=+4)` in both tables) and an FNV-1a hash of the full 180-entry
+  table; the rebaseline script lives at
+  `tools/dev/recompute_gj8_hash.sh`. The `static_assert(kCoefficientHash
+  == 0x02AED205E063D443ULL)` is the load-bearing tripwire that catches
+  silent table edits.
+
+- **`GaussJackson8` adapter** behind the `IIntegrator` seam, with `Options`
+  exposing PEC vs PECE, the f-and-g starter's `mu_starter`, the central-
+  difference Phi epsilons, and continuity-detection tolerances. The seam
+  contract (single `step(t, x, phi, dt, force)` advancing by one fixed
+  step) is honoured with internal stencil cache + (t, x) continuity test
+  for re-bootstrap.
+
+- **f-and-g starter** at `src/integrate/gj8_starter.{h,cc}` per Berry-Healy
+  2004 §5.1. Forward and backward universal-variable Kepler propagation
+  via the existing `apsis::math::fandg::propagate()` helper populates
+  states at j=-4..+4 around the seed; force model evaluated at each gives
+  the 9-point acceleration ring buffer; Phi is bootstrapped by central-
+  difference perturbation oracle (Phase 1A acceptable approximation per
+  the deliverable plan; closed-form universal-variable Kepler STM remains
+  a Phase 7 follow-on).
+
+- **Bootstrap of running sums** from row-9 (paper-j=+4) ordinate-form
+  formulas reproducing the f-and-g state at the leading edge. The first
+  4 post-bootstrap `step()` calls deliver the f-and-g forward states at
+  j=+1..+4 (exact for circular Kepler — the conformance scope; bounded
+  to half-stencil-span Kepler approximation drift for perturbed
+  dynamics, which Berry-Healy §5.1's SECECE...CE iteration would refine
+  in production — that iteration is also a Phase 7 follow-on).
+
+### Algorithm convention — empirical closure
+
+The PECE step's velocity formula at the corrector row (paper-j=+4,
+row 9) needs a **trapezoidal** first-sum recurrence:
+
+  s_corr = s_lead + (1/2) * (ddot_r_lead + ddot_r_slot8_new)
+
+NOT the ordinary `s_lead + ddot_r_lead` recurrence that constant-
+acceleration self-consistency naively suggests (under constant a
+the two coincide, so the constant-a test fails to discriminate them).
+The predictor row (paper-j=+5, row 0, no half-acceleration absorption
+in the generator's `half_acceleration_in_sum` convention) uses a
+half-step shift `s_pred = s_lead + (1/2) * ddot_r_lead`, and the
+second sum `S_new = S_lead + s_lead + (1/2) * ddot_r_lead` works for
+both predictor and corrector rows.
+
+The trapezoidal first-sum was identified empirically: under circular
+Kepler at h=60 s, the ordinary first-sum recurrence produced a ~16
+m/s per-step velocity drift; trapezoidal recovers a ~4e-12 m/s per-
+step residual at the first PECE step, accumulating to ~1.27e-9 m/s
+over one full period (~97 steps). The trapezoidal interpretation is
+consistent with how the corrector row's `+1/2` diagonal term in the
+absorbed table represents the contribution of the corrector point's
+own acceleration: the absorbed half-acceleration in the table and
+the trapezoidal half-acceleration in the running sum together form
+the full-step contribution that the corrector implicitly integrates.
+
+Paper-derivation alignment: this matches Berry-Healy 2004 §3.2's
+trapezoidal-summed first-sum convention (where the "alternate
+formulation" of the summed first sum incorporates `(1/2) * ddot_r`
+at both the lower and upper bounds of the running sum); the
+corrector row's diagonal absorption handles the upper-bound half,
+while our running-sum recurrence handles the per-step trapezoidal
+update.
+
+### Empirical residuals (development host)
+
+- Kepler 1-period at h=60 s, fixed step: **~1.21e-6 m** (asserted
+  bound 1e-5 m; ~10x margin matching the Apsis tolerance convention).
+  Velocity residual ~1.27e-9 m/s. Contrast: the same orbit on Dp54
+  closes at <1 m / period; on Dop853 at <2e-5 m / period at rtol=
+  1e-12. GJ8 sits at the floor of the f-and-g starter precision (the
+  starter f-and-g iterates to ~1e-12 m, propagating one ULP of LEO
+  scale per stencil position). Phase 7 may upgrade the starter to a
+  closed-form universal-variable Kepler STM (vs the current central-
+  difference Phi-side oracle) if higher fidelity is required.
+
+- Phi 1-hour at h=60 s on Kepler: **~6e-7 m / ~3e-10 m/s** (asserted
+  bound 1e-3 m / 1e-6 m/s; ~1000x margin). The Phi residual is bounded
+  above by the central-difference perturbation oracle's truncation
+  (~ `eps^2 / 2 * |∂³r/∂r³|`), not by the GJ8 step error.
+
+### Coefficient source — vs the original Batch D failure
+
+Critically, the **coefficient transcription** is now load-bearing-
+trustable. The generator's exact-rational output, paper-cross-checked
+at every named anchor (Eqs 27/32/44/48/68/70 + Tables 3/4/5/6 sample
+cells; see `docs/raw/code/berry-healy-2004-gj8-generator/verify.py`
+and `docs/wiki/sources/berry-healy-2004-gj8-generator.md` for the
+upstream-Lisp-bug history that `verify.py` documents), gives an
+unambiguous algebraic source. The C++ transcription in
+`src/integrate/gj8_coeffs.h` is verified by `static_assert` on the
+same anchor cells AND by the FNV-1a hash baseline tripwire. The
+original Batch D's TWO bridge failures (PDF-OCR drift and
+shift-convention disagreement on first-principles re-derivation) do
+NOT recur here — both were addressed at-source by the
+generator-corpus addition and the Lisp-bug fix.

@@ -450,3 +450,14 @@ Bundle:
 Resolution: corrected the Python port's `half_acceleration_in_sum`; Lisp file preserved unmodified as historical record. The `verify.py` harness passes at every checked Table 5 anchor including paper-corner cells `(j=±4, k=∓4) = ±19087/89600` and the corrector-current-point `(j=4, k=4) = -19087/89600`.
 
 Use in Apsis: this becomes the source-of-truth for the Phase 1A Batch D'' GJ8 coefficient transcription into C++. The prior implement-cycle attempt at GJ8 (Phase 1A Batch D, deferred under T4) had hit both the "transcription bridge" (PDF-OCR fragile) and "first-principles bridge" (shift-convention disagreement) failure modes. The generator output now provides an unambiguous algebraic reference for the C++ tables, with `verify.py` as the regression test.
+
+## [2026-05-05] decision | Phase 1A Batch D'' (GJ8 re-attempt) closure on ADR-009
+
+Updated [[decisions/009-hand-rolled-integrator-family]] with a Phase 1A Batch D'' closure paragraph documenting:
+- Coefficient table transcribed from `docs/raw/code/berry-healy-2004-gj8-generator/coefficients-output.txt` (the verified-fix Python port, paper-cross-checked at every named anchor) into `src/integrate/gj8_coeffs.h`. FNV-1a hash baseline pinned at `0x02AED205E063D443ULL` with `tools/dev/recompute_gj8_hash.sh` for intentional rebaselining.
+- `GaussJackson8` adapter behind `IIntegrator` (per ADR-009), with f-and-g starter (Berry-Healy 2004 §5.1, central-difference Phi STM oracle as Phase 1A acceptable approximation).
+- Algorithm convention triage: predictor uses half-step first sum; corrector uses TRAPEZOIDAL first sum `s_lead + 0.5 * (ddot_r_lead + ddot_r_slot8_new)`. Identified empirically (constant-acceleration self-consistency does not discriminate trapezoidal from full-step; circular Kepler shows ~16 m/s per-step v error under full-step vs ~4e-12 m/s under trapezoidal).
+- Empirical residuals on dev host: Kepler 1-period at h=60s ~1.21e-6 m / ~1.27e-9 m/s; Phi 1-hour at h=60s passes 1e-3 m / 1e-6 m/s gate.
+- Both `IntegratorKepler.GaussJackson8` and `IntegratorPhi.GaussJackson8` rejoin the parameterised conformance gate (alongside Dp54, Dop853, Yoshida4).
+
+The original Batch D's TWO bridge failures (PDF-OCR drift; first-principles shift-convention disagreement) do NOT recur — the generator-corpus addition + Lisp-bug fix gave an unambiguous algebraic source. The convention triage (final fix) was the only material Batch D'' debugging effort.

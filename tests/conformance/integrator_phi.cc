@@ -218,12 +218,10 @@ TEST(IntegratorPhi, Dop853WithBeta) {
   // implementer measured terminal facold_ ≈ 9.099e-1; the 1e-3 threshold
   // gives ~10× margin over the seed and ~1000× margin under that empirical
   // value. This assertion fires under the bug and passes under the fix.
-  EXPECT_GT(facold_default, 1e-3)
-      << "facold_ stuck near the 1e-4 seed — the original step()-local "
-         "facold bug has returned (or step() wrote to a stale local).";
-  EXPECT_GT(facold_pi, 1e-3)
-      << "facold_ stuck near the 1e-4 seed — the original step()-local "
-         "facold bug has returned (or step() wrote to a stale local).";
+  EXPECT_GT(facold_default, 1e-3) << "facold_ stuck near the 1e-4 seed — the original step()-local "
+                                     "facold bug has returned (or step() wrote to a stale local).";
+  EXPECT_GT(facold_pi, 1e-3) << "facold_ stuck near the 1e-4 seed — the original step()-local "
+                                "facold bug has returned (or step() wrote to a stale local).";
 }
 
 }  // namespace

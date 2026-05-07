@@ -206,6 +206,24 @@ TEST(IntegratorPhi, Dop853WithBeta) {
   EXPECT_LE(facold_default, 1.0);
   EXPECT_GE(facold_pi, 1e-4);
   EXPECT_LE(facold_pi, 1.0);
+
+  // (e) Inversion-detecting assertion: under the original bug (`facold` as
+  // a function-local re-initialised at the top of every step()), the
+  // member `facold_` stays at its 1e-4 constructor seed regardless of how
+  // many accepted steps run, because the bugged code writes only the
+  // local. The working impl writes `facold_ = max(err, 1e-4)` on every
+  // accept; for steps near the controller's acceptance threshold (where
+  // err is O(0.1)–O(1)), the persisted value lands well above 1e-4.
+  // On smooth Kepler at rtol=1e-12 / atol=1e-9 / dt_max=600 s the
+  // implementer measured terminal facold_ ≈ 9.099e-1; the 1e-3 threshold
+  // gives ~10× margin over the seed and ~1000× margin under that empirical
+  // value. This assertion fires under the bug and passes under the fix.
+  EXPECT_GT(facold_default, 1e-3)
+      << "facold_ stuck near the 1e-4 seed — the original step()-local "
+         "facold bug has returned (or step() wrote to a stale local).";
+  EXPECT_GT(facold_pi, 1e-3)
+      << "facold_ stuck near the 1e-4 seed — the original step()-local "
+         "facold bug has returned (or step() wrote to a stale local).";
 }
 
 }  // namespace

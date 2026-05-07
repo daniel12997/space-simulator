@@ -68,8 +68,8 @@ class GaussJackson8 final : public IIntegrator {
     // Central-difference Phi-at-starter perturbation scales (m and m/s).
     // Larger values reduce numerical noise but increase truncation; the
     // defaults are tuned for LEO-scale dynamics.
-    double phi_fd_pos_eps = 1.0;       // m
-    double phi_fd_vel_eps = 1.0e-3;    // m/s
+    double phi_fd_pos_eps = 1.0;     // m
+    double phi_fd_vel_eps = 1.0e-3;  // m/s
 
     // Continuity tolerance: a `step()` call is treated as a continuation
     // of the cached stencil if `||x.r - cached_x.r|| < kContinuityRTol *
@@ -102,8 +102,7 @@ class GaussJackson8 final : public IIntegrator {
   // ring buffer, sigma_, Sigma_, and first 4 forward-cached deliveries.
   void bootstrap(apsis::time::Time<apsis::time::tags::TT> t,
                  const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-                 const apsis::math::Mat6& phi, double dt,
-                 const apsis::force::IForceModel& force);
+                 const apsis::math::Mat6& phi, double dt, const apsis::force::IForceModel& force);
 
   // Advance the stencil by one step using PECE (or PEC if opts_.pece is
   // false). Updates the ring buffer, sums, and cached state.

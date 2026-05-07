@@ -85,8 +85,7 @@ apsis::math::Mat6 eval_row_phi(std::size_t row, const apsis::math::Mat6& s_sum,
 // Compute the dPhi/dt = A(t) * Phi product given a force Jacobian and Phi.
 apsis::math::Mat6 eval_dphi(apsis::time::Time<apsis::time::tags::TT> t,
                             const apsis::frames::State<apsis::frames::tags::ICRF>& x,
-                            const apsis::math::Mat6& phi,
-                            const apsis::force::IForceModel& force) {
+                            const apsis::math::Mat6& phi, const apsis::force::IForceModel& force) {
   const auto kJ36 = force.partials_dadx(t, x);
   return assemble_a(kJ36) * phi;
 }
@@ -142,8 +141,7 @@ void GaussJackson8::advance_one_step(const apsis::force::IForceModel& force) {
   // 2. Predict r, v, Phi at paper-j=+5 using row-0 of the table, the
   //    CURRENT (pre-shift) stencil's accelerations, and the predictor-
   //    side sums.
-  const apsis::math::Vec3 kRPred =
-      eval_row_position(coeff::kRowPredictor, kSNew, accel_, kH);
+  const apsis::math::Vec3 kRPred = eval_row_position(coeff::kRowPredictor, kSNew, accel_, kH);
   const apsis::math::Vec3 kVPred = eval_row_velocity(coeff::kRowPredictor, kSPred, accel_, kH);
   const apsis::math::Mat6 kPhiPred = eval_row_phi(coeff::kRowPredictor, kSPhiPred, dphi_, kH);
 

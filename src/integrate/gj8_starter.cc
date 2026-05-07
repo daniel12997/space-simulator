@@ -27,8 +27,9 @@
 
 #include "gj8_starter.h"
 
-#include "../math/f_and_g_series.h"
 #include "apsis/integrate/iintegrator.h"
+
+#include "../math/f_and_g_series.h"
 #include "gj8_coeffs.h"
 
 namespace apsis::integrate::detail {
@@ -39,9 +40,9 @@ namespace coeff = apsis::integrate::gj8;
 // Propagate Phi to time t = j*h via central-difference perturbation of the
 // seed state. Returns Phi(j*h) = STM mapping (r0, v0) -> (r(j*h), v(j*h))
 // under Kepler-only motion. Six columns; each requires two f-and-g calls.
-apsis::math::Mat6 phi_via_central_difference(
-    const apsis::frames::State<apsis::frames::tags::ICRF>& x0, double dt, double mu,
-    double fd_pos_eps, double fd_vel_eps) {
+apsis::math::Mat6
+phi_via_central_difference(const apsis::frames::State<apsis::frames::tags::ICRF>& x0, double dt,
+                           double mu, double fd_pos_eps, double fd_vel_eps) {
   apsis::math::Mat6 phi;
   for (int axis = 0; axis < 6; ++axis) {
     auto x_plus = x0;
